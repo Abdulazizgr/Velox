@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/velox_db";
+const MONGODB_URI = (
+  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/velox_db"
+).trim();
 
 if (!process.env.MONGODB_URI && process.env.NODE_ENV === "production") {
   console.error(
@@ -31,6 +33,7 @@ export async function connectDB(): Promise<typeof mongoose> {
 
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
+      dbName: "velox_db",
       bufferCommands: false,
     };
 
