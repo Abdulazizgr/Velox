@@ -43,34 +43,34 @@ export async function seedDatabase() {
   if (shoeCount === 0) {
     const sampleShoes = [
       // Size 36 (Quads only)
-      { shoeId: "SK-36-01", size: 36, type: "QUAD", color: "Red", status: "AVAILABLE", notes: "Red Roller Quads" },
-      { shoeId: "SK-36-02", size: 36, type: "QUAD", color: "Blue", status: "AVAILABLE", notes: "Blue Roller Quads" },
+      { shoeId: "SK-36-01", size: 36, type: "QUAD", status: "AVAILABLE", notes: "Roller Quads" },
+      { shoeId: "SK-36-02", size: 36, type: "QUAD", status: "AVAILABLE", notes: "Roller Quads" },
       // Size 37 (Both)
-      { shoeId: "SK-37-01", size: 37, type: "INLINE", color: "Black", status: "AVAILABLE" },
-      { shoeId: "SK-37-02", size: 37, type: "QUAD", color: "White", status: "AVAILABLE" },
+      { shoeId: "SK-37-01", size: 37, type: "INLINE", status: "AVAILABLE" },
+      { shoeId: "SK-37-02", size: 37, type: "QUAD", status: "AVAILABLE" },
       // Size 38 (Both)
-      { shoeId: "SK-38-01", size: 38, type: "INLINE", color: "Black", status: "AVAILABLE" },
-      { shoeId: "SK-38-02", size: 38, type: "QUAD", color: "Pink", status: "AVAILABLE" },
-      { shoeId: "SK-38-03", size: 38, type: "INLINE", color: "Blue", status: "AVAILABLE" },
+      { shoeId: "SK-38-01", size: 38, type: "INLINE", status: "AVAILABLE" },
+      { shoeId: "SK-38-02", size: 38, type: "QUAD", status: "AVAILABLE" },
+      { shoeId: "SK-38-03", size: 38, type: "INLINE", status: "AVAILABLE" },
       // Size 39 (Both)
-      { shoeId: "SK-39-01", size: 39, type: "INLINE", color: "Black", status: "AVAILABLE" },
-      { shoeId: "SK-39-02", size: 39, type: "QUAD", color: "Red", status: "AVAILABLE" },
+      { shoeId: "SK-39-01", size: 39, type: "INLINE", status: "AVAILABLE" },
+      { shoeId: "SK-39-02", size: 39, type: "QUAD", status: "AVAILABLE" },
       // Size 40 (popular size - Both)
-      { shoeId: "SK-40-01", size: 40, type: "INLINE", color: "Blue", status: "AVAILABLE" },
-      { shoeId: "SK-40-02", size: 40, type: "INLINE", color: "Black", status: "AVAILABLE" },
-      { shoeId: "SK-40-03", size: 40, type: "QUAD", color: "White", status: "AVAILABLE" },
-      { shoeId: "SK-40-04", size: 40, type: "QUAD", color: "Black", status: "AVAILABLE" },
+      { shoeId: "SK-40-01", size: 40, type: "INLINE", status: "AVAILABLE" },
+      { shoeId: "SK-40-02", size: 40, type: "INLINE", status: "AVAILABLE" },
+      { shoeId: "SK-40-03", size: 40, type: "QUAD", status: "AVAILABLE" },
+      { shoeId: "SK-40-04", size: 40, type: "QUAD", status: "AVAILABLE" },
       // Size 41 (Both)
-      { shoeId: "SK-41-01", size: 41, type: "INLINE", color: "Black", status: "AVAILABLE" },
-      { shoeId: "SK-41-02", size: 41, type: "QUAD", color: "Blue", status: "AVAILABLE" },
-      { shoeId: "SK-41-03", size: 41, type: "INLINE", color: "Red", status: "AVAILABLE" },
+      { shoeId: "SK-41-01", size: 41, type: "INLINE", status: "AVAILABLE" },
+      { shoeId: "SK-41-02", size: 41, type: "QUAD", status: "AVAILABLE" },
+      { shoeId: "SK-41-03", size: 41, type: "INLINE", status: "AVAILABLE" },
       // Size 42 (Both)
-      { shoeId: "SK-42-01", size: 42, type: "INLINE", color: "Black", status: "AVAILABLE" },
-      { shoeId: "SK-42-02", size: 42, type: "QUAD", color: "White", status: "AVAILABLE" },
+      { shoeId: "SK-42-01", size: 42, type: "INLINE", status: "AVAILABLE" },
+      { shoeId: "SK-42-02", size: 42, type: "QUAD", status: "AVAILABLE" },
       // Size 43 (Inline only)
-      { shoeId: "SK-43-01", size: 43, type: "INLINE", color: "Black", status: "AVAILABLE" },
+      { shoeId: "SK-43-01", size: 43, type: "INLINE", status: "AVAILABLE" },
       // Size 44 (Inline only)
-      { shoeId: "SK-44-01", size: 44, type: "INLINE", color: "Black", status: "AVAILABLE" },
+      { shoeId: "SK-44-01", size: 44, type: "INLINE", status: "AVAILABLE" },
     ];
 
     await Shoe.insertMany(sampleShoes);

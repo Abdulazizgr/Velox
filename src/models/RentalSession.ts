@@ -22,7 +22,6 @@ export interface IRentalSession extends Document {
   shoeId: string; // Current assigned Shoe ID
   shoeSize: number;
   skateType?: "INLINE" | "QUAD";
-  shoeColor?: string;
   customerName?: string;
   customerPhone?: string;
   baseDurationMinutes: number; // 30 or 60
@@ -61,10 +60,6 @@ const RentalSessionSchema = new Schema<IRentalSession>(
       type: String,
       enum: ["INLINE", "QUAD"],
       default: "INLINE",
-    },
-    shoeColor: {
-      type: String,
-      default: "",
     },
     customerName: {
       type: String,

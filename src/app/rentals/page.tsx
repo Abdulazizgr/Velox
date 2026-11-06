@@ -52,7 +52,6 @@ interface RentalSessionItem {
   paymentStatus: "PAID" | "UNPAID";
   paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
   skateType?: "INLINE" | "QUAD";
-  shoeColor?: string;
   shoeSwaps?: ShoeSwapLog[];
   tabTotal?: number;
   tabItemsCount?: number;
@@ -63,7 +62,6 @@ interface ShoeOption {
   shoeId: string;
   size: number;
   type?: "INLINE" | "QUAD";
-  color?: string;
   status: string;
 }
 
@@ -279,18 +277,16 @@ export default function RentalBoardPage() {
     };
   }, [availableShoes, selectedSize]);
 
-  // If a size number only has one type, auto-select that type; otherwise prefer available
+  // If a size number only has one type or only one available type, auto-switch to it
   useEffect(() => {
     if (availableTypesForSelectedSize.onlyQuad) {
       setSelectedType("QUAD");
     } else if (availableTypesForSelectedSize.onlyInline) {
       setSelectedType("INLINE");
-    } else {
-      if (selectedType === "INLINE" && availableTypesForSelectedSize.inlineAvail === 0 && availableTypesForSelectedSize.quadAvail > 0) {
-        setSelectedType("QUAD");
-      } else if (selectedType === "QUAD" && availableTypesForSelectedSize.quadAvail === 0 && availableTypesForSelectedSize.inlineAvail > 0) {
-        setSelectedType("INLINE");
-      }
+    } else if (availableTypesForSelectedSize.inlineAvail === 0 && availableTypesForSelectedSize.quadAvail > 0) {
+      setSelectedType("QUAD");
+    } else if (availableTypesForSelectedSize.quadAvail === 0 && availableTypesForSelectedSize.inlineAvail > 0) {
+      setSelectedType("INLINE");
     }
   }, [
     selectedSize,
@@ -314,7 +310,8 @@ export default function RentalBoardPage() {
   const activeSessionsForSelectedSizeAndType = useMemo(() => {
     return sessions
       .filter((s) => {
-        const sessionType = s.skateType || "INLINE";
+        const shoeObj = availableShoes.find((sh) => sh.shoeId === s.shoeId);
+        const sessionType = shoeObj?.type || s.skateType || "INLINE";
         return (
           s.status === "ACTIVE" &&
           s.shoeSize === selectedSize &&
@@ -323,7 +320,7 @@ export default function RentalBoardPage() {
       })
       .sort((a, b) => new Date(a.expectedEndTime).getTime() - new Date(b.expectedEndTime).getTime())
       .slice(0, 3);
-  }, [sessions, selectedSize, selectedType]);
+  }, [sessions, selectedSize, selectedType, availableShoes]);
 
   // Set default shoe id when size or type changes
   useEffect(() => {
@@ -830,32 +827,6 @@ export default function RentalBoardPage() {
                           >
                             {(session.skateType || "INLINE") === "QUAD" ? "Quads" : "Inline"}
                           </span>
-                          {session.shoeColor && (
-                            <span className="text-[10px] font-semibold text-[#8B8179] flex items-center gap-1">
-                              <span
-                                className="inline-block h-2 w-2 rounded-full border border-black/20"
-                                style={{
-                                  backgroundColor:
-                                    session.shoeColor.toLowerCase() === "white"
-                                      ? "#FFFFFF"
-                                      : session.shoeColor.toLowerCase() === "black"
-                                      ? "#000000"
-                                      : session.shoeColor.toLowerCase() === "blue"
-                                      ? "#2563EB"
-                                      : session.shoeColor.toLowerCase() === "red"
-                                      ? "#DC2626"
-                                      : session.shoeColor.toLowerCase() === "pink"
-                                      ? "#EC4899"
-                                      : session.shoeColor.toLowerCase() === "yellow"
-                                      ? "#EAB308"
-                                      : session.shoeColor.toLowerCase() === "orange"
-                                      ? "#D96827"
-                                      : "#8B8179",
-                                }}
-                              />
-                              {session.shoeColor}
-                            </span>
-                          )}
                         </div>
                         <div className="text-xs text-[#8B8179] mt-1 flex items-center gap-1.5 truncate">
                           <User className="h-3 w-3 text-[#8B8179] shrink-0" />
@@ -1157,9 +1128,9 @@ export default function RentalBoardPage() {
                       onClick={() => setSelectedType("QUAD")}
                       className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                         selectedType === "QUAD"
-                          ? "bg-[#6D28D9] text-white border-[#6D28D9] shadow-sm font-bold"
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
                           : availableTypesForSelectedSize.hasQuad
-                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#6D28D9]/40"
+                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
                           : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
                       }`}
                     >
@@ -1209,7 +1180,7 @@ export default function RentalBoardPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedType("QUAD")}
-                          className="w-full p-2.5 rounded-xl bg-[#EDE9FE] border border-[#DDD6FE] text-[#6D28D9] text-xs flex items-center justify-between cursor-pointer hover:bg-[#DDD6FE]/60 transition-colors"
+                          className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
                         >
                           <span className="font-semibold text-left">
                             💡 Quads are available for Size #{selectedSize} ({availableTypesForSelectedSize.quadAvail} left)
@@ -1245,6 +1216,10 @@ export default function RentalBoardPage() {
                             {activeSessionsForSelectedSizeAndType.map((s, idx) => {
                               const timer = getSessionTimerData(s);
                               const dueTime = format12HourTime(s.expectedEndTime);
+                              const displayName =
+                                !s.customerName || s.customerName.toLowerCase().includes("walk-in")
+                                  ? "Skater"
+                                  : s.customerName;
 
                               return (
                                 <div
@@ -1256,11 +1231,8 @@ export default function RentalBoardPage() {
                                       #{idx + 1}
                                     </span>
                                     <span className="font-mono font-bold text-[#29221E]">{s.shoeId}</span>
-                                    {s.shoeColor && (
-                                      <span className="text-[10px] text-[#8B8179]">({s.shoeColor})</span>
-                                    )}
-                                    <span className="text-[#8B8179] text-[11px] truncate max-w-[90px]">
-                                      ({s.customerName})
+                                    <span className="text-[#8B8179] text-[11px] truncate max-w-[120px]">
+                                      ({displayName})
                                     </span>
                                   </div>
 
@@ -1300,7 +1272,7 @@ export default function RentalBoardPage() {
                     >
                       {shoesForSelectedSizeAndType.map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"}{s.color ? ` • ${s.color}` : ""})
+                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"})
                         </option>
                       ))}
                     </select>
@@ -1484,7 +1456,7 @@ export default function RentalBoardPage() {
                       .filter((s) => s.status === "AVAILABLE" && s.shoeId !== swapSession.shoeId)
                       .map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"}{s.color ? ` • ${s.color}` : ""})
+                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"})
                         </option>
                       ))}
                   </select>
