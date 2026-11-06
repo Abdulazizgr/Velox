@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Repeat,
   Sparkles,
+  Footprints,
   User,
   Check,
   X,
@@ -50,6 +51,8 @@ interface RentalSessionItem {
   status: "ACTIVE" | "COMPLETED" | "CANCELLED";
   paymentStatus: "PAID" | "UNPAID";
   paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
+  skateType?: "INLINE" | "QUAD";
+  shoeColor?: string;
   shoeSwaps?: ShoeSwapLog[];
   tabTotal?: number;
   tabItemsCount?: number;
@@ -59,6 +62,8 @@ interface ShoeOption {
   _id: string;
   shoeId: string;
   size: number;
+  type?: "INLINE" | "QUAD";
+  color?: string;
   status: string;
 }
 
@@ -81,6 +86,7 @@ export default function RentalBoardPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [availableShoes, setAvailableShoes] = useState<ShoeOption[]>([]);
   const [selectedSize, setSelectedSize] = useState<number>(40);
+  const [selectedType, setSelectedType] = useState<"INLINE" | "QUAD">("INLINE");
   const [selectedShoeId, setSelectedShoeId] = useState<string>("");
   const [duration, setDuration] = useState<30 | 60>(30);
   const [customerName, setCustomerName] = useState("");
@@ -251,27 +257,82 @@ export default function RentalBoardPage() {
     fetchAvailableShoes();
   }, []);
 
-  // Filter available shoes by selected size
-  const shoesForSelectedSize = useMemo(() => {
-    return availableShoes.filter((s) => s.size === selectedSize && s.status === "AVAILABLE");
+  // Check available skate types (Inline vs Quads) for the currently selected size
+  const availableTypesForSelectedSize = useMemo(() => {
+    const shoesForSize = availableShoes.filter((s) => s.size === selectedSize);
+    const inlineShoes = shoesForSize.filter((s) => (s.type || "INLINE") === "INLINE");
+    const quadShoes = shoesForSize.filter((s) => s.type === "QUAD");
+
+    const hasInline = inlineShoes.length > 0;
+    const hasQuad = quadShoes.length > 0;
+
+    const inlineAvail = inlineShoes.filter((s) => s.status === "AVAILABLE").length;
+    const quadAvail = quadShoes.filter((s) => s.status === "AVAILABLE").length;
+
+    return {
+      hasInline,
+      hasQuad,
+      inlineAvail,
+      quadAvail,
+      onlyInline: hasInline && !hasQuad,
+      onlyQuad: hasQuad && !hasInline,
+    };
   }, [availableShoes, selectedSize]);
 
-  // Top 3 active rented shoes for selected size returning earliest with remaining time
-  const activeSessionsForSelectedSize = useMemo(() => {
+  // If a size number only has one type, auto-select that type; otherwise prefer available
+  useEffect(() => {
+    if (availableTypesForSelectedSize.onlyQuad) {
+      setSelectedType("QUAD");
+    } else if (availableTypesForSelectedSize.onlyInline) {
+      setSelectedType("INLINE");
+    } else {
+      if (selectedType === "INLINE" && availableTypesForSelectedSize.inlineAvail === 0 && availableTypesForSelectedSize.quadAvail > 0) {
+        setSelectedType("QUAD");
+      } else if (selectedType === "QUAD" && availableTypesForSelectedSize.quadAvail === 0 && availableTypesForSelectedSize.inlineAvail > 0) {
+        setSelectedType("INLINE");
+      }
+    }
+  }, [
+    selectedSize,
+    availableTypesForSelectedSize.onlyQuad,
+    availableTypesForSelectedSize.onlyInline,
+    availableTypesForSelectedSize.inlineAvail,
+    availableTypesForSelectedSize.quadAvail,
+  ]);
+
+  // Filter available shoes by selected size AND selected skate type
+  const shoesForSelectedSizeAndType = useMemo(() => {
+    return availableShoes.filter(
+      (s) =>
+        s.size === selectedSize &&
+        (s.type || "INLINE") === selectedType &&
+        s.status === "AVAILABLE"
+    );
+  }, [availableShoes, selectedSize, selectedType]);
+
+  // Top 3 active rented shoes for selected size AND selected type returning earliest
+  const activeSessionsForSelectedSizeAndType = useMemo(() => {
     return sessions
-      .filter((s) => s.status === "ACTIVE" && s.shoeSize === selectedSize)
+      .filter((s) => {
+        const sessionType = s.skateType || "INLINE";
+        return (
+          s.status === "ACTIVE" &&
+          s.shoeSize === selectedSize &&
+          sessionType === selectedType
+        );
+      })
       .sort((a, b) => new Date(a.expectedEndTime).getTime() - new Date(b.expectedEndTime).getTime())
       .slice(0, 3);
-  }, [sessions, selectedSize]);
+  }, [sessions, selectedSize, selectedType]);
 
-  // Set default shoe id when size changes
+  // Set default shoe id when size or type changes
   useEffect(() => {
-    if (shoesForSelectedSize.length > 0) {
-      setSelectedShoeId(shoesForSelectedSize[0].shoeId);
+    if (shoesForSelectedSizeAndType.length > 0) {
+      setSelectedShoeId(shoesForSelectedSizeAndType[0].shoeId);
     } else {
       setSelectedShoeId("");
     }
-  }, [shoesForSelectedSize]);
+  }, [shoesForSelectedSizeAndType]);
 
   // Pricing calculations for current day
   const isWeekend = [0, 6].includes(new Date().getDay());
@@ -753,13 +814,48 @@ export default function RentalBoardPage() {
                     {/* Header: Shoe ID + Status Tag */}
                     <div className="flex items-start justify-between gap-2 mb-2.5">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-mono text-xl sm:text-2xl font-black text-[#29221E] tracking-tight">
                             {session.shoeId}
                           </span>
                           <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
                             Size #{session.shoeSize}
                           </span>
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                              (session.skateType || "INLINE") === "QUAD"
+                                ? "bg-[#EDE9FE] text-[#6D28D9] border border-[#DDD6FE]"
+                                : "bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD]"
+                            }`}
+                          >
+                            {(session.skateType || "INLINE") === "QUAD" ? "Quads" : "Inline"}
+                          </span>
+                          {session.shoeColor && (
+                            <span className="text-[10px] font-semibold text-[#8B8179] flex items-center gap-1">
+                              <span
+                                className="inline-block h-2 w-2 rounded-full border border-black/20"
+                                style={{
+                                  backgroundColor:
+                                    session.shoeColor.toLowerCase() === "white"
+                                      ? "#FFFFFF"
+                                      : session.shoeColor.toLowerCase() === "black"
+                                      ? "#000000"
+                                      : session.shoeColor.toLowerCase() === "blue"
+                                      ? "#2563EB"
+                                      : session.shoeColor.toLowerCase() === "red"
+                                      ? "#DC2626"
+                                      : session.shoeColor.toLowerCase() === "pink"
+                                      ? "#EC4899"
+                                      : session.shoeColor.toLowerCase() === "yellow"
+                                      ? "#EAB308"
+                                      : session.shoeColor.toLowerCase() === "orange"
+                                      ? "#D96827"
+                                      : "#8B8179",
+                                }}
+                              />
+                              {session.shoeColor}
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-[#8B8179] mt-1 flex items-center gap-1.5 truncate">
                           <User className="h-3 w-3 text-[#8B8179] shrink-0" />
@@ -973,7 +1069,7 @@ export default function RentalBoardPage() {
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
                     1. Select Shoe Size
                   </label>
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
                     {distinctSizes.map((size) => {
                       const avail = availableShoes.filter(
                         (s) => s.size === size && s.status === "AVAILABLE"
@@ -984,12 +1080,12 @@ export default function RentalBoardPage() {
                           key={size}
                           type="button"
                           onClick={() => setSelectedSize(size)}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center min-w-[56px] ${
+                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center min-w-[56px] shrink-0 ${
                             isSelected
                               ? "bg-[#D96827] text-white shadow-md shadow-[#D96827]/25 scale-105"
                               : avail > 0
                               ? "bg-[#F7F6F3] text-[#29221E] border border-[#E9D9C5] hover:border-[#D96827]"
-                              : "bg-[#F7F6F3]/50 text-[#8B8179]/50 border border-dashed border-[#E9D9C5] cursor-not-allowed opacity-50"
+                              : "bg-[#F7F6F3]/50 text-[#8B8179]/50 border border-dashed border-[#E9D9C5] opacity-50"
                           }`}
                         >
                           <span className="text-sm">#{size}</span>
@@ -1002,18 +1098,105 @@ export default function RentalBoardPage() {
                   </div>
                 </div>
 
-                {/* Step 2: Specific Shoe ID Asset */}
+                {/* Step 2: Skate Type (Inline Skates vs Quads) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider">
+                      2. Skate Type (Size #{selectedSize})
+                    </label>
+                    {availableTypesForSelectedSize.onlyInline && (
+                      <span className="text-[10px] font-semibold text-[#8B8179] bg-[#F7F6F3] px-2 py-0.5 rounded-full border border-[#E9D9C5]">
+                        Only Inline available in #{selectedSize}
+                      </span>
+                    )}
+                    {availableTypesForSelectedSize.onlyQuad && (
+                      <span className="text-[10px] font-semibold text-[#6D28D9] bg-[#EDE9FE] px-2 py-0.5 rounded-full border border-[#DDD6FE]">
+                        Only Quads available in #{selectedSize}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Inline Skates Button */}
+                    <button
+                      type="button"
+                      disabled={!availableTypesForSelectedSize.hasInline}
+                      onClick={() => setSelectedType("INLINE")}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                        selectedType === "INLINE"
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
+                          : availableTypesForSelectedSize.hasInline
+                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
+                          : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Footprints className="h-4 w-4 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold leading-tight">Inline Skates</div>
+                          <div
+                            className={`text-[10px] mt-0.5 ${
+                              selectedType === "INLINE" ? "text-white/80" : "text-[#8B8179]"
+                            }`}
+                          >
+                            {availableTypesForSelectedSize.hasInline
+                              ? `${availableTypesForSelectedSize.inlineAvail} available`
+                              : "Not stocked"}
+                          </div>
+                        </div>
+                      </div>
+                      {selectedType === "INLINE" && (
+                        <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
+                      )}
+                    </button>
+
+                    {/* Quads Button */}
+                    <button
+                      type="button"
+                      disabled={!availableTypesForSelectedSize.hasQuad}
+                      onClick={() => setSelectedType("QUAD")}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                        selectedType === "QUAD"
+                          ? "bg-[#6D28D9] text-white border-[#6D28D9] shadow-sm font-bold"
+                          : availableTypesForSelectedSize.hasQuad
+                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#6D28D9]/40"
+                          : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold leading-tight">Quads</div>
+                          <div
+                            className={`text-[10px] mt-0.5 ${
+                              selectedType === "QUAD" ? "text-white/80" : "text-[#8B8179]"
+                            }`}
+                          >
+                            {availableTypesForSelectedSize.hasQuad
+                              ? `${availableTypesForSelectedSize.quadAvail} available`
+                              : "Not stocked"}
+                          </div>
+                        </div>
+                      </div>
+                      {selectedType === "QUAD" && (
+                        <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 3: Specific Shoe ID Asset */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    2. Choose Shoe Asset (Unique ID)
+                    3. Choose Shoe Asset (Unique ID)
                   </label>
-                  {shoesForSelectedSize.length === 0 ? (
+                  {shoesForSelectedSizeAndType.length === 0 ? (
                     <div className="space-y-2.5">
                       <div className="p-3 rounded-xl bg-[#FDF0EF] border border-[#D94B45]/30 text-[#D94B45] text-xs flex items-start gap-2">
                         <AlertTriangle className="h-4 w-4 shrink-0 text-[#D94B45] mt-0.5" />
                         <div>
                           <strong className="block font-bold">
-                            No shoes of Size #{selectedSize} are currently available.
+                            No {selectedType === "QUAD" ? "Quads" : "Inline Skates"} of Size #{selectedSize} are currently available.
                           </strong>
                           <span className="text-[11px] text-[#D94B45]/90">
                             Customer will need to wait for one to be returned.
@@ -1021,18 +1204,45 @@ export default function RentalBoardPage() {
                         </div>
                       </div>
 
-                      {activeSessionsForSelectedSize.length > 0 ? (
+                      {/* Helpful tip if alternate type is available */}
+                      {selectedType === "INLINE" && availableTypesForSelectedSize.quadAvail > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedType("QUAD")}
+                          className="w-full p-2.5 rounded-xl bg-[#EDE9FE] border border-[#DDD6FE] text-[#6D28D9] text-xs flex items-center justify-between cursor-pointer hover:bg-[#DDD6FE]/60 transition-colors"
+                        >
+                          <span className="font-semibold text-left">
+                            💡 Quads are available for Size #{selectedSize} ({availableTypesForSelectedSize.quadAvail} left)
+                          </span>
+                          <span className="text-[11px] font-bold underline shrink-0">Switch to Quads &rarr;</span>
+                        </button>
+                      )}
+
+                      {selectedType === "QUAD" && availableTypesForSelectedSize.inlineAvail > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedType("INLINE")}
+                          className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
+                        >
+                          <span className="font-semibold text-left">
+                            💡 Inline Skates are available for Size #{selectedSize} ({availableTypesForSelectedSize.inlineAvail} left)
+                          </span>
+                          <span className="text-[11px] font-bold underline shrink-0">Switch to Inline &rarr;</span>
+                        </button>
+                      )}
+
+                      {activeSessionsForSelectedSizeAndType.length > 0 ? (
                         <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] space-y-2">
                           <div className="flex items-center justify-between text-xs pb-1 border-b border-[#E9D9C5]/60">
                             <span className="font-bold text-[#29221E] flex items-center gap-1.5">
                               <Clock className="h-3.5 w-3.5 text-[#D96827]" />
-                              Top {activeSessionsForSelectedSize.length} Returning Soonest (Size #{selectedSize}):
+                              Top {activeSessionsForSelectedSizeAndType.length} Returning Soonest (Size #{selectedSize} {selectedType === "QUAD" ? "Quads" : "Inline"}):
                             </span>
                             <span className="text-[10px] text-[#8B8179] font-medium">Est. Wait</span>
                           </div>
 
                           <div className="space-y-1.5">
-                            {activeSessionsForSelectedSize.map((s, idx) => {
+                            {activeSessionsForSelectedSizeAndType.map((s, idx) => {
                               const timer = getSessionTimerData(s);
                               const dueTime = format12HourTime(s.expectedEndTime);
 
@@ -1046,7 +1256,10 @@ export default function RentalBoardPage() {
                                       #{idx + 1}
                                     </span>
                                     <span className="font-mono font-bold text-[#29221E]">{s.shoeId}</span>
-                                    <span className="text-[#8B8179] text-[11px] truncate max-w-[110px]">
+                                    {s.shoeColor && (
+                                      <span className="text-[10px] text-[#8B8179]">({s.shoeColor})</span>
+                                    )}
+                                    <span className="text-[#8B8179] text-[11px] truncate max-w-[90px]">
                                       ({s.customerName})
                                     </span>
                                   </div>
@@ -1075,7 +1288,7 @@ export default function RentalBoardPage() {
                         </div>
                       ) : (
                         <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-[11px] text-[#8B8179] text-center">
-                          No active sessions currently on track for Size #{selectedSize}.
+                          No active sessions currently on track for Size #{selectedSize} {selectedType === "QUAD" ? "Quads" : "Inline"}.
                         </div>
                       )}
                     </div>
@@ -1083,21 +1296,21 @@ export default function RentalBoardPage() {
                     <select
                       value={selectedShoeId}
                       onChange={(e) => setSelectedShoeId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] cursor-pointer"
                     >
-                      {shoesForSelectedSize.map((s) => (
+                      {shoesForSelectedSizeAndType.map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (Size #{s.size})
+                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"}{s.color ? ` • ${s.color}` : ""})
                         </option>
                       ))}
                     </select>
                   )}
                 </div>
 
-                {/* Step 3: Duration & Pricing */}
+                {/* Step 4: Duration & Pricing */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    3. Rental Duration & Timing
+                    4. Rental Duration & Timing
                   </label>
                   <div className="grid grid-cols-2 gap-2.5">
                     <button
@@ -1169,7 +1382,7 @@ export default function RentalBoardPage() {
                 {/* Step 5: Payment Timing */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    4. Payment Timing
+                    5. Payment Timing
                   </label>
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <button
@@ -1271,7 +1484,7 @@ export default function RentalBoardPage() {
                       .filter((s) => s.status === "AVAILABLE" && s.shoeId !== swapSession.shoeId)
                       .map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (Size #{s.size})
+                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"}{s.color ? ` • ${s.color}` : ""})
                         </option>
                       ))}
                   </select>

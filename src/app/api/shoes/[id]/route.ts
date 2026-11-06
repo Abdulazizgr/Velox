@@ -15,7 +15,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { status, notes } = body;
+    const { status, notes, type, color } = body;
 
     await connectDB();
     const shoe = await Shoe.findById(id);
@@ -25,6 +25,12 @@ export async function PATCH(
 
     if (status) {
       shoe.status = status;
+    }
+    if (type === "INLINE" || type === "QUAD") {
+      shoe.type = type;
+    }
+    if (typeof color === "string") {
+      shoe.color = color.trim();
     }
     if (typeof notes === "string") {
       shoe.notes = notes;

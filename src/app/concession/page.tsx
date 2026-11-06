@@ -38,6 +38,8 @@ interface ActiveSkater {
   _id: string;
   shoeId: string;
   shoeSize: number;
+  skateType?: string;
+  shoeColor?: string;
   customerName: string;
   startedAt: string;
 }
@@ -537,9 +539,11 @@ export default function ConcessionPage() {
                               s.customerName &&
                               !s.customerName.toLowerCase().includes("walk-in") &&
                               s.customerName.trim().length > 0;
+                            const typeLabel = s.skateType === "QUAD" ? "Quads" : "Inline";
+                            const colorLabel = s.shoeColor ? ` • ${s.shoeColor}` : "";
                             const label = hasRealName
-                              ? `Shoe ${s.shoeId} (Size #${s.shoeSize}) — ${s.customerName}`
-                              : `Shoe ${s.shoeId} (Size #${s.shoeSize})`;
+                              ? `Shoe ${s.shoeId} (Size #${s.shoeSize} • ${typeLabel}${colorLabel}) — ${s.customerName}`
+                              : `Shoe ${s.shoeId} (Size #${s.shoeSize} • ${typeLabel}${colorLabel})`;
 
                             return (
                               <option key={s._id} value={s._id}>

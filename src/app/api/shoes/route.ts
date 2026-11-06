@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth";
 export async function GET() {
   try {
     await connectDB();
-    const shoes = await Shoe.find({}).sort({ size: 1, shoeId: 1 });
+    const shoes = await Shoe.find({}).sort({ size: 1, shoeId: 1 }).lean();
     return NextResponse.json({ shoes });
   } catch (error) {
     console.error("Fetch shoes error:", error);
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { shoeId, size, notes } = body;
+    const { shoeId, size, type, color, notes } = body;
 
     if (!shoeId || !size) {
       return NextResponse.json(
@@ -42,9 +42,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const skateType = type === "QUAD" ? "QUAD" : "INLINE";
+    const shoeColor = typeof color === "string" ? color.trim() : "";
+
     const newShoe = await Shoe.create({
       shoeId: formattedShoeId,
       size: Number(size),
+      type: skateType,
+      color: shoeColor,
       status: "AVAILABLE",
       notes: notes || "",
     });
