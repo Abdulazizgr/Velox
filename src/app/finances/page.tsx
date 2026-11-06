@@ -88,7 +88,6 @@ export default function ExpensesPage() {
   // Add Reason Modal
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [newReasonName, setNewReasonName] = useState("");
-  const [newReasonDisplay, setNewReasonDisplay] = useState("");
   const [newReasonFundSource, setNewReasonFundSource] = useState<"DAILY_CASH" | "CAPITAL" | "BOTH">("BOTH");
   const [creatingReason, setCreatingReason] = useState(false);
 
@@ -223,7 +222,7 @@ export default function ExpensesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newReasonName.trim(),
-          displayName: newReasonDisplay.trim() || newReasonName.trim(),
+          displayName: newReasonName.trim(),
           fundSource: newReasonFundSource,
         }),
       });
@@ -232,7 +231,6 @@ export default function ExpensesPage() {
       if (res.ok) {
         setShowReasonModal(false);
         setNewReasonName("");
-        setNewReasonDisplay("");
         showPopup("Reason Added", `Reason "${json.category.displayName}" created!`);
         fetchReasons();
       } else {
@@ -1173,19 +1171,6 @@ export default function ExpensesPage() {
                     value={newReasonName}
                     onChange={(e) => setNewReasonName(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Display Label (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Electricity & Power Bills"
-                    value={newReasonDisplay}
-                    onChange={(e) => setNewReasonDisplay(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none"
                   />
                 </div>
 
