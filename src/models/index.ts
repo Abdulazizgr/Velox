@@ -8,3 +8,5 @@ export * from "./Expense";
 export * from "./ExpenseCategory";
 export * from "./CapitalFund";
 export * from "./DailyRegister";
+export * from "./MissedDemand";
+export * from "./StockAdjustment";

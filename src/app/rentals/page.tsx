@@ -92,6 +92,8 @@ export default function RentalBoardPage() {
   const [paymentOption, setPaymentOption] = useState<"UNPAID" | "PAID">("UNPAID");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [submitting, setSubmitting] = useState(false);
+  const [loggingDemand, setLoggingDemand] = useState(false);
+  const [loggedDemandSize, setLoggedDemandSize] = useState<number | null>(null);
 
   // Swap Modal State
   const [swapSession, setSwapSession] = useState<RentalSessionItem | null>(null);
@@ -334,6 +336,41 @@ export default function RentalBoardPage() {
   // Pricing calculations for current day
   const isWeekend = [0, 6].includes(new Date().getDay());
   const calculatedPrice = duration === 30 ? (isWeekend ? 200 : 150) : (isWeekend ? 300 : 250);
+
+  // Handle Log Missed Demand when size is out of stock (for owner's bottleneck report)
+  const handleLogMissedDemand = async () => {
+    setLoggingDemand(true);
+    try {
+      const res = await fetch("/api/rentals/demand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shoeSize: selectedSize, skateType: selectedType }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setLoggedDemandSize(selectedSize);
+        showAlert({
+          title: "Customer Demand Logged",
+          message: `Recorded 1 customer request for Size #${selectedSize}. Total out-of-stock requests recorded: ${json.totalForSize}. This helps the owner decide which sizes to buy next.`,
+          type: "success",
+        });
+      } else {
+        showAlert({
+          title: "Logging Failed",
+          message: "Could not log customer demand.",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Network Error",
+        message: "Failed to record customer request.",
+        type: "error",
+      });
+    } finally {
+      setLoggingDemand(false);
+    }
+  };
 
   // Handle Start Rental
   const handleStartRental = async (e: React.FormEvent) => {
@@ -1174,6 +1211,21 @@ export default function RentalBoardPage() {
                           </span>
                         </div>
                       </div>
+
+                      {/* Log Missed Demand Button (Owner Bottleneck Report) */}
+                      <button
+                        type="button"
+                        disabled={loggingDemand}
+                        onClick={handleLogMissedDemand}
+                        className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#FDF0EF] border-2 border-[#D94B45] text-[#D94B45] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-98"
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5 text-[#D94B45]" />
+                        <span>
+                          {loggedDemandSize === selectedSize
+                            ? `✓ Logged! Customer Request Recorded for Size #${selectedSize}`
+                            : `+ Log 1 Customer Turned Away (Size #${selectedSize} Out of Stock)`}
+                        </span>
+                      </button>
 
                       {/* Helpful tip if alternate type is available */}
                       {selectedType === "INLINE" && availableTypesForSelectedSize.quadAvail > 0 && (

@@ -336,7 +336,11 @@ export default function StockInventoryPage() {
       const res = await fetch(`/api/products/${adjustProduct._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentStock: targetStock }),
+        body: JSON.stringify({
+          currentStock: targetStock,
+          adjustReason: adjustMode === "DEDUCT" ? "DAMAGE" : "INVENTORY_COUNT",
+          adjustReasonLabel: adjustReason,
+        }),
       });
 
       if (res.ok) {

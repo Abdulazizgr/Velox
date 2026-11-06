@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { Product } from "@/models/Product";
+import { Product, StockAdjustment } from "@/models";
 import { getSession } from "@/lib/auth";
 
 export async function PATCH(
@@ -15,7 +15,18 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { addStock, currentStock, sellingPrice, costPrice, minStockAlert, name, category } = body;
+    const {
+      addStock,
+      currentStock,
+      sellingPrice,
+      costPrice,
+      minStockAlert,
+      name,
+      category,
+      adjustReason = "INVENTORY_COUNT",
+      adjustReasonLabel = "Physical Count",
+      notes = "",
+    } = body;
 
     await connectDB();
     const product = await Product.findById(id);
@@ -28,8 +39,38 @@ export async function PATCH(
     if (sellingPrice != null) product.sellingPrice = Number(sellingPrice);
     if (costPrice != null) product.costPrice = Number(costPrice);
     if (minStockAlert != null) product.minStockAlert = Number(minStockAlert);
-    if (currentStock != null) product.currentStock = Math.max(0, Number(currentStock));
-    if (addStock != null) product.currentStock = Math.max(0, product.currentStock + Number(addStock));
+
+    // Track stock adjustments / shrinkage
+    const prevStock = product.currentStock;
+    if (currentStock != null) {
+      const newStockVal = Math.max(0, Number(currentStock));
+      const delta = newStockVal - prevStock;
+      if (delta !== 0) {
+        try {
+          await StockAdjustment.create({
+            productId: product._id.toString(),
+            productName: product.name,
+            category: product.category,
+            previousStock: prevStock,
+            newStock: newStockVal,
+            delta,
+            reason: adjustReason,
+            reasonLabel: adjustReasonLabel,
+            costValueLost: delta < 0 ? Math.abs(delta) * (product.costPrice || 0) : 0,
+            date: new Date(),
+            recordedByStaffId: session.userId,
+            notes,
+          });
+        } catch (e) {
+          console.error("Failed to log stock adjustment:", e);
+        }
+      }
+      product.currentStock = newStockVal;
+    }
+
+    if (addStock != null) {
+      product.currentStock = Math.max(0, product.currentStock + Number(addStock));
+    }
 
     await product.save();
 
@@ -63,4 +104,3 @@ export async function DELETE(
     return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
   }
 }
-
