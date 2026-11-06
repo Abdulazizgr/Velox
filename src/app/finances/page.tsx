@@ -29,14 +29,14 @@ interface ExpenseItem {
   _id: string;
   title: string;
   amount: number;
-  category: string;
+  category: string; // Internal field storing the reason key
   fundSource: "DAILY_CASH" | "CAPITAL";
   paymentMethod: "CASH" | "TELEBIRR" | "CBE";
   notes?: string;
   date: string;
 }
 
-interface ExpenseCategoryItem {
+interface ExpenseReasonItem {
   _id: string;
   name: string;
   displayName: string;
@@ -64,14 +64,14 @@ type DatePreset = "TODAY" | "YESTERDAY" | "WEEK" | "MONTH" | "ALL" | "CUSTOM";
 
 export default function ExpensesPage() {
   const [data, setData] = useState<FinanceData | null>(null);
-  const [categories, setCategories] = useState<ExpenseCategoryItem[]>([]);
+  const [reasons, setReasons] = useState<ExpenseReasonItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
   const [datePreset, setDatePreset] = useState<DatePreset>("TODAY");
   const [customDate, setCustomDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [fundFilter, setFundFilter] = useState<"ALL" | "DAILY_CASH" | "CAPITAL">("ALL");
-  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [reasonFilter, setReasonFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Record Expense Modal
@@ -79,22 +79,22 @@ export default function ExpensesPage() {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [fundSource, setFundSource] = useState<"DAILY_CASH" | "CAPITAL">("DAILY_CASH");
-  const [category, setCategory] = useState("LUNCH");
+  const [selectedReason, setSelectedReason] = useState("LUNCH");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Add Category Modal
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatDisplay, setNewCatDisplay] = useState("");
-  const [newCatFundSource, setNewCatFundSource] = useState<"DAILY_CASH" | "CAPITAL" | "BOTH">("BOTH");
-  const [creatingCategory, setCreatingCategory] = useState(false);
+  // Add Reason Modal
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [newReasonName, setNewReasonName] = useState("");
+  const [newReasonDisplay, setNewReasonDisplay] = useState("");
+  const [newReasonFundSource, setNewReasonFundSource] = useState<"DAILY_CASH" | "CAPITAL" | "BOTH">("BOTH");
+  const [creatingReason, setCreatingReason] = useState(false);
 
-  // Inline Category Creator inside Expense Modal
-  const [showInlineCat, setShowInlineCat] = useState(false);
-  const [inlineCatName, setInlineCatName] = useState("");
+  // Inline Reason Creator inside Expense Modal
+  const [showInlineReason, setShowInlineReason] = useState(false);
+  const [inlineReasonName, setInlineReasonName] = useState("");
 
   // Capital Top-up Modal
   const [showTopupModal, setShowTopupModal] = useState(false);
@@ -117,16 +117,16 @@ export default function ExpensesPage() {
     setNotification({ show: true, title, message, type });
   };
 
-  // Fetch Categories
-  const fetchCategories = async () => {
+  // Fetch Reasons
+  const fetchReasons = async () => {
     try {
       const res = await fetch("/api/finances/categories");
       if (res.ok) {
         const json = await res.json();
-        setCategories(json.categories || []);
+        setReasons(json.categories || []);
       }
     } catch (e) {
-      console.error("Error fetching categories:", e);
+      console.error("Error fetching reasons:", e);
     }
   };
 
@@ -155,7 +155,7 @@ export default function ExpensesPage() {
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchReasons();
   }, []);
 
   useEffect(() => {
@@ -165,10 +165,12 @@ export default function ExpensesPage() {
   // Handle Record Expense
   const handleRecordExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !amount) {
-      showPopup("Missing Fields", "Please provide a title and amount", "error");
+    if (!amount) {
+      showPopup("Amount Required", "Please enter the expense amount", "error");
       return;
     }
+
+    const effectiveTitle = title.trim() || getReasonDisplay(selectedReason);
 
     setSubmitting(true);
     try {
@@ -176,9 +178,9 @@ export default function ExpensesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: title.trim(),
+          title: effectiveTitle,
           amount: Number(amount),
-          category,
+          category: selectedReason, // Backend uses category field to store reason
           fundSource,
           paymentMethod,
           notes: notes.trim(),
@@ -195,7 +197,7 @@ export default function ExpensesPage() {
         setExpenseDate(new Date().toISOString().slice(0, 10));
         showPopup("Success", resJson.message || "Expense recorded successfully");
         fetchExpenses();
-        fetchCategories();
+        fetchReasons();
       } else {
         showPopup("Recording Failed", resJson.error || "Failed to record expense", "error");
       }
@@ -206,67 +208,67 @@ export default function ExpensesPage() {
     }
   };
 
-  // Handle Create Category
-  const handleCreateCategory = async (e: React.FormEvent) => {
+  // Handle Create Reason
+  const handleCreateReason = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCatName.trim()) {
-      showPopup("Input Required", "Please enter a category name", "error");
+    if (!newReasonName.trim()) {
+      showPopup("Input Required", "Please enter a reason name", "error");
       return;
     }
 
-    setCreatingCategory(true);
+    setCreatingReason(true);
     try {
       const res = await fetch("/api/finances/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: newCatName.trim(),
-          displayName: newCatDisplay.trim() || newCatName.trim(),
-          fundSource: newCatFundSource,
+          name: newReasonName.trim(),
+          displayName: newReasonDisplay.trim() || newReasonName.trim(),
+          fundSource: newReasonFundSource,
         }),
       });
 
       const json = await res.json();
       if (res.ok) {
-        setShowCategoryModal(false);
-        setNewCatName("");
-        setNewCatDisplay("");
-        showPopup("Category Added", `Category "${json.category.displayName}" created!`);
-        fetchCategories();
+        setShowReasonModal(false);
+        setNewReasonName("");
+        setNewReasonDisplay("");
+        showPopup("Reason Added", `Reason "${json.category.displayName}" created!`);
+        fetchReasons();
       } else {
-        showPopup("Error", json.error || "Failed to create category", "error");
+        showPopup("Error", json.error || "Failed to create reason", "error");
       }
     } catch {
-      showPopup("Network Error", "Could not create category", "error");
+      showPopup("Network Error", "Could not create reason", "error");
     } finally {
-      setCreatingCategory(false);
+      setCreatingReason(false);
     }
   };
 
-  // Handle Quick Inline Category Creation inside Record Expense Modal
-  const handleCreateInlineCategory = async () => {
-    if (!inlineCatName.trim()) return;
+  // Handle Quick Inline Reason Creation inside Record Expense Modal
+  const handleCreateInlineReason = async () => {
+    if (!inlineReasonName.trim()) return;
     try {
       const res = await fetch("/api/finances/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: inlineCatName.trim(),
-          displayName: inlineCatName.trim(),
+          name: inlineReasonName.trim(),
+          displayName: inlineReasonName.trim(),
           fundSource,
         }),
       });
       const json = await res.json();
       if (res.ok) {
-        setCategory(json.category.name);
-        setInlineCatName("");
-        setShowInlineCat(false);
-        fetchCategories();
+        setSelectedReason(json.category.name);
+        setInlineReasonName("");
+        setShowInlineReason(false);
+        fetchReasons();
       } else {
-        showPopup("Error", json.error || "Failed to create category", "error");
+        showPopup("Error", json.error || "Failed to create reason", "error");
       }
     } catch {
-      showPopup("Network Error", "Failed to create category", "error");
+      showPopup("Network Error", "Failed to create reason", "error");
     }
   };
 
@@ -322,15 +324,15 @@ export default function ExpensesPage() {
     }
   };
 
-  // Filtered expenses based on Fund Source, Category, and Search
+  // Filtered expenses based on Fund Source, Reason, and Search
   const filteredExpenses = useMemo(() => {
     return (data?.expenses || []).filter((exp) => {
       // Fund Source Filter
       if (fundFilter !== "ALL" && exp.fundSource !== fundFilter) {
         return false;
       }
-      // Category Filter
-      if (categoryFilter !== "ALL" && exp.category !== categoryFilter) {
+      // Reason Filter
+      if (reasonFilter !== "ALL" && exp.category !== reasonFilter) {
         return false;
       }
       // Search Query
@@ -339,20 +341,20 @@ export default function ExpensesPage() {
         const matchesTitle = exp.title.toLowerCase().includes(q);
         const matchesNotes = (exp.notes || "").toLowerCase().includes(q);
         const matchesChannel = exp.paymentMethod.toLowerCase().includes(q);
-        const matchesCat = exp.category.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesNotes && !matchesChannel && !matchesCat) {
+        const matchesReason = exp.category.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesNotes && !matchesChannel && !matchesReason) {
           return false;
         }
       }
       return true;
     });
-  }, [data?.expenses, fundFilter, categoryFilter, searchQuery]);
+  }, [data?.expenses, fundFilter, reasonFilter, searchQuery]);
 
-  // Map category code to human readable name
-  const getCategoryDisplay = (catCode: string) => {
-    const found = categories.find((c) => c.name === catCode);
+  // Map reason code to human readable name
+  const getReasonDisplay = (reasonCode: string) => {
+    const found = reasons.find((r) => r.name === reasonCode);
     if (found) return found.displayName;
-    return catCode
+    return reasonCode
       .split("_")
       .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
       .join(" ");
@@ -398,11 +400,11 @@ export default function ExpensesPage() {
             </button>
 
             <button
-              onClick={() => setShowCategoryModal(true)}
+              onClick={() => setShowReasonModal(true)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-[#29221E] bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:bg-[#FFF4E5]/40 rounded-xl transition-all cursor-pointer shadow-xs"
             >
               <Tag className="h-4 w-4 text-[#D96827]" />
-              <span>+ Category</span>
+              <span>+ Reason</span>
             </button>
 
             <button
@@ -561,52 +563,52 @@ export default function ExpensesPage() {
           </div>
         </div>
 
-        {/* 3. CATEGORY SCROLLER & QUICK CONTROLS */}
+        {/* 3. REASON SCROLLER & QUICK CONTROLS */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-[#8B8179] px-1">
-            <span className="uppercase tracking-wider">Filter by Category:</span>
+            <span className="uppercase tracking-wider">Filter by Reason:</span>
             <span className="text-[11px] font-normal">
               Showing {filteredExpenses.length} of {data?.expenses.length || 0}
             </span>
           </div>
 
-          {/* Scrollable Category Filter Pills */}
+          {/* Scrollable Reason Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin whitespace-nowrap">
             <button
-              onClick={() => setCategoryFilter("ALL")}
+              onClick={() => setReasonFilter("ALL")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                categoryFilter === "ALL"
+                reasonFilter === "ALL"
                   ? "bg-[#D96827] text-white shadow-xs"
                   : "bg-white border border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
               }`}
             >
-              All Categories ({data?.expenses.length || 0})
+              All Reasons ({data?.expenses.length || 0})
             </button>
 
-            {categories.map((cat) => {
-              const count = (data?.expenses || []).filter((e) => e.category === cat.name).length;
-              const isSelected = categoryFilter === cat.name;
+            {reasons.map((r) => {
+              const count = (data?.expenses || []).filter((e) => e.category === r.name).length;
+              const isSelected = reasonFilter === r.name;
               return (
                 <button
-                  key={cat._id}
-                  onClick={() => setCategoryFilter(cat.name)}
+                  key={r._id}
+                  onClick={() => setReasonFilter(r.name)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
                     isSelected
                       ? "bg-[#29221E] text-white shadow-xs font-bold"
                       : "bg-white border border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                   }`}
                 >
-                  {cat.displayName} {count > 0 ? `(${count})` : ""}
+                  {r.displayName} {count > 0 ? `(${count})` : ""}
                 </button>
               );
             })}
 
             <button
-              onClick={() => setShowCategoryModal(true)}
+              onClick={() => setShowReasonModal(true)}
               className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#D96827] bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] transition-all shrink-0 cursor-pointer flex items-center gap-1"
             >
               <Plus className="h-3 w-3" />
-              <span>New Category</span>
+              <span>New Reason</span>
             </button>
           </div>
         </div>
@@ -620,7 +622,7 @@ export default function ExpensesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8B8179]" />
               <input
                 type="text"
-                placeholder="Search expense title, notes, channel..."
+                placeholder="Search reason, notes, channel..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#F7F6F3] border border-[#E9D9C5] rounded-xl text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
@@ -675,11 +677,11 @@ export default function ExpensesPage() {
                   onClick={() =>
                     exportToCSV(
                       "Velox_Expenses",
-                      ["Date/Time", "Expense Title", "Category", "Fund Source", "Channel", "Amount (ETB)", "Notes"],
+                      ["Date/Time", "Expense Reason / Title", "Reason", "Fund Source", "Channel", "Amount (ETB)", "Notes"],
                       filteredExpenses.map((exp) => [
                         format12HourDateTime(exp.date),
                         exp.title,
-                        getCategoryDisplay(exp.category),
+                        getReasonDisplay(exp.category),
                         exp.fundSource === "DAILY_CASH" ? "Daily Cash Drawer" : "General Capital",
                         exp.paymentMethod,
                         exp.amount,
@@ -707,7 +709,7 @@ export default function ExpensesPage() {
               <Wallet className="h-10 w-10 mx-auto mb-2 opacity-30 text-[#D96827]" />
               <p className="text-sm font-bold text-[#29221E]">No expenses found</p>
               <p className="text-xs text-[#8B8179] mt-1">
-                No recorded expenses matching the active date & category filters.
+                No recorded expenses matching the active date & reason filters.
               </p>
             </div>
           ) : (
@@ -718,7 +720,9 @@ export default function ExpensesPage() {
                   <div key={exp._id} className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h4 className="font-bold text-sm text-[#29221E]">{exp.title}</h4>
+                        <h4 className="font-bold text-sm text-[#29221E]">
+                          {exp.title || getReasonDisplay(exp.category)}
+                        </h4>
                         <div className="text-[11px] text-[#8B8179] font-mono mt-0.5">
                           {format12HourDateTime(exp.date)}
                         </div>
@@ -739,7 +743,7 @@ export default function ExpensesPage() {
                     <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1 text-[10px]">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="px-2 py-0.5 rounded bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5] font-semibold">
-                          {getCategoryDisplay(exp.category)}
+                          {getReasonDisplay(exp.category)}
                         </span>
                         {exp.fundSource === "DAILY_CASH" ? (
                           <span className="px-2 py-0.5 rounded font-semibold bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
@@ -773,8 +777,8 @@ export default function ExpensesPage() {
                   <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                     <tr>
                       <th className="px-5 py-3">Date / Time</th>
-                      <th className="px-5 py-3">Expense Title</th>
-                      <th className="px-5 py-3">Category</th>
+                      <th className="px-5 py-3">Expense / Details</th>
+                      <th className="px-5 py-3">Reason</th>
                       <th className="px-5 py-3">Funding Source</th>
                       <th className="px-5 py-3">Channel</th>
                       <th className="px-5 py-3 text-right">Amount</th>
@@ -788,7 +792,7 @@ export default function ExpensesPage() {
                           {format12HourDateTime(exp.date)}
                         </td>
                         <td className="px-5 py-3 font-bold text-[#29221E]">
-                          {exp.title}
+                          {exp.title || getReasonDisplay(exp.category)}
                           {exp.notes && (
                             <span className="block text-[11px] text-[#8B8179] font-normal">
                               {exp.notes}
@@ -797,7 +801,7 @@ export default function ExpensesPage() {
                         </td>
                         <td className="px-5 py-3">
                           <span className="px-2 py-0.5 rounded bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5] text-[10px] font-semibold">
-                            {getCategoryDisplay(exp.category)}
+                            {getReasonDisplay(exp.category)}
                           </span>
                         </td>
                         <td className="px-5 py-3">
@@ -846,7 +850,7 @@ export default function ExpensesPage() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-[#29221E]">Record Expense</h3>
-                    <p className="text-xs text-[#8B8179]">Select funding source & category</p>
+                    <p className="text-xs text-[#8B8179]">Select funding source & reason</p>
                   </div>
                 </div>
                 <button
@@ -868,7 +872,7 @@ export default function ExpensesPage() {
                       type="button"
                       onClick={() => {
                         setFundSource("DAILY_CASH");
-                        setCategory("LUNCH");
+                        setSelectedReason("LUNCH");
                       }}
                       className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                         fundSource === "DAILY_CASH"
@@ -886,7 +890,7 @@ export default function ExpensesPage() {
                       type="button"
                       onClick={() => {
                         setFundSource("CAPITAL");
-                        setCategory("SKATE_SHOES");
+                        setSelectedReason("SKATE_SHOES");
                       }}
                       className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                         fundSource === "CAPITAL"
@@ -913,7 +917,7 @@ export default function ExpensesPage() {
                           onClick={() => {
                             setTitle("Staff Lunch");
                             setAmount("200");
-                            setCategory("LUNCH");
+                            setSelectedReason("LUNCH");
                             setPaymentMethod("CASH");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#F7F6F3] hover:bg-[#FFF4E5] text-[#29221E] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
@@ -925,7 +929,7 @@ export default function ExpensesPage() {
                           onClick={() => {
                             setTitle("Taxi Transport");
                             setAmount("100");
-                            setCategory("TRANSPORT");
+                            setSelectedReason("TRANSPORT");
                             setPaymentMethod("CASH");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#F7F6F3] hover:bg-[#FFF4E5] text-[#29221E] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
@@ -937,7 +941,7 @@ export default function ExpensesPage() {
                           onClick={() => {
                             setTitle("Cleaning Supplies");
                             setAmount("150");
-                            setCategory("SUPPLIES");
+                            setSelectedReason("SUPPLIES");
                             setPaymentMethod("CASH");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#F7F6F3] hover:bg-[#FFF4E5] text-[#29221E] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
@@ -951,7 +955,7 @@ export default function ExpensesPage() {
                           type="button"
                           onClick={() => {
                             setTitle("New Skate Shoes Batch");
-                            setCategory("SKATE_SHOES");
+                            setSelectedReason("SKATE_SHOES");
                             setPaymentMethod("CBE");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#FFF4E5] hover:bg-[#FCEAD2] text-[#D96827] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
@@ -962,7 +966,7 @@ export default function ExpensesPage() {
                           type="button"
                           onClick={() => {
                             setTitle("Bulk Concession Restock");
-                            setCategory("SNACK_RESTOCK");
+                            setSelectedReason("SNACK_RESTOCK");
                             setPaymentMethod("CBE");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#FFF4E5] hover:bg-[#FCEAD2] text-[#D96827] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
@@ -973,7 +977,7 @@ export default function ExpensesPage() {
                           type="button"
                           onClick={() => {
                             setTitle("Facility Monthly Rent");
-                            setCategory("RENT");
+                            setSelectedReason("RENT");
                             setPaymentMethod("CBE");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#FFF4E5] hover:bg-[#FCEAD2] text-[#D96827] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
@@ -985,27 +989,54 @@ export default function ExpensesPage() {
                   </div>
                 </div>
 
-                {/* 2. EXPENSE TITLE */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Expense Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder={
-                      fundSource === "DAILY_CASH"
-                        ? "e.g. Staff Lunch, Taxi Transport"
-                        : "e.g. 10x New Skate Shoes, Shop Rent Deposit"
-                    }
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
-                  />
-                </div>
-
-                {/* 3. AMOUNT & CATEGORY */}
+                {/* 2. REASON & AMOUNT */}
                 <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-[#29221E]">
+                        Reason
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowInlineReason(!showInlineReason)}
+                        className="text-[10px] text-[#D96827] font-bold hover:underline cursor-pointer"
+                      >
+                        {showInlineReason ? "Cancel" : "+ New"}
+                      </button>
+                    </div>
+
+                    {!showInlineReason ? (
+                      <select
+                        value={selectedReason}
+                        onChange={(e) => setSelectedReason(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      >
+                        {reasons.map((r) => (
+                          <option key={r._id} value={r.name}>
+                            {r.displayName}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          placeholder="New reason..."
+                          value={inlineReasonName}
+                          onChange={(e) => setInlineReasonName(e.target.value)}
+                          className="w-full px-2 py-1.5 bg-white border border-[#D96827] rounded-xl text-xs text-[#29221E] focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateInlineReason}
+                          className="px-2 py-1.5 bg-[#D96827] text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
                       Amount (ETB)
@@ -1020,52 +1051,20 @@ export default function ExpensesPage() {
                       className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#D96827]"
                     />
                   </div>
+                </div>
 
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-[#29221E]">
-                        Category
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setShowInlineCat(!showInlineCat)}
-                        className="text-[10px] text-[#D96827] font-bold hover:underline cursor-pointer"
-                      >
-                        {showInlineCat ? "Cancel" : "+ New"}
-                      </button>
-                    </div>
-
-                    {!showInlineCat ? (
-                      <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
-                      >
-                        {categories.map((c) => (
-                          <option key={c._id} value={c.name}>
-                            {c.displayName}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="text"
-                          placeholder="New category..."
-                          value={inlineCatName}
-                          onChange={(e) => setInlineCatName(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-white border border-[#D96827] rounded-xl text-xs text-[#29221E] focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleCreateInlineCategory}
-                          className="px-2 py-1.5 bg-[#D96827] text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                {/* 3. OPTIONAL DETAILS / TITLE */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Description / Details <span className="font-normal text-[#8B8179]">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={`e.g. ${getReasonDisplay(selectedReason)} details, receipt ref`}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
                 </div>
 
                 {/* 4. PAYMENT CHANNEL & DATE */}
@@ -1140,8 +1139,8 @@ export default function ExpensesPage() {
           </div>
         )}
 
-        {/* MODAL 2: CREATE EXPENSE CATEGORY */}
-        {showCategoryModal && (
+        {/* MODAL 2: CREATE EXPENSE REASON */}
+        {showReasonModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
@@ -1150,29 +1149,29 @@ export default function ExpensesPage() {
                     <Tag className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">New Expense Category</h3>
-                    <p className="text-xs text-[#8B8179]">Add custom classification</p>
+                    <h3 className="text-base font-bold text-[#29221E]">New Expense Reason</h3>
+                    <p className="text-xs text-[#8B8179]">Add custom reason for expenses</p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowCategoryModal(false)}
+                  onClick={() => setShowReasonModal(false)}
                   className="p-1 text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreateCategory} className="mt-4 space-y-3.5">
+              <form onSubmit={handleCreateReason} className="mt-4 space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Category Name
+                    Reason Name
                   </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Electricity, Marketing, First Aid"
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
+                    value={newReasonName}
+                    onChange={(e) => setNewReasonName(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
                   />
                 </div>
@@ -1184,8 +1183,8 @@ export default function ExpensesPage() {
                   <input
                     type="text"
                     placeholder="e.g. Electricity & Power Bills"
-                    value={newCatDisplay}
-                    onChange={(e) => setNewCatDisplay(e.target.value)}
+                    value={newReasonDisplay}
+                    onChange={(e) => setNewReasonDisplay(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none"
                   />
                 </div>
@@ -1195,9 +1194,9 @@ export default function ExpensesPage() {
                     Funding Source Applicability
                   </label>
                   <select
-                    value={newCatFundSource}
+                    value={newReasonFundSource}
                     onChange={(e) =>
-                      setNewCatFundSource(
+                      setNewReasonFundSource(
                         e.target.value as "DAILY_CASH" | "CAPITAL" | "BOTH"
                       )
                     }
@@ -1212,17 +1211,17 @@ export default function ExpensesPage() {
                 <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#E9D9C5]">
                   <button
                     type="button"
-                    onClick={() => setShowCategoryModal(false)}
+                    onClick={() => setShowReasonModal(false)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={creatingCategory}
+                    disabled={creatingReason}
                     className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 cursor-pointer"
                   >
-                    {creatingCategory ? "Creating..." : "Save Category"}
+                    {creatingReason ? "Creating..." : "Save Reason"}
                   </button>
                 </div>
               </form>
@@ -1303,7 +1302,9 @@ export default function ExpensesPage() {
               </div>
 
               <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
-                <div className="font-bold text-[#29221E]">{expenseToDelete.title}</div>
+                <div className="font-bold text-[#29221E]">
+                  {expenseToDelete.title || getReasonDisplay(expenseToDelete.category)}
+                </div>
                 <div className="font-mono text-[#D94B45] font-bold">
                   -{formatETB(expenseToDelete.amount)}
                 </div>

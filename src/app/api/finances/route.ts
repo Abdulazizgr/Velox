@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
     const fundSourceParam = searchParams.get("fundSource");
-    const categoryParam = searchParams.get("category");
+    const categoryParam = searchParams.get("reason") || searchParams.get("category");
 
     const now = new Date();
     let queryDate: any = null;

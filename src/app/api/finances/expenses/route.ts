@@ -15,16 +15,19 @@ export async function POST(req: NextRequest) {
       title,
       amount,
       category,
+      reason,
       fundSource, // "DAILY_CASH" | "CAPITAL"
       paymentMethod = "CASH", // "CASH" | "TELEBIRR" | "CBE"
       notes = "",
       date,
     } = body;
 
+    const chosenReason = (reason || category || "").toString().trim().toUpperCase();
+    const chosenTitle = (title || reason || category || "").toString().trim();
     const expenseAmount = Number(amount);
-    if (!title || !expenseAmount || expenseAmount <= 0 || !category || !fundSource) {
+    if (!chosenTitle || !expenseAmount || expenseAmount <= 0 || !chosenReason || !fundSource) {
       return NextResponse.json(
-        { error: "Title, positive amount, category, and fund source are required." },
+        { error: "Title/Reason, positive amount, reason, and fund source are required." },
         { status: 400 }
       );
     }
@@ -56,17 +59,17 @@ export async function POST(req: NextRequest) {
       await capital.save();
     }
 
-    // Ensure category exists in ExpenseCategory collection
+    // Ensure reason exists in ExpenseCategory collection
     try {
-      const cleanCat = String(category).trim().toUpperCase();
-      const existingCat = await ExpenseCategory.findOne({ name: cleanCat });
-      if (!existingCat) {
-        const pretty = cleanCat
+      const cleanReason = chosenReason;
+      const existingReason = await ExpenseCategory.findOne({ name: cleanReason });
+      if (!existingReason) {
+        const pretty = cleanReason
           .split("_")
-          .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
+          .map((w: string) => w.charAt(0) + w.slice(1).toLowerCase())
           .join(" ");
         await ExpenseCategory.create({
-          name: cleanCat,
+          name: cleanReason,
           displayName: pretty,
           fundSource: fundSource === "CAPITAL" ? "CAPITAL" : "DAILY_CASH",
         });
@@ -78,9 +81,9 @@ export async function POST(req: NextRequest) {
     const expenseDate = date ? new Date(date) : new Date();
 
     const expense = await Expense.create({
-      title: title.trim(),
+      title: chosenTitle,
       amount: expenseAmount,
-      category: String(category).trim().toUpperCase(),
+      category: chosenReason,
       fundSource,
       paymentMethod,
       notes: notes.trim(),
