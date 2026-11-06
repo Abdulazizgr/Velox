@@ -270,3 +270,4 @@ sequenceDiagram
 | **Q2** | Should the system print physical paper receipts or send SMS (e.g. Telebirr reference)? | For Phase 1, on-screen confirmation with optional thermal receipt printing (e.g. 58mm/80mm POS printer). |
 | **Q3** | Are hygiene liners (*festal*) tracked as inventory items, or considered general free supplies? | Track as free consumable supplies under general operational expenses. |
 | **Q4** | Will multiple staff members use different devices at the same time (e.g. one at the shoe counter, one at the snack bar)? | Recommend a responsive web app accessible simultaneously on tablet/phone and PC with real-time updates. |
+

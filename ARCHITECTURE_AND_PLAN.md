@@ -221,3 +221,4 @@ function calculateSessionParameters(duration: 30 | 60, startTime = new Date()) {
 - [ ] Audio notification when session is Due Soon (< 5 mins) or Overdue.
 - [ ] Keyboard shortcuts for rapid counter operations (e.g. `F2` New Rental, `/` search shoe).
 - [ ] Verification tests for all business rules.
+
