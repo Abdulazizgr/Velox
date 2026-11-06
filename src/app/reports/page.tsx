@@ -182,12 +182,12 @@ export default function ReportsPage() {
   const liveDiscrepancy = Number(countedCash || 0) - (data?.register.expectedClosingCash || 0);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen bg-[#F7F6F3] text-[#29221E]">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
         {/* Print-Only Official Receipt Header */}
-        <div className="hidden print:flex items-center justify-between pb-4 mb-4 border-b-2 border-zinc-700 text-zinc-900">
+        <div className="hidden print:flex items-center justify-between pb-4 mb-4 border-b-2 border-[#29221E] text-[#29221E]">
           <div className="flex items-center gap-3">
-            <div className="relative h-14 w-14 rounded-xl overflow-hidden border border-zinc-700 bg-black shrink-0">
+            <div className="relative h-14 w-14 rounded-xl overflow-hidden border border-[#E9D9C5] bg-black shrink-0">
               <Image
                 src="/logo.jpg"
                 alt="Velox Skate Logo"
@@ -197,20 +197,20 @@ export default function ReportsPage() {
               />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white">VELOX SKATE RINK</h1>
-              <p className="text-xs text-zinc-400">Daily Shift Closing & Financial Audit Receipt</p>
+              <h1 className="text-xl font-black tracking-tight text-[#29221E]">VELOX SKATE RINK</h1>
+              <p className="text-xs text-[#8B8179]">Daily Shift Closing & Financial Audit Receipt</p>
             </div>
           </div>
-          <div className="text-right text-xs text-zinc-300 font-mono">
+          <div className="text-right text-xs text-[#29221E] font-mono">
             <p className="font-bold">Shift Date: {data?.summary.date}</p>
-            <p className="text-zinc-400 font-sans text-[11px]">Printed: {new Date().toLocaleString()}</p>
+            <p className="text-[#8B8179] font-sans text-[11px]">Printed: {new Date().toLocaleString()}</p>
           </div>
         </div>
 
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800 print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E9D9C5] print:hidden">
           <div className="flex items-center gap-3.5">
-            <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-amber-500/30 shadow-md shadow-amber-500/10 shrink-0 bg-black">
+            <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-[#E9D9C5] shadow-sm shrink-0 bg-black">
               <Image
                 src="/logo.jpg"
                 alt="Velox Skate"
@@ -221,14 +221,14 @@ export default function ReportsPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
                   Daily Closing & Audit Reports
                 </h1>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  Phase 5
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                  EOD
                 </span>
               </div>
-              <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">
+              <p className="mt-0.5 text-xs sm:text-sm text-[#8B8179]">
                 End-of-day register balancing, physical cash drawer counting, and multi-channel audit reports.
               </p>
             </div>
@@ -236,13 +236,13 @@ export default function ReportsPage() {
 
           <div className="flex items-center gap-2">
             {/* View Switcher */}
-            <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 text-xs font-bold">
+            <div className="flex bg-white border border-[#E9D9C5] rounded-xl p-1 text-xs font-bold shadow-sm">
               <button
                 onClick={() => setActiveTab("TODAY")}
                 className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   activeTab === "TODAY"
-                    ? "bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-[#D96827] text-white shadow-sm"
+                    : "text-[#8B8179] hover:text-[#29221E]"
                 }`}
               >
                 Today&apos;s Shift
@@ -251,8 +251,8 @@ export default function ReportsPage() {
                 onClick={() => setActiveTab("HISTORY")}
                 className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   activeTab === "HISTORY"
-                    ? "bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-[#D96827] text-white shadow-sm"
+                    : "text-[#8B8179] hover:text-[#29221E]"
                 }`}
               >
                 Shift History
@@ -261,7 +261,7 @@ export default function ReportsPage() {
 
             <button
               onClick={handlePrint}
-              className="p-2 sm:px-3 sm:py-2 text-xs font-bold text-zinc-300 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="p-2 sm:px-3 sm:py-2 text-xs font-bold text-[#29221E] hover:text-white bg-white hover:bg-[#29221E] border border-[#E9D9C5] rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
               title="Print EOD Summary"
             >
               <Printer className="h-4 w-4" />
@@ -271,7 +271,7 @@ export default function ReportsPage() {
             <button
               onClick={fetchTodayRegister}
               disabled={loading}
-              className="p-2 sm:px-3 sm:py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </button>
@@ -282,18 +282,18 @@ export default function ReportsPage() {
           <div className="space-y-6">
             {/* 1. SHIFT STATUS BANNER */}
             <div
-              className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg ${
+              className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm bg-white ${
                 data?.register.status === "CLOSED"
-                  ? "bg-zinc-900/90 border-zinc-700"
-                  : "bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-zinc-900 border-emerald-500/40"
+                  ? "border-[#E9D9C5]"
+                  : "border-2 border-[#26845B]"
               }`}
             >
               <div className="flex items-center gap-3">
                 <div
                   className={`p-3 rounded-xl ${
                     data?.register.status === "CLOSED"
-                      ? "bg-zinc-800 text-zinc-400"
-                      : "bg-emerald-500/20 text-emerald-400 animate-pulse"
+                      ? "bg-[#F7F6F3] text-[#8B8179]"
+                      : "bg-[#EBF5F0] text-[#26845B]"
                   }`}
                 >
                   {data?.register.status === "CLOSED" ? (
@@ -304,20 +304,20 @@ export default function ReportsPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base sm:text-lg font-black text-white">
+                    <h2 className="text-base sm:text-lg font-extrabold text-[#29221E]">
                       Shift Date: {data?.summary.date}
                     </h2>
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                         data?.register.status === "CLOSED"
-                          ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
-                          : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
+                          : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
                       }`}
                     >
                       {data?.register.status === "CLOSED" ? "Shift Closed & Locked" : "Shift Open"}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-400 mt-0.5">
+                  <p className="text-xs text-[#8B8179] mt-0.5">
                     {data?.register.status === "CLOSED"
                       ? `Closed at ${new Date(data?.register.closedAt || "").toLocaleTimeString()}`
                       : "Register is actively accepting rentals, concession sales, and expenses."}
@@ -328,15 +328,23 @@ export default function ReportsPage() {
               {data?.register.status === "OPEN" ? (
                 <button
                   onClick={() => setShowCloseModal(true)}
-                  className="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-lg shadow-rose-600/30 cursor-pointer flex items-center justify-center gap-2 print:hidden"
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md shadow-[#D94B45]/20 cursor-pointer flex items-center justify-center gap-2 print:hidden"
                 >
                   <Lock className="h-4 w-4" />
                   <span>Count Drawer & Close Shift</span>
                 </button>
               ) : (
-                <div className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Reconciled & Finalized</span>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-[#26845B] font-bold bg-[#EBF5F0] px-3 py-1.5 rounded-xl border border-[#26845B]/30 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Reconciled & Finalized</span>
+                  </div>
+                  <button
+                    onClick={handleReopenShift}
+                    className="text-xs text-[#8B8179] hover:text-[#29221E] px-2 py-1 underline cursor-pointer print:hidden"
+                  >
+                    Re-open
+                  </button>
                 </div>
               )}
             </div>
@@ -344,98 +352,98 @@ export default function ReportsPage() {
             {/* 2. REVENUE & OPERATIONS RECAP */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
               {/* Skate Rentals */}
-              <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-                <div className="flex items-center justify-between text-zinc-400 text-xs mb-1">
+              <div className="p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-sm">
+                <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
                   <span className="uppercase font-semibold">Skate Rentals</span>
-                  <Footprints className="h-4 w-4 text-emerald-400" />
+                  <Footprints className="h-4 w-4 text-[#D96827]" />
                 </div>
-                <div className="text-xl sm:text-2xl font-black text-white font-mono">
+                <div className="text-xl sm:text-2xl font-black text-[#29221E] font-mono">
                   {formatETB(data?.summary.rentalsTotal || 0)}
                 </div>
-                <div className="text-[11px] text-zinc-500 mt-1">
+                <div className="text-[11px] text-[#8B8179] mt-1">
                   {data?.summary.rentalsCount} completed sessions
                 </div>
               </div>
 
               {/* Concession Sales */}
-              <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-                <div className="flex items-center justify-between text-zinc-400 text-xs mb-1">
+              <div className="p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-sm">
+                <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
                   <span className="uppercase font-semibold">Snacks & Drinks</span>
-                  <ShoppingBag className="h-4 w-4 text-cyan-400" />
+                  <ShoppingBag className="h-4 w-4 text-[#D96827]" />
                 </div>
-                <div className="text-xl sm:text-2xl font-black text-white font-mono">
+                <div className="text-xl sm:text-2xl font-black text-[#29221E] font-mono">
                   {formatETB(data?.summary.concessionsTotal || 0)}
                 </div>
-                <div className="text-[11px] text-zinc-500 mt-1">
+                <div className="text-[11px] text-[#8B8179] mt-1">
                   {data?.summary.concessionsCount} concession orders
                 </div>
               </div>
 
               {/* Petty Cash Expenses */}
-              <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-                <div className="flex items-center justify-between text-zinc-400 text-xs mb-1">
+              <div className="p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-sm">
+                <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
                   <span className="uppercase font-semibold">Petty Expenses</span>
-                  <span className="text-rose-400 font-bold">OpEx</span>
+                  <span className="text-[#D94B45] font-bold">OpEx</span>
                 </div>
-                <div className="text-xl sm:text-2xl font-black text-rose-400 font-mono">
+                <div className="text-xl sm:text-2xl font-black text-[#D94B45] font-mono">
                   -{formatETB(data?.summary.dailyExpensesTotal || 0)}
                 </div>
-                <div className="text-[11px] text-zinc-500 mt-1">Staff lunch & transport</div>
+                <div className="text-[11px] text-[#8B8179] mt-1">Staff lunch & transport</div>
               </div>
 
               {/* Net Daily Operating Profit */}
-              <div className="p-4 rounded-xl bg-zinc-900/80 border border-emerald-500/40">
-                <div className="flex items-center justify-between text-zinc-400 text-xs mb-1">
-                  <span className="uppercase font-semibold text-emerald-400">Net Operating Profit</span>
-                  <TrendingUp className="h-4 w-4 text-emerald-400" />
+              <div className="p-4 rounded-2xl bg-white border border-[#26845B]/40 shadow-sm">
+                <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
+                  <span className="uppercase font-semibold text-[#26845B]">Net Operating Profit</span>
+                  <TrendingUp className="h-4 w-4 text-[#26845B]" />
                 </div>
-                <div className="text-xl sm:text-2xl font-black text-emerald-300 font-mono">
+                <div className="text-xl sm:text-2xl font-black text-[#26845B] font-mono">
                   {formatETB(data?.summary.netOperatingIncome || 0)}
                 </div>
-                <div className="text-[11px] text-zinc-500 mt-1">Gross revenue minus petty expenses</div>
+                <div className="text-[11px] text-[#8B8179] mt-1">Gross revenue minus petty expenses</div>
               </div>
             </div>
 
             {/* 3. CASH DRAWER RECONCILIATION CARD (The centerpiece of EOD) */}
-            <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-xl space-y-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Banknote className="h-5 w-5 text-emerald-400" />
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[#E9D9C5] shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-[#D96827]" />
                 Physical Cash Drawer Reconciliation
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs font-mono">
                 <div>
-                  <span className="text-zinc-500 block uppercase font-sans text-[10px]">
+                  <span className="text-[#8B8179] block uppercase font-sans text-[10px] font-semibold">
                     1. Opening Float
                   </span>
-                  <span className="text-base font-bold text-zinc-300">
+                  <span className="text-base font-bold text-[#29221E]">
                     {formatETB(data?.summary.channels.cash.openingFloat || 0)}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-zinc-500 block uppercase font-sans text-[10px]">
-                    2. (+) Cash Sales Inflow
+                  <span className="text-[#8B8179] block uppercase font-sans text-[10px] font-semibold">
+                    2. (+) Cash Inflow
                   </span>
-                  <span className="text-base font-bold text-emerald-400">
+                  <span className="text-base font-bold text-[#26845B]">
                     +{formatETB(data?.summary.channels.cash.inflow || 0)}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-zinc-500 block uppercase font-sans text-[10px]">
+                  <span className="text-[#8B8179] block uppercase font-sans text-[10px] font-semibold">
                     3. (-) Daily Petty Outflow
                   </span>
-                  <span className="text-base font-bold text-rose-400">
+                  <span className="text-base font-bold text-[#D94B45]">
                     -{formatETB(data?.summary.channels.cash.outflow || 0)}
                   </span>
                 </div>
 
-                <div className="pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-zinc-800 sm:pl-4">
-                  <span className="text-emerald-400 block uppercase font-sans text-[10px] font-bold">
+                <div className="pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-[#E9D9C5] sm:pl-4">
+                  <span className="text-[#D96827] block uppercase font-sans text-[10px] font-bold">
                     4. (=) Expected in Drawer
                   </span>
-                  <span className="text-lg font-black text-white">
+                  <span className="text-lg font-black text-[#29221E]">
                     {formatETB(data?.summary.channels.cash.expectedInDrawer || 0)}
                   </span>
                 </div>
@@ -443,23 +451,23 @@ export default function ReportsPage() {
 
               {/* Closed status discrepancy readout */}
               {data?.register.status === "CLOSED" && (
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-between text-xs">
+                <div className="p-4 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-zinc-400">Actual Counted Physical Cash: </span>
-                    <strong className="text-white font-mono text-sm ml-1">
+                    <span className="text-[#8B8179]">Actual Counted Cash: </span>
+                    <strong className="text-[#29221E] font-mono text-sm ml-1">
                       {formatETB(data.register.actualClosingCash || 0)}
                     </strong>
                   </div>
 
                   <div>
-                    <span className="text-zinc-400">Closing Discrepancy: </span>
+                    <span className="text-[#8B8179]">Closing Discrepancy: </span>
                     <span
                       className={`font-mono font-bold text-sm ml-1 ${
                         (data.register.discrepancy || 0) === 0
-                          ? "text-emerald-400"
+                          ? "text-[#26845B]"
                           : (data.register.discrepancy || 0) > 0
-                          ? "text-amber-400"
-                          : "text-rose-400"
+                          ? "text-[#D96827]"
+                          : "text-[#D94B45]"
                       }`}
                     >
                       {(data.register.discrepancy || 0) === 0
@@ -476,35 +484,35 @@ export default function ReportsPage() {
             {/* 4. DIGITAL RECONCILIATION CHANNELS (Telebirr & CBE) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Telebirr Audit */}
-              <div className="p-5 rounded-2xl bg-zinc-900/90 border border-cyan-500/30 shadow-md">
+              <div className="p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase font-bold text-cyan-400 flex items-center gap-1.5">
+                  <span className="text-xs uppercase font-bold text-[#D96827] flex items-center gap-1.5">
                     <Smartphone className="h-4 w-4" />
                     Telebirr Inflows
                   </span>
-                  <span className="text-[10px] text-zinc-500">Cross-check with SMS</span>
+                  <span className="text-[10px] text-[#8B8179]">Cross-check with SMS</span>
                 </div>
-                <div className="text-2xl font-black text-cyan-400 font-mono">
+                <div className="text-2xl font-black text-[#D96827] font-mono">
                   {formatETB(data?.summary.channels.telebirr.inflow || 0)}
                 </div>
-                <p className="text-[11px] text-zinc-400 mt-2">
+                <p className="text-[11px] text-[#8B8179] mt-2">
                   Confirm against your Telebirr merchant / wallet incoming transfer statements.
                 </p>
               </div>
 
               {/* CBE Audit */}
-              <div className="p-5 rounded-2xl bg-zinc-900/90 border border-purple-500/30 shadow-md">
+              <div className="p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs uppercase font-bold text-purple-400 flex items-center gap-1.5">
-                    <Landmark className="h-4 w-4" />
+                  <span className="text-xs uppercase font-bold text-[#29221E] flex items-center gap-1.5">
+                    <Landmark className="h-4 w-4 text-[#D96827]" />
                     Commercial Bank (CBE) Inflows
                   </span>
-                  <span className="text-[10px] text-zinc-500">Cross-check with App</span>
+                  <span className="text-[10px] text-[#8B8179]">Cross-check with App</span>
                 </div>
-                <div className="text-2xl font-black text-purple-400 font-mono">
+                <div className="text-2xl font-black text-[#29221E] font-mono">
                   {formatETB(data?.summary.channels.cbe.inflow || 0)}
                 </div>
-                <p className="text-[11px] text-zinc-400 mt-2">
+                <p className="text-[11px] text-[#8B8179] mt-2">
                   Confirm against your CBE mobile banking direct deposit notifications.
                 </p>
               </div>
@@ -512,24 +520,24 @@ export default function ReportsPage() {
           </div>
         ) : (
           /* TAB 2: HISTORICAL SHIFT ARCHIVE */
-          <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-[#E9D9C5] flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white">Closed Shift Registers</h3>
-                <p className="text-xs text-zinc-400">Past daily audit logs and cash balancing records</p>
+                <h3 className="text-base font-bold text-[#29221E]">Closed Shift Registers</h3>
+                <p className="text-xs text-[#8B8179]">Past daily audit logs and cash balancing records</p>
               </div>
-              <span className="text-xs text-zinc-400">Total: {history.length} days</span>
+              <span className="text-xs text-[#8B8179]">Total: {history.length} days</span>
             </div>
 
             {history.length === 0 ? (
-              <div className="p-12 text-center text-zinc-500">
-                <History className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <div className="p-12 text-center text-[#8B8179]">
+                <History className="h-10 w-10 mx-auto mb-2 opacity-30 text-[#D96827]" />
                 <p className="text-xs">No historical closed registers found.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-zinc-950/60 uppercase tracking-wider text-zinc-400 border-b border-zinc-800">
+                  <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                     <tr>
                       <th className="px-5 py-3">Date</th>
                       <th className="px-5 py-3">Cash Inflow</th>
@@ -542,31 +550,31 @@ export default function ReportsPage() {
                       <th className="px-5 py-3">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800/80 font-mono">
+                  <tbody className="divide-y divide-[#E9D9C5] font-mono">
                     {history.map((h) => (
-                      <tr key={h._id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-5 py-3 font-sans font-bold text-white">{h.date}</td>
-                        <td className="px-5 py-3 text-zinc-300">{formatETB(h.cashInTotal)}</td>
-                        <td className="px-5 py-3 text-cyan-400">{formatETB(h.telebirrTotal)}</td>
-                        <td className="px-5 py-3 text-purple-400">{formatETB(h.cbeTotal)}</td>
-                        <td className="px-5 py-3 text-rose-400">-{formatETB(h.dailyExpensesTotal)}</td>
-                        <td className="px-5 py-3 text-white font-bold">{formatETB(h.expectedClosingCash)}</td>
-                        <td className="px-5 py-3 text-white">{formatETB(h.actualClosingCash || 0)}</td>
+                      <tr key={h._id} className="hover:bg-[#FFF4E5]/20 transition-colors">
+                        <td className="px-5 py-3 font-sans font-bold text-[#29221E]">{h.date}</td>
+                        <td className="px-5 py-3 text-[#29221E]">{formatETB(h.cashInTotal)}</td>
+                        <td className="px-5 py-3 text-[#D96827]">{formatETB(h.telebirrTotal)}</td>
+                        <td className="px-5 py-3 text-[#29221E]">{formatETB(h.cbeTotal)}</td>
+                        <td className="px-5 py-3 text-[#D94B45]">-{formatETB(h.dailyExpensesTotal)}</td>
+                        <td className="px-5 py-3 text-[#29221E] font-bold">{formatETB(h.expectedClosingCash)}</td>
+                        <td className="px-5 py-3 text-[#29221E]">{formatETB(h.actualClosingCash || 0)}</td>
                         <td className="px-5 py-3 font-bold">
                           {(h.discrepancy || 0) === 0 ? (
-                            <span className="text-emerald-400 font-sans">✓ Balanced</span>
+                            <span className="text-[#26845B] font-sans">✓ Balanced</span>
                           ) : (h.discrepancy || 0) > 0 ? (
-                            <span className="text-amber-400 font-sans">+{formatETB(h.discrepancy || 0)}</span>
+                            <span className="text-[#D96827] font-sans">+{formatETB(h.discrepancy || 0)}</span>
                           ) : (
-                            <span className="text-rose-400 font-sans">{formatETB(h.discrepancy || 0)}</span>
+                            <span className="text-[#D94B45] font-sans">{formatETB(h.discrepancy || 0)}</span>
                           )}
                         </td>
                         <td className="px-5 py-3 font-sans">
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               h.status === "CLOSED"
-                                ? "bg-zinc-800 text-zinc-400 border border-zinc-700"
-                                : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
+                                : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
                             }`}
                           >
                             {h.status}
@@ -583,36 +591,36 @@ export default function ReportsPage() {
 
         {/* CLOSE SHIFT MODAL */}
         {showCloseModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
-                  <Lock className="h-5 w-5 text-rose-400" />
-                  <h3 className="text-base font-bold text-white">Count Drawer & Close Shift</h3>
+                  <Lock className="h-5 w-5 text-[#D94B45]" />
+                  <h3 className="text-base font-bold text-[#29221E]">Count Drawer & Close Shift</h3>
                 </div>
                 <button
                   onClick={() => setShowCloseModal(false)}
-                  className="p-1 text-zinc-400 hover:text-white"
+                  className="p-1 text-[#8B8179] hover:text-[#29221E]"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <form onSubmit={handleCloseShift} className="mt-4 space-y-4">
-                <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs space-y-1.5 font-mono">
-                  <div className="flex justify-between text-zinc-400">
+                <div className="p-3.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs space-y-1.5 font-mono">
+                  <div className="flex justify-between text-[#8B8179]">
                     <span>Expected Cash in Drawer:</span>
-                    <strong className="text-white text-sm">
+                    <strong className="text-[#29221E] text-sm">
                       {formatETB(data?.register.expectedClosingCash || 0)}
                     </strong>
                   </div>
-                  <p className="text-[10px] text-zinc-500 font-sans italic">
+                  <p className="text-[10px] text-[#8B8179] font-sans italic">
                     Opening Float ({formatETB(data?.register.openingCash || 0)}) + Cash Revenue ({formatETB(data?.summary.channels.cash.inflow || 0)}) - Petty Expenses ({formatETB(data?.summary.dailyExpensesTotal || 0)})
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
                     Actual Physical Cash Counted (ETB)
                   </label>
                   <input
@@ -621,7 +629,7 @@ export default function ReportsPage() {
                     min={0}
                     value={countedCash}
                     onChange={(e) => setCountedCash(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                   />
                 </div>
 
@@ -629,10 +637,10 @@ export default function ReportsPage() {
                 <div
                   className={`p-3 rounded-xl border text-xs flex items-center justify-between font-mono ${
                     liveDiscrepancy === 0
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                      ? "bg-[#EBF5F0] border-[#26845B]/30 text-[#26845B]"
                       : liveDiscrepancy > 0
-                      ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
-                      : "bg-rose-500/10 border-rose-500/30 text-rose-300"
+                      ? "bg-[#FFF4E5] border-[#E9D9C5] text-[#D96827]"
+                      : "bg-[#FDF0EF] border-[#D94B45]/30 text-[#D94B45]"
                   }`}
                 >
                   <span className="font-sans font-semibold">Cash Balance Status:</span>
@@ -646,7 +654,7 @@ export default function ReportsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
                     Closing Notes / Shift Observations (Optional)
                   </label>
                   <input
@@ -654,7 +662,7 @@ export default function ReportsPage() {
                     placeholder="e.g. Clean drawer, handed key to owner"
                     value={closeNotes}
                     onChange={(e) => setCloseNotes(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                   />
                 </div>
 
@@ -662,14 +670,14 @@ export default function ReportsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCloseModal(false)}
-                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={closing}
-                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 cursor-pointer"
+                    className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D94B45]/20 cursor-pointer"
                   >
                     {closing ? "Locking..." : "Confirm & Lock Register"}
                   </button>

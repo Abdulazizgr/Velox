@@ -47,53 +47,53 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 py-12 relative overflow-hidden">
-      {/* Background glow accents */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen flex items-center justify-center bg-[#F7F6F3] px-4 py-12 relative overflow-hidden">
+      {/* Background ambient accents */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FFF4E5] rounded-full blur-3xl pointer-events-none opacity-80" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#E9D9C5] rounded-full blur-3xl pointer-events-none opacity-50" />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Brand header */}
+        {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="relative mx-auto mb-4 h-28 w-28 overflow-hidden rounded-3xl border-2 border-amber-500/40 shadow-2xl shadow-amber-500/20 bg-black">
+          <div className="relative mx-auto mb-4 h-24 w-24 overflow-hidden rounded-2xl border-2 border-[#E9D9C5] shadow-lg shadow-[#29221E]/10 bg-black">
             <Image
               src="/logo.jpg"
               alt="Velox Skate"
               fill
-              sizes="112px"
+              sizes="96px"
               className="object-cover"
               priority
             />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#29221E]">
             Velox Skate Rink
           </h1>
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-1.5 text-xs sm:text-sm text-[#8B8179]">
             Internal Operations & Counter POS System
           </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-zinc-900/90 border border-zinc-800 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/50">
-          <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-zinc-300">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" />
+        <div className="bg-white border border-[#E9D9C5] rounded-2xl p-6 sm:p-8 shadow-xl shadow-[#29221E]/5">
+          <div className="flex items-center gap-2 mb-6 text-sm font-semibold text-[#29221E]">
+            <ShieldCheck className="h-5 w-5 text-[#D96827]" />
             <span>Staff & Owner Sign In</span>
           </div>
 
           {error && (
-            <div className="mb-6 flex items-start gap-3 rounded-lg bg-rose-500/10 border border-rose-500/30 p-3.5 text-sm text-rose-300">
-              <AlertCircle className="h-5 w-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="mb-6 flex items-start gap-3 rounded-xl bg-[#FDF0EF] border border-[#D94B45]/30 p-3.5 text-xs sm:text-sm text-[#D94B45]">
+              <AlertCircle className="h-5 w-5 text-[#D94B45] shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-zinc-300 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#29221E] mb-1.5">
                 Phone Number
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8B8179]">
                   <Phone className="h-4 w-4" />
                 </div>
                 <input
@@ -102,20 +102,20 @@ export default function LoginPage() {
                   placeholder="0911000000 or +251..."
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] text-sm transition-all"
                 />
               </div>
-              <p className="mt-1 text-[11px] text-zinc-500">
+              <p className="mt-1 text-[11px] text-[#8B8179]">
                 Registered Ethiopian phone number
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-zinc-300 mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#29221E] mb-1.5">
                 Password / PIN
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8B8179]">
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
@@ -124,7 +124,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-sm transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] text-sm transition-all"
                 />
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold text-sm shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-white font-semibold text-sm shadow-md shadow-[#D96827]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -146,30 +146,30 @@ export default function LoginPage() {
           </form>
 
           {/* Quick Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-zinc-800/80">
-            <p className="text-xs font-medium text-zinc-400 mb-2.5 text-center">
+          <div className="mt-6 pt-5 border-t border-[#E9D9C5]">
+            <p className="text-xs font-medium text-[#8B8179] mb-2.5 text-center">
               Quick Fill Seeded Accounts:
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => handleQuickFill("0911000000", "admin")}
-                className="flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-950/60 hover:bg-zinc-800/80 border border-zinc-800 text-xs transition-colors cursor-pointer"
+                className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-xs transition-colors cursor-pointer"
               >
-                <span className="font-semibold text-amber-400">Rink Owner</span>
-                <span className="text-[11px] text-zinc-500">0911000000</span>
+                <span className="font-bold text-[#D96827]">Rink Owner</span>
+                <span className="text-[11px] font-mono text-[#8B8179]">0911000000</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickFill("0922000000", "staff")}
-                className="flex flex-col items-center justify-center p-2 rounded-lg bg-zinc-950/60 hover:bg-zinc-800/80 border border-zinc-800 text-xs transition-colors cursor-pointer"
+                className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-xs transition-colors cursor-pointer"
               >
-                <span className="font-semibold text-cyan-400">Staff Operator</span>
-                <span className="text-[11px] text-zinc-500">0922000000</span>
+                <span className="font-bold text-[#29221E]">Staff Operator</span>
+                <span className="text-[11px] font-mono text-[#8B8179]">0922000000</span>
               </button>
             </div>
-            <p className="mt-3 text-[11px] text-zinc-500 text-center">
-              Note: Staff accounts are created and registered directly by the Owner.
+            <p className="mt-3 text-[11px] text-[#8B8179] text-center">
+              Staff accounts are created and registered directly by the Owner.
             </p>
           </div>
         </div>
@@ -177,4 +177,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

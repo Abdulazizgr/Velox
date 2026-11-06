@@ -230,34 +230,34 @@ export default function ConcessionPage() {
   }, [products, categoryFilter, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen bg-[#F7F6F3] text-[#29221E]">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E9D9C5]">
           <div>
             <div className="flex items-center gap-2">
-              <ShoppingBag className="h-6 w-6 text-cyan-400" />
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              <ShoppingBag className="h-6 w-6 text-[#D96827]" />
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
                 Snacks & Drinks POS
               </h1>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                Phase 3
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                Counter POS
               </span>
             </div>
-            <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">
+            <p className="mt-0.5 text-xs sm:text-sm text-[#8B8179]">
               Charge snacks to active skater tabs or conduct instant walk-in sales. Stock decreases in real-time.
             </p>
           </div>
 
           {/* Tab Switcher: POS vs History */}
           <div className="flex items-center gap-2">
-            <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1">
+            <div className="flex bg-white border border-[#E9D9C5] rounded-xl p-1 shadow-sm">
               <button
                 onClick={() => setActiveTab("POS")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === "POS"
-                    ? "bg-cyan-500 text-zinc-950 shadow-md shadow-cyan-500/20"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-[#D96827] text-white shadow-sm"
+                    : "text-[#8B8179] hover:text-[#29221E]"
                 }`}
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
@@ -268,8 +268,8 @@ export default function ConcessionPage() {
                 onClick={() => setActiveTab("HISTORY")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === "HISTORY"
-                    ? "bg-cyan-500 text-zinc-950 shadow-md shadow-cyan-500/20"
-                    : "text-zinc-400 hover:text-white"
+                    ? "bg-[#D96827] text-white shadow-sm"
+                    : "text-[#8B8179] hover:text-[#29221E]"
                 }`}
               >
                 <History className="h-3.5 w-3.5" />
@@ -283,7 +283,7 @@ export default function ConcessionPage() {
                 if (activeTab === "HISTORY") fetchHistory();
               }}
               disabled={loading || historyLoading}
-              className="p-2 sm:px-3 sm:py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`h-4 w-4 ${loading || historyLoading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
@@ -294,19 +294,19 @@ export default function ConcessionPage() {
         {/* TAB 1: POS REGISTER */}
         {activeTab === "POS" ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* Catalog Grid (7 Columns on desktop) */}
+            {/* Catalog Grid */}
             <div className="lg:col-span-7 xl:col-span-8 space-y-4">
               {/* Category Pills & Search */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-[#E9D9C5] rounded-2xl p-3 shadow-sm">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                   {(["ALL", "BEVERAGE", "SNACK"] as const).map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setCategoryFilter(cat)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap ${
                         categoryFilter === cat
-                          ? "bg-cyan-500 text-zinc-950 font-bold shadow-md shadow-cyan-500/20"
-                          : "bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800"
+                          ? "bg-[#D96827] text-white font-bold shadow-sm"
+                          : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
                       }`}
                     >
                       {cat === "ALL"
@@ -319,13 +319,13 @@ export default function ConcessionPage() {
                 </div>
 
                 <div className="relative min-w-[180px]">
-                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-500" />
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#8B8179]" />
                   <input
                     type="text"
                     placeholder="Search product..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
                   />
                 </div>
               </div>
@@ -345,39 +345,39 @@ export default function ConcessionPage() {
                       disabled={isOutOfStock}
                       className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all flex flex-col justify-between relative cursor-pointer select-none min-h-[125px] ${
                         isOutOfStock
-                          ? "bg-zinc-950 border-zinc-900 opacity-40 cursor-not-allowed"
+                          ? "bg-[#F7F6F3] border-[#E9D9C5] opacity-40 cursor-not-allowed"
                           : inCart
-                          ? "bg-cyan-950/25 border-cyan-500 shadow-md shadow-cyan-950/20"
-                          : "bg-zinc-900/80 border-zinc-800 hover:border-cyan-500/50 hover:bg-zinc-900"
+                          ? "bg-[#FFF4E5]/50 border-2 border-[#D96827] shadow-sm"
+                          : "bg-white border-[#E9D9C5] hover:border-[#D96827]/60 hover:shadow-sm"
                       }`}
                     >
                       <div>
                         <div className="flex items-start justify-between gap-1 mb-1">
-                          <span className="text-xs font-semibold text-white line-clamp-2 leading-tight">
+                          <span className="text-xs font-bold text-[#29221E] line-clamp-2 leading-tight">
                             {product.name}
                           </span>
                           {inCart && (
-                            <span className="shrink-0 h-5 w-5 rounded-full bg-cyan-500 text-zinc-950 font-black text-[10px] flex items-center justify-center">
+                            <span className="shrink-0 h-5 w-5 rounded-full bg-[#D96827] text-white font-black text-[10px] flex items-center justify-center">
                               {inCart.quantity}
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-zinc-500 uppercase font-medium">
+                        <span className="text-[10px] text-[#8B8179] uppercase font-semibold">
                           {product.category}
                         </span>
                       </div>
 
-                      <div className="mt-3 pt-2 border-t border-zinc-800/80 flex items-baseline justify-between">
-                        <span className="text-sm font-extrabold text-cyan-400 font-mono">
+                      <div className="mt-3 pt-2 border-t border-[#E9D9C5] flex items-baseline justify-between">
+                        <span className="text-sm font-black text-[#D96827] font-mono">
                           {formatETB(product.sellingPrice)}
                         </span>
                         <span
                           className={`text-[10px] font-semibold ${
                             isOutOfStock
-                              ? "text-rose-500"
+                              ? "text-[#D94B45]"
                               : isLowStock
-                              ? "text-amber-400"
-                              : "text-zinc-500"
+                              ? "text-[#D94B45] font-bold"
+                              : "text-[#8B8179]"
                           }`}
                         >
                           {isOutOfStock ? "Out of stock" : `${product.currentStock} left`}
@@ -389,19 +389,19 @@ export default function ConcessionPage() {
               </div>
             </div>
 
-            {/* POS Cart Sidebar (5 Columns on desktop) */}
+            {/* POS Cart Sidebar */}
             <div className="lg:col-span-5 xl:col-span-4 sticky top-16">
-              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col justify-between">
+              <div className="bg-white border border-[#E9D9C5] rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between text-[#29221E]">
                 <div>
-                  <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5] mb-3">
                     <div className="flex items-center gap-2">
-                      <ShoppingBag className="h-5 w-5 text-cyan-400" />
-                      <h2 className="text-sm sm:text-base font-bold text-white">Current Order</h2>
+                      <ShoppingBag className="h-5 w-5 text-[#D96827]" />
+                      <h2 className="text-sm sm:text-base font-bold text-[#29221E]">Current Order</h2>
                     </div>
                     {cart.length > 0 && (
                       <button
                         onClick={clearCart}
-                        className="text-xs text-zinc-500 hover:text-rose-400 transition-colors cursor-pointer"
+                        className="text-xs font-semibold text-[#8B8179] hover:text-[#D94B45] transition-colors cursor-pointer"
                       >
                         Clear
                       </button>
@@ -410,7 +410,7 @@ export default function ConcessionPage() {
 
                   {/* Billing Mode Toggle: Skater Tab vs Walk-in */}
                   <div className="mb-3">
-                    <label className="block text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
+                    <label className="block text-[11px] font-semibold text-[#8B8179] uppercase tracking-wider mb-1.5">
                       Destination / Bill Type
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -419,8 +419,8 @@ export default function ConcessionPage() {
                         onClick={() => setSaleType("WALK_IN")}
                         className={`p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                           saleType === "WALK_IN"
-                            ? "bg-cyan-500 text-zinc-950 font-bold shadow-md shadow-cyan-500/20"
-                            : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                            ? "bg-[#D96827] text-white font-bold shadow-sm"
+                            : "bg-[#F7F6F3] border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                         }`}
                       >
                         <User className="h-3.5 w-3.5" />
@@ -432,8 +432,8 @@ export default function ConcessionPage() {
                         onClick={() => setSaleType("TAB")}
                         className={`p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                           saleType === "TAB"
-                            ? "bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/20"
-                            : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                            ? "bg-[#29221E] text-white font-bold shadow-sm"
+                            : "bg-[#F7F6F3] border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                         }`}
                       >
                         <Footprints className="h-3.5 w-3.5" />
@@ -444,19 +444,19 @@ export default function ConcessionPage() {
 
                   {/* Skater Selection for TAB sales */}
                   {saleType === "TAB" && (
-                    <div className="mb-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs">
-                      <label className="block text-[10px] font-bold text-amber-300 uppercase mb-1">
+                    <div className="mb-3 p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-xs">
+                      <label className="block text-[10px] font-bold text-[#D96827] uppercase mb-1">
                         Select Skater (Active Shoe ID)
                       </label>
                       {activeSkaters.length === 0 ? (
-                        <p className="text-zinc-400 text-xs">
+                        <p className="text-[#8B8179] text-xs">
                           No skaters currently on the rink. Switch to Walk-in to sell.
                         </p>
                       ) : (
                         <select
                           value={selectedSkaterId}
                           onChange={(e) => setSelectedSkaterId(e.target.value)}
-                          className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white font-mono text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+                          className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                         >
                           {activeSkaters.map((s) => (
                             <option key={s._id} value={s._id}>
@@ -465,16 +465,16 @@ export default function ConcessionPage() {
                           ))}
                         </select>
                       )}
-                      <p className="text-[10px] text-zinc-500 mt-1 italic">
+                      <p className="text-[10px] text-[#8B8179] mt-1 italic">
                         *Will be paid when customer returns their shoes at checkout.
                       </p>
                     </div>
                   )}
 
                   {/* Cart Items */}
-                  <div className="max-h-56 overflow-y-auto divide-y divide-zinc-800/80 my-2 pr-1">
+                  <div className="max-h-56 overflow-y-auto divide-y divide-[#E9D9C5] my-2 pr-1">
                     {cart.length === 0 ? (
-                      <div className="py-8 text-center text-zinc-500 text-xs">
+                      <div className="py-8 text-center text-[#8B8179] text-xs">
                         Order is empty. Tap items to add.
                       </div>
                     ) : (
@@ -484,40 +484,40 @@ export default function ConcessionPage() {
                           className="py-2.5 flex items-center justify-between text-xs"
                         >
                           <div className="overflow-hidden pr-2">
-                            <div className="font-semibold text-white truncate">
+                            <div className="font-semibold text-[#29221E] truncate">
                               {item.product.name}
                             </div>
-                            <div className="text-[11px] text-zinc-400 font-mono">
+                            <div className="text-[11px] text-[#8B8179] font-mono">
                               {formatETB(item.product.sellingPrice)} each
                             </div>
                           </div>
 
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-lg p-0.5">
+                            <div className="flex items-center gap-1 bg-[#F7F6F3] border border-[#E9D9C5] rounded-lg p-0.5">
                               <button
                                 onClick={() => updateQuantity(item.product._id, -1)}
-                                className="p-1 text-zinc-400 hover:text-white"
+                                className="p-1 text-[#8B8179] hover:text-[#29221E]"
                               >
                                 <Minus className="h-3 w-3" />
                               </button>
-                              <span className="w-5 text-center font-bold text-white text-xs">
+                              <span className="w-5 text-center font-bold text-[#29221E] text-xs">
                                 {item.quantity}
                               </span>
                               <button
                                 onClick={() => updateQuantity(item.product._id, 1)}
-                                className="p-1 text-zinc-400 hover:text-white"
+                                className="p-1 text-[#8B8179] hover:text-[#29221E]"
                               >
                                 <Plus className="h-3 w-3" />
                               </button>
                             </div>
 
-                            <span className="font-mono font-bold text-cyan-400 w-16 text-right">
+                            <span className="font-mono font-bold text-[#D96827] w-16 text-right">
                               {formatETB(item.product.sellingPrice * item.quantity)}
                             </span>
 
                             <button
                               onClick={() => removeFromCart(item.product._id)}
-                              className="p-1 text-zinc-500 hover:text-rose-400"
+                              className="p-1 text-[#8B8179] hover:text-[#D94B45]"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -529,10 +529,10 @@ export default function ConcessionPage() {
                 </div>
 
                 {/* Cart Footer */}
-                <div className="pt-3 border-t border-zinc-800 mt-2 space-y-3">
+                <div className="pt-3 border-t border-[#E9D9C5] mt-2 space-y-3">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs uppercase font-semibold text-zinc-400">Total Due</span>
-                    <span className="text-xl sm:text-2xl font-black text-cyan-400 font-mono">
+                    <span className="text-xs uppercase font-bold text-[#8B8179]">Total Due</span>
+                    <span className="text-xl sm:text-2xl font-black text-[#D96827] font-mono">
                       {formatETB(totalAmount)}
                     </span>
                   </div>
@@ -540,7 +540,7 @@ export default function ConcessionPage() {
                   {/* Payment method selector for Walk-in */}
                   {saleType === "WALK_IN" && cart.length > 0 && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-zinc-400 uppercase mb-1">
+                      <label className="block text-[10px] font-semibold text-[#8B8179] uppercase mb-1">
                         Settlement Method
                       </label>
                       <div className="grid grid-cols-3 gap-1.5">
@@ -551,8 +551,8 @@ export default function ConcessionPage() {
                             onClick={() => setPaymentMethod(method)}
                             className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                               paymentMethod === method
-                                ? "bg-cyan-500 text-zinc-950 shadow-md shadow-cyan-500/20"
-                                : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                                ? "bg-[#D96827] text-white shadow-sm"
+                                : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
                             }`}
                           >
                             {method}
@@ -567,11 +567,7 @@ export default function ConcessionPage() {
                     disabled={
                       submitting || cart.length === 0 || (saleType === "TAB" && !selectedSkaterId)
                     }
-                    className={`w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-                      saleType === "TAB"
-                        ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-500/20"
-                        : "bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white shadow-cyan-600/30"
-                    }`}
+                    className="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#D96827]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[#D96827] hover:bg-[#C2571A] text-white"
                   >
                     {submitting
                       ? "Recording..."
@@ -585,29 +581,29 @@ export default function ConcessionPage() {
           </div>
         ) : (
           /* TAB 2: CONCESSION SALES HISTORY */
-          <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+          <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-[#E9D9C5] flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white">Concession Transaction Log</h3>
-                <p className="text-xs text-zinc-400">All recent snack and drink orders</p>
+                <h3 className="text-sm font-bold text-[#29221E]">Concession Transaction Log</h3>
+                <p className="text-xs text-[#8B8179]">All recent snack and drink orders</p>
               </div>
-              <span className="text-xs text-zinc-400">Total: {salesHistory.length} orders</span>
+              <span className="text-xs text-[#8B8179]">Total: {salesHistory.length} orders</span>
             </div>
 
             {historyLoading ? (
-              <div className="p-12 text-center text-zinc-500">
-                <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+              <div className="p-12 text-center text-[#8B8179]">
+                <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#D96827]" />
                 <p className="text-xs">Loading sales history...</p>
               </div>
             ) : salesHistory.length === 0 ? (
-              <div className="p-12 text-center text-zinc-500">
-                <Receipt className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <div className="p-12 text-center text-[#8B8179]">
+                <Receipt className="h-10 w-10 mx-auto mb-2 opacity-30 text-[#D96827]" />
                 <p className="text-xs">No sales recorded yet today.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-zinc-950/60 uppercase tracking-wider text-zinc-400 border-b border-zinc-800">
+                  <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                     <tr>
                       <th className="px-5 py-3">Time</th>
                       <th className="px-5 py-3">Type / Destination</th>
@@ -616,10 +612,10 @@ export default function ConcessionPage() {
                       <th className="px-5 py-3">Payment</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800/80">
+                  <tbody className="divide-y divide-[#E9D9C5]">
                     {salesHistory.map((sale) => (
-                      <tr key={sale._id} className="hover:bg-zinc-800/30 transition-colors">
-                        <td className="px-5 py-3 text-zinc-400 font-mono">
+                      <tr key={sale._id} className="hover:bg-[#FFF4E5]/30 transition-colors">
+                        <td className="px-5 py-3 text-[#8B8179] font-mono">
                           {new Date(sale.createdAt).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -627,18 +623,18 @@ export default function ConcessionPage() {
                         </td>
                         <td className="px-5 py-3">
                           {sale.saleType === "TAB" ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 font-semibold border border-amber-500/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] font-semibold border border-[#E9D9C5]">
                               <Footprints className="h-3 w-3" />
                               Shoe {sale.shoeId || "Tab"}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 font-semibold border border-cyan-500/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F7F6F3] text-[#29221E] font-semibold border border-[#E9D9C5]">
                               <User className="h-3 w-3" />
                               Walk-in Sale
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-3 text-zinc-300">
+                        <td className="px-5 py-3 text-[#29221E]">
                           {sale.items.map((i, idx) => (
                             <span key={idx} className="mr-2">
                               {i.quantity}x {i.productName}
@@ -646,16 +642,16 @@ export default function ConcessionPage() {
                             </span>
                           ))}
                         </td>
-                        <td className="px-5 py-3 font-mono font-bold text-white">
+                        <td className="px-5 py-3 font-mono font-bold text-[#29221E]">
                           {formatETB(sale.totalAmount)}
                         </td>
                         <td className="px-5 py-3">
                           {sale.paymentStatus === "PAID" ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
                               PAID ({sale.paymentMethod || "CASH"})
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
                               OPEN TAB
                             </span>
                           )}
@@ -671,14 +667,14 @@ export default function ConcessionPage() {
 
         {/* 3. INSTANT RECEIPT MODAL UPON SALE COMPLETION */}
         {completedSale && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto animate-fade-in">
-              <div className="text-center pb-3 border-b border-zinc-800">
-                <div className="h-10 w-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-2">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="text-center pb-3 border-b border-[#E9D9C5]">
+                <div className="h-10 w-10 rounded-full bg-[#EBF5F0] text-[#26845B] flex items-center justify-center mx-auto mb-2">
                   <CheckCircle2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-base font-bold text-white">Order Recorded!</h3>
-                <p className="text-xs text-zinc-400">
+                <h3 className="text-base font-bold text-[#29221E]">Order Recorded!</h3>
+                <p className="text-xs text-[#8B8179]">
                   {completedSale.saleType === "TAB"
                     ? `Charged to Shoe ${completedSale.shoeId}'s Tab`
                     : `Settled via ${completedSale.paymentMethod || "CASH"}`}
@@ -686,9 +682,9 @@ export default function ConcessionPage() {
               </div>
 
               {/* Receipt Item List */}
-              <div className="py-3 space-y-2 text-xs border-b border-zinc-800 font-mono">
+              <div className="py-3 space-y-2 text-xs border-b border-[#E9D9C5] font-mono">
                 {completedSale.items.map((i, idx) => (
-                  <div key={idx} className="flex justify-between text-zinc-300">
+                  <div key={idx} className="flex justify-between text-[#29221E]">
                     <span>
                       {i.quantity}x {i.productName}
                     </span>
@@ -696,16 +692,16 @@ export default function ConcessionPage() {
                   </div>
                 ))}
 
-                <div className="pt-2 border-t border-zinc-800/80 flex justify-between font-bold text-sm text-white">
+                <div className="pt-2 border-t border-[#E9D9C5] flex justify-between font-bold text-sm text-[#29221E]">
                   <span>Total Amount:</span>
-                  <span className="text-emerald-400">{formatETB(completedSale.totalAmount)}</span>
+                  <span className="text-[#D96827] font-black">{formatETB(completedSale.totalAmount)}</span>
                 </div>
               </div>
 
               <div className="pt-3 flex items-center justify-end gap-2">
                 <button
                   onClick={() => setCompletedSale(null)}
-                  className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+                  className="w-full py-2.5 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors shadow-sm"
                 >
                   Done / Next Order
                 </button>

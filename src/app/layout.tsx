@@ -41,7 +41,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#09090b",
+  themeColor: "#29221E",
 };
 
 async function ShellWrapper({ children }: { children: React.ReactNode }) {
@@ -63,10 +63,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950 text-white selection:bg-emerald-500 selection:text-zinc-950">
-        <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+      <body className="min-h-full flex flex-col bg-[#F7F6F3] text-[#29221E] selection:bg-[#D96827] selection:text-white">
+        <Suspense fallback={<div className="min-h-screen bg-[#F7F6F3]" />}>
           <ShellWrapper>{children}</ShellWrapper>
         </Suspense>
       </body>

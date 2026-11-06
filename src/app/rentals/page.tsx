@@ -431,21 +431,21 @@ export default function RentalBoardPage() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen bg-[#F7F6F3] text-[#29221E]">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
         {/* Top Control Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E9D9C5]">
           <div>
             <div className="flex items-center gap-2">
-              <Timer className="h-6 w-6 text-emerald-400" />
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+              <Timer className="h-6 w-6 text-[#D96827]" />
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
                 Live Rental Timer Board
               </h1>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Phase 2
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                Live Board
               </span>
             </div>
-            <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">
+            <p className="mt-0.5 text-xs sm:text-sm text-[#8B8179]">
               Sorted by finish time • +5m grace period • In-flight shoe swaps & extensions
             </p>
           </div>
@@ -461,12 +461,12 @@ export default function RentalBoardPage() {
               title={soundEnabled ? "Mute audio cues" : "Unmute audio cues"}
               className={`p-2.5 rounded-xl border text-xs transition-colors cursor-pointer flex items-center gap-1.5 ${
                 soundEnabled
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                  : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                  ? "bg-[#FFF4E5] border-[#E9D9C5] text-[#D96827] hover:bg-[#FCEAD2]"
+                  : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
               }`}
             >
               {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-              <span className="text-[11px] hidden sm:inline">
+              <span className="text-[11px] hidden sm:inline font-semibold">
                 {soundEnabled ? "Sound ON" : "Muted"}
               </span>
             </button>
@@ -477,7 +477,7 @@ export default function RentalBoardPage() {
                 fetchAvailableShoes();
               }}
               disabled={loading}
-              className="p-2.5 sm:px-3.5 sm:py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="p-2.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
@@ -485,7 +485,7 @@ export default function RentalBoardPage() {
 
             <button
               onClick={() => setShowNewModal(true)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 rounded-xl transition-all shadow-lg shadow-emerald-600/30 cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D96827] hover:bg-[#C2571A] rounded-xl transition-all shadow-md shadow-[#D96827]/20 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Issue Skates</span>
@@ -499,20 +499,20 @@ export default function RentalBoardPage() {
             onClick={() => setStatusTab("ACTIVE")}
             className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "ACTIVE"
-                ? "bg-zinc-900 border-emerald-500 shadow-md shadow-emerald-500/10"
-                : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700"
+                ? "bg-white border-2 border-[#D96827] shadow-sm"
+                : "bg-white border-[#E9D9C5] hover:border-[#D96827]/50"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] sm:text-xs uppercase font-semibold text-zinc-400">
+              <span className="text-[11px] sm:text-xs uppercase font-semibold text-[#8B8179]">
                 On Rink
               </span>
-              <Clock className="h-4 w-4 text-emerald-400" />
+              <Clock className="h-4 w-4 text-[#D96827]" />
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-extrabold text-white">{activeCount}</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#29221E]">{activeCount}</span>
               {dueSoonCount > 0 && (
-                <span className="text-[11px] text-amber-400 font-bold hidden sm:inline">
+                <span className="text-[11px] text-[#D96827] font-bold hidden sm:inline">
                   ({dueSoonCount} due)
                 </span>
               )}
@@ -523,60 +523,60 @@ export default function RentalBoardPage() {
             onClick={() => setStatusTab("OVERDUE")}
             className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "OVERDUE"
-                ? "bg-zinc-900 border-rose-500 shadow-md shadow-rose-500/10"
-                : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700"
+                ? "bg-white border-2 border-[#D94B45] shadow-sm"
+                : "bg-white border-[#E9D9C5] hover:border-[#D94B45]/50"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] sm:text-xs uppercase font-semibold text-zinc-400">
+              <span className="text-[11px] sm:text-xs uppercase font-semibold text-[#8B8179]">
                 Overdue
               </span>
-              <AlertTriangle className="h-4 w-4 text-rose-400" />
+              <AlertTriangle className="h-4 w-4 text-[#D94B45]" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-rose-400">{overdueCount}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#D94B45]">{overdueCount}</div>
           </button>
 
           <button
             onClick={() => setStatusTab("COMPLETED")}
             className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "COMPLETED"
-                ? "bg-zinc-900 border-zinc-500 shadow-md"
-                : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700"
+                ? "bg-white border-2 border-[#29221E] shadow-sm"
+                : "bg-white border-[#E9D9C5] hover:border-[#29221E]/50"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] sm:text-xs uppercase font-semibold text-zinc-400">
+              <span className="text-[11px] sm:text-xs uppercase font-semibold text-[#8B8179]">
                 Returned
               </span>
-              <CheckCircle2 className="h-4 w-4 text-zinc-400" />
+              <CheckCircle2 className="h-4 w-4 text-[#8B8179]" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-zinc-300">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#8B8179]">
               {completedTodayCount}
             </div>
           </button>
         </div>
 
         {/* Search, Filter & Sort Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-[#E9D9C5] rounded-2xl p-3 sm:p-4 shadow-sm">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-zinc-500" />
+            <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#8B8179]" />
             <input
               type="text"
               placeholder="Search Shoe ID (e.g. SK-40-01) or skater name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs sm:text-sm text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] font-mono"
             />
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 text-xs">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              <span>Sort:</span>
+            <div className="flex items-center gap-1.5 text-[#8B8179]">
+              <ArrowUpDown className="h-3.5 w-3.5 text-[#D96827]" />
+              <span className="font-semibold text-[#29221E]">Sort:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as "EARLIEST_END" | "SHOE_ID" | "SIZE")}
-                className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-white text-xs focus:outline-none cursor-pointer"
+                className="bg-[#F7F6F3] border border-[#E9D9C5] rounded-xl px-2.5 py-1.5 text-[#29221E] font-medium text-xs focus:outline-none cursor-pointer"
               >
                 <option value="EARLIEST_END">Earliest Finish Time (Default)</option>
                 <option value="SHOE_ID">Shoe ID</option>
@@ -588,10 +588,10 @@ export default function RentalBoardPage() {
 
         {/* Live Timer Grid */}
         {filteredSessions.length === 0 ? (
-          <div className="p-12 sm:p-16 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800/80 text-zinc-500">
-            <Timer className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="text-base font-semibold text-zinc-300">No sessions match this view</p>
-            <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+          <div className="p-12 sm:p-16 text-center rounded-2xl bg-white border border-[#E9D9C5] text-[#8B8179] shadow-sm">
+            <Timer className="h-12 w-12 mx-auto mb-3 opacity-30 text-[#D96827]" />
+            <p className="text-base font-bold text-[#29221E]">No sessions match this view</p>
+            <p className="text-xs text-[#8B8179] mt-1 max-w-sm mx-auto">
               {statusTab === "ACTIVE"
                 ? "No skaters currently on the rink. Tap 'Issue Skates' to allocate shoes."
                 : statusTab === "OVERDUE"
@@ -608,26 +608,26 @@ export default function RentalBoardPage() {
               return (
                 <div
                   key={session._id}
-                  className={`rounded-2xl border p-4 sm:p-5 transition-all flex flex-col justify-between relative overflow-hidden ${
+                  className={`rounded-2xl border p-4 sm:p-5 transition-all flex flex-col justify-between relative overflow-hidden bg-white shadow-sm ${
                     !isActive
-                      ? "bg-zinc-900/40 border-zinc-800 opacity-75"
+                      ? "border-[#E9D9C5] opacity-75"
                       : timer.isOverdue
-                      ? "bg-gradient-to-b from-rose-950/40 to-zinc-900 border-rose-500 shadow-xl shadow-rose-950/30"
+                      ? "border-2 border-[#D94B45] shadow-md"
                       : timer.isDueSoon
-                      ? "bg-gradient-to-b from-amber-950/40 to-zinc-900 border-amber-500 shadow-xl shadow-amber-950/30"
-                      : "bg-zinc-900/90 border-emerald-500/40 hover:border-emerald-500"
+                      ? "border-2 border-[#D96827] shadow-md"
+                      : "border-[#E9D9C5] hover:border-[#D96827]/60"
                   }`}
                 >
                   {/* Top Progress / Alert Strip */}
                   <div
                     className={`absolute top-0 left-0 right-0 h-1.5 transition-all ${
                       !isActive
-                        ? "bg-zinc-700"
+                        ? "bg-[#E9D9C5]"
                         : timer.isOverdue
-                        ? "bg-rose-500 animate-pulse"
+                        ? "bg-[#D94B45] animate-pulse"
                         : timer.isDueSoon
-                        ? "bg-amber-400"
-                        : "bg-emerald-500"
+                        ? "bg-[#D96827]"
+                        : "bg-[#26845B]"
                     }`}
                   />
 
@@ -636,18 +636,18 @@ export default function RentalBoardPage() {
                     <div className="flex items-start justify-between gap-2 mb-2.5">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xl sm:text-2xl font-black text-white tracking-tight">
+                          <span className="font-mono text-xl sm:text-2xl font-black text-[#29221E] tracking-tight">
                             {session.shoeId}
                           </span>
-                          <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-200 border border-zinc-700">
+                          <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
                             Size #{session.shoeSize}
                           </span>
                         </div>
-                        <div className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5 truncate">
-                          <User className="h-3 w-3 text-zinc-500 shrink-0" />
-                          <span className="font-medium text-zinc-300">{session.customerName}</span>
+                        <div className="text-xs text-[#8B8179] mt-1 flex items-center gap-1.5 truncate">
+                          <User className="h-3 w-3 text-[#8B8179] shrink-0" />
+                          <span className="font-semibold text-[#29221E]">{session.customerName}</span>
                           {session.customerPhone && (
-                            <span className="text-zinc-500 font-mono text-[11px]">
+                            <span className="text-[#8B8179] font-mono text-[11px]">
                               ({session.customerPhone})
                             </span>
                           )}
@@ -657,19 +657,19 @@ export default function RentalBoardPage() {
                       {/* Status Tag */}
                       <div className="shrink-0">
                         {!isActive ? (
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]">
                             Returned
                           </span>
                         ) : timer.isOverdue ? (
-                          <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-rose-500 text-white animate-pulse">
+                          <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-[#D94B45] text-white animate-pulse">
                             OVERDUE +{timer.minutes}m
                           </span>
                         ) : timer.isDueSoon ? (
-                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/40">
                             Due Soon ({timer.minutes}m)
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/40">
                             Active
                           </span>
                         )}
@@ -678,37 +678,37 @@ export default function RentalBoardPage() {
 
                     {/* Countdown Digits */}
                     {isActive ? (
-                      <div className="py-3 my-2 text-center rounded-xl bg-zinc-950/80 border border-zinc-800/80">
-                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-0.5">
+                      <div className="py-3 my-2 text-center rounded-xl bg-[#F7F6F3] border border-[#E9D9C5]">
+                        <div className="text-[10px] text-[#8B8179] uppercase tracking-widest font-semibold mb-0.5">
                           {timer.isOverdue ? "Overdue Exceeded" : "Time Remaining"}
                         </div>
                         <div
                           className={`font-mono text-4xl sm:text-5xl font-black tracking-tight ${
                             timer.isOverdue
-                              ? "text-rose-400"
+                              ? "text-[#D94B45]"
                               : timer.isDueSoon
-                              ? "text-amber-400"
-                              : "text-emerald-400"
+                              ? "text-[#D96827]"
+                              : "text-[#26845B]"
                           }`}
                         >
                           {timer.timeFormatted}
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="w-48 mx-auto mt-2 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                        <div className="w-48 mx-auto mt-2 h-1.5 rounded-full bg-[#E9D9C5] overflow-hidden">
                           <div
                             className={`h-full transition-all duration-1000 ${
                               timer.isOverdue
-                                ? "bg-rose-500"
+                                ? "bg-[#D94B45]"
                                 : timer.isDueSoon
-                                ? "bg-amber-400"
-                                : "bg-emerald-500"
+                                ? "bg-[#D96827]"
+                                : "bg-[#26845B]"
                             }`}
                             style={{ width: `${timer.progressPercent}%` }}
                           />
                         </div>
 
-                        <div className="text-[11px] text-zinc-500 mt-2 flex items-center justify-center gap-2 font-mono">
+                        <div className="text-[11px] text-[#8B8179] mt-2 flex items-center justify-center gap-2 font-mono">
                           <span>
                             Started:{" "}
                             {new Date(session.startedAt).toLocaleTimeString([], {
@@ -717,7 +717,7 @@ export default function RentalBoardPage() {
                             })}
                           </span>
                           <span>•</span>
-                          <span className="text-zinc-300 font-bold">
+                          <span className="text-[#29221E] font-bold">
                             Due:{" "}
                             {new Date(session.expectedEndTime).toLocaleTimeString([], {
                               hour: "2-digit",
@@ -727,7 +727,7 @@ export default function RentalBoardPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="py-2.5 my-2 text-center rounded-xl bg-zinc-950/40 border border-zinc-800/40 text-xs text-zinc-500">
+                      <div className="py-2.5 my-2 text-center rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs text-[#8B8179]">
                         Returned at{" "}
                         {session.actualReturnTime
                           ? new Date(session.actualReturnTime).toLocaleTimeString([], {
@@ -739,14 +739,14 @@ export default function RentalBoardPage() {
                     )}
 
                     {/* Financial summary & Snack Tabs */}
-                    <div className="mt-2.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-xs">
+                    <div className="mt-2.5 pt-2.5 border-t border-[#E9D9C5] flex items-center justify-between text-xs">
                       <div>
-                        <span className="text-zinc-500">Skate Fee: </span>
-                        <strong className="text-white font-mono">
+                        <span className="text-[#8B8179]">Skate Fee: </span>
+                        <strong className="text-[#29221E] font-mono">
                           {formatETB(session.totalRentalFee)}
                         </strong>
                         {session.extensionPrice > 0 && (
-                          <span className="text-[10px] text-amber-400 block font-mono">
+                          <span className="text-[10px] text-[#D96827] block font-mono font-semibold">
                             (+{formatETB(session.extensionPrice)} ext.)
                           </span>
                         )}
@@ -754,11 +754,11 @@ export default function RentalBoardPage() {
 
                       <div>
                         {session.paymentStatus === "PAID" ? (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
                             PAID ({session.paymentMethod || "CASH"})
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
                             UNPAID (TAB)
                           </span>
                         )}
@@ -767,15 +767,15 @@ export default function RentalBoardPage() {
 
                     {/* Attached Snack Concession Tab if any */}
                     {session.tabTotal && session.tabTotal > 0 ? (
-                      <div className="mt-2 text-[11px] text-cyan-300 bg-cyan-950/30 p-2 rounded-lg border border-cyan-800/50 flex items-center justify-between">
+                      <div className="mt-2 text-[11px] text-[#29221E] bg-[#FFF4E5] p-2 rounded-xl border border-[#E9D9C5] flex items-center justify-between">
                         <span>🍿 Attached Concession ({session.tabItemsCount || 0} items)</span>
-                        <strong className="font-mono font-bold">+{formatETB(session.tabTotal)}</strong>
+                        <strong className="font-mono font-bold text-[#D96827]">+{formatETB(session.tabTotal)}</strong>
                       </div>
                     ) : null}
 
                     {/* Swap notice */}
                     {session.shoeSwaps && session.shoeSwaps.length > 0 && (
-                      <div className="mt-2 text-[10px] text-zinc-400 bg-zinc-950/60 p-1.5 rounded-lg border border-zinc-800 truncate">
+                      <div className="mt-2 text-[10px] text-[#8B8179] bg-[#F7F6F3] p-1.5 rounded-lg border border-[#E9D9C5] truncate">
                         🔄 Swapped from {session.shoeSwaps[0].oldShoeId} to{" "}
                         {session.shoeSwaps[0].newShoeId}
                       </div>
@@ -784,25 +784,25 @@ export default function RentalBoardPage() {
 
                   {/* Bottom Operational Action Buttons */}
                   {isActive && (
-                    <div className="mt-3.5 pt-3 border-t border-zinc-800 grid grid-cols-3 gap-2">
+                    <div className="mt-3.5 pt-3 border-t border-[#E9D9C5] grid grid-cols-3 gap-2">
                       <button
                         onClick={() => {
                           setSwapSession(session);
                           setSwapNewShoeId("");
                         }}
-                        className="py-2 px-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="py-2 px-1.5 rounded-xl bg-[#F7F6F3] hover:bg-[#E9D9C5]/40 border border-[#E9D9C5] text-xs font-semibold text-[#29221E] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         title="Swap shoe for comfortable fit"
                       >
-                        <Repeat className="h-3.5 w-3.5 text-cyan-400" />
+                        <Repeat className="h-3.5 w-3.5 text-[#D96827]" />
                         <span>Swap</span>
                       </button>
 
                       <button
                         onClick={() => handleExtend(session, 30)}
-                        className="py-2 px-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="py-2 px-1.5 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-xs font-semibold text-[#D96827] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         title="Add +30 minutes"
                       >
-                        <Plus className="h-3.5 w-3.5 text-amber-400" />
+                        <Plus className="h-3.5 w-3.5 text-[#D96827]" />
                         <span>+30m</span>
                       </button>
 
@@ -811,7 +811,7 @@ export default function RentalBoardPage() {
                           setReturnSession(session);
                           setReturnPaymentMethod(session.paymentMethod || "CASH");
                         }}
-                        className="py-2 px-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-emerald-600/20"
+                        className="py-2 px-1.5 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                         title="Return shoe & checkout"
                       >
                         <Check className="h-3.5 w-3.5" />
@@ -827,36 +827,36 @@ export default function RentalBoardPage() {
 
         {/* 1. START NEW RENTAL MODAL */}
         {showNewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative my-auto">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
                     <Timer className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold text-white">
+                    <h3 className="text-base sm:text-lg font-bold text-[#29221E]">
                       Start Skate Rental Session
                     </h3>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-[#8B8179]">
                       Allocate shoe asset, apply rates, and launch countdown timer.
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowNewModal(false)}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800"
+                  className="p-1 rounded-lg text-[#8B8179] hover:text-[#29221E]"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <form onSubmit={handleStartRental} className="mt-4 space-y-4">
-                {/* Hygiene protocol reminder (Requirement #5: 2 lastics / festal) */}
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2.5">
-                  <Sparkles className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                {/* Hygiene protocol reminder */}
+                <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#29221E] text-xs flex items-start gap-2.5">
+                  <Sparkles className="h-4 w-4 text-[#D96827] shrink-0 mt-0.5" />
                   <div>
-                    <strong className="block font-semibold">Hygiene Requirement:</strong>
+                    <strong className="block font-bold text-[#D96827]">Hygiene Requirement:</strong>
                     Hand over <strong>2 disposable plastic liners (festal/lastics)</strong> with the
                     skate shoes before the customer puts them on.
                   </div>
@@ -864,10 +864,10 @@ export default function RentalBoardPage() {
 
                 {/* Step 1: Select Shoe Size */}
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
                     1. Select Shoe Size
                   </label>
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5">
                     {distinctSizes.map((size) => {
                       const avail = availableShoes.filter(
                         (s) => s.size === size && s.status === "AVAILABLE"
@@ -880,10 +880,10 @@ export default function RentalBoardPage() {
                           onClick={() => setSelectedSize(size)}
                           className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center min-w-[56px] ${
                             isSelected
-                              ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 scale-105"
+                              ? "bg-[#D96827] text-white shadow-md shadow-[#D96827]/25 scale-105"
                               : avail > 0
-                              ? "bg-zinc-950 text-white border border-zinc-800 hover:border-zinc-700"
-                              : "bg-zinc-950/40 text-zinc-600 border border-zinc-900 cursor-not-allowed opacity-50"
+                              ? "bg-[#F7F6F3] text-[#29221E] border border-[#E9D9C5] hover:border-[#D96827]"
+                              : "bg-[#F7F6F3]/50 text-[#8B8179]/50 border border-dashed border-[#E9D9C5] cursor-not-allowed opacity-50"
                           }`}
                         >
                           <span className="text-sm">#{size}</span>
@@ -898,11 +898,11 @@ export default function RentalBoardPage() {
 
                 {/* Step 2: Specific Shoe ID Asset */}
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
                     2. Choose Available Shoe Asset (Unique ID)
                   </label>
                   {shoesForSelectedSize.length === 0 ? (
-                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+                    <div className="p-3 rounded-xl bg-[#FDF0EF] border border-[#D94B45]/30 text-[#D94B45] text-xs">
                       ⚠️ No shoes of Size #{selectedSize} are currently available. Customer will
                       need to wait for one to be returned.
                     </div>
@@ -910,7 +910,7 @@ export default function RentalBoardPage() {
                     <select
                       value={selectedShoeId}
                       onChange={(e) => setSelectedShoeId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
                     >
                       {shoesForSelectedSize.map((s) => (
                         <option key={s._id} value={s.shoeId}>
@@ -923,7 +923,7 @@ export default function RentalBoardPage() {
 
                 {/* Step 3: Duration & Pricing */}
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
                     3. Rental Duration & Timing
                   </label>
                   <div className="grid grid-cols-2 gap-2.5">
@@ -932,15 +932,15 @@ export default function RentalBoardPage() {
                       onClick={() => setDuration(30)}
                       className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                         duration === 30
-                          ? "bg-emerald-500/10 border-emerald-500 text-white shadow-md shadow-emerald-500/10"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                          ? "bg-[#FFF4E5] border-2 border-[#D96827] text-[#29221E] shadow-sm"
+                          : "bg-white border-[#E9D9C5] text-[#8B8179] hover:border-[#D96827]/40"
                       }`}
                     >
-                      <div className="font-bold text-sm text-white">30 Minutes</div>
-                      <div className="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                      <div className="font-bold text-sm text-[#29221E]">30 Minutes</div>
+                      <div className="text-[11px] text-[#D96827] font-bold mt-0.5">
                         {isWeekend ? "200 ETB (Weekend)" : "150 ETB (Weekday)"}
                       </div>
-                      <div className="text-[10px] text-zinc-500 mt-1">
+                      <div className="text-[10px] text-[#8B8179] mt-1">
                         +5m buffer = <strong>35m timer</strong>
                       </div>
                     </button>
@@ -950,15 +950,15 @@ export default function RentalBoardPage() {
                       onClick={() => setDuration(60)}
                       className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                         duration === 60
-                          ? "bg-emerald-500/10 border-emerald-500 text-white shadow-md shadow-emerald-500/10"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                          ? "bg-[#FFF4E5] border-2 border-[#D96827] text-[#29221E] shadow-sm"
+                          : "bg-white border-[#E9D9C5] text-[#8B8179] hover:border-[#D96827]/40"
                       }`}
                     >
-                      <div className="font-bold text-sm text-white">60 Minutes (1 Hour)</div>
-                      <div className="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                      <div className="font-bold text-sm text-[#29221E]">60 Minutes (1 Hour)</div>
+                      <div className="text-[11px] text-[#D96827] font-bold mt-0.5">
                         {isWeekend ? "300 ETB (Weekend)" : "250 ETB (Weekday)"}
                       </div>
-                      <div className="text-[10px] text-zinc-500 mt-1">
+                      <div className="text-[10px] text-[#8B8179] mt-1">
                         +5m buffer = <strong>65m timer</strong>
                       </div>
                     </button>
@@ -968,7 +968,7 @@ export default function RentalBoardPage() {
                 {/* Step 4: Customer Details */}
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
                       Customer Name
                     </label>
                     <input
@@ -976,11 +976,11 @@ export default function RentalBoardPage() {
                       placeholder="e.g. Kidus"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
                       Phone Number
                     </label>
                     <input
@@ -988,14 +988,14 @@ export default function RentalBoardPage() {
                       placeholder="09..."
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] font-mono"
                     />
                   </div>
                 </div>
 
                 {/* Step 5: Payment Timing */}
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
                     4. Payment Timing
                   </label>
                   <div className="grid grid-cols-2 gap-2 mb-2">
@@ -1004,8 +1004,8 @@ export default function RentalBoardPage() {
                       onClick={() => setPaymentOption("UNPAID")}
                       className={`p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                         paymentOption === "UNPAID"
-                          ? "bg-amber-500/20 border-amber-500 text-amber-300"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                          ? "bg-[#FFF4E5] border-2 border-[#D96827] text-[#D96827] font-bold"
+                          : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                       }`}
                     >
                       Pay After Skating (Open Tab)
@@ -1015,8 +1015,8 @@ export default function RentalBoardPage() {
                       onClick={() => setPaymentOption("PAID")}
                       className={`p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                         paymentOption === "PAID"
-                          ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                          ? "bg-[#EBF5F0] border-2 border-[#26845B] text-[#26845B] font-bold"
+                          : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                       }`}
                     >
                       Pay Upfront Now ({formatETB(calculatedPrice)})
@@ -1030,10 +1030,10 @@ export default function RentalBoardPage() {
                           key={method}
                           type="button"
                           onClick={() => setPaymentMethod(method)}
-                          className={`p-2 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                          className={`p-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
                             paymentMethod === method
-                              ? "bg-emerald-500 text-zinc-950"
-                              : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                              ? "bg-[#D96827] text-white shadow-sm"
+                              : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
                           }`}
                         >
                           {method}
@@ -1047,7 +1047,7 @@ export default function RentalBoardPage() {
                   <button
                     type="submit"
                     disabled={submitting || !selectedShoeId}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="w-full py-3 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-[#D96827]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {submitting
                       ? "Launching..."
@@ -1059,39 +1059,39 @@ export default function RentalBoardPage() {
           </div>
         )}
 
-        {/* 2. SHOE SWAP MODAL (Requirement #8: uncomfortable fit) */}
+        {/* 2. SHOE SWAP MODAL */}
         {swapSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
-                  <Repeat className="h-5 w-5 text-cyan-400" />
-                  <h3 className="text-base sm:text-lg font-bold text-white">Swap Skate Shoe</h3>
+                  <Repeat className="h-5 w-5 text-[#D96827]" />
+                  <h3 className="text-base sm:text-lg font-bold text-[#29221E]">Swap Skate Shoe</h3>
                 </div>
                 <button
                   onClick={() => setSwapSession(null)}
-                  className="p-1 text-zinc-400 hover:text-white"
+                  className="p-1 text-[#8B8179] hover:text-[#29221E]"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSwapSubmit} className="mt-4 space-y-4">
-                <p className="text-xs text-zinc-400 leading-relaxed">
+                <p className="text-xs text-[#8B8179] leading-relaxed">
                   Currently assigned to shoe{" "}
-                  <strong className="text-white font-mono">{swapSession.shoeId}</strong> (Size #
+                  <strong className="text-[#29221E] font-mono">{swapSession.shoeId}</strong> (Size #
                   {swapSession.shoeSize}). The timer will continue without interruption.
                 </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
                     Select New Available Shoe Asset
                   </label>
                   <select
                     value={swapNewShoeId}
                     onChange={(e) => setSwapNewShoeId(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    className="w-full px-3 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
                   >
                     <option value="">-- Choose replacement shoe --</option>
                     {availableShoes
@@ -1105,14 +1105,14 @@ export default function RentalBoardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
                     Reason
                   </label>
                   <input
                     type="text"
                     value={swapReason}
                     onChange={(e) => setSwapReason(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                   />
                 </div>
 
@@ -1120,14 +1120,14 @@ export default function RentalBoardPage() {
                   <button
                     type="button"
                     onClick={() => setSwapSession(null)}
-                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={swapLoading || !swapNewShoeId}
-                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs rounded-xl disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 bg-[#D96827] hover:bg-[#C2571A] text-white font-semibold text-xs rounded-xl shadow-sm disabled:opacity-50 cursor-pointer"
                   >
                     {swapLoading ? "Swapping..." : "Confirm Shoe Swap"}
                   </button>
@@ -1137,67 +1137,67 @@ export default function RentalBoardPage() {
           </div>
         )}
 
-        {/* 3. RETURN & CHECKOUT MODAL (Requirement #10 & #12: check by shoe id, settle, mark returned) */}
+        {/* 3. RETURN & CHECKOUT MODAL */}
         {returnSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                  <h3 className="text-base sm:text-lg font-bold text-white">
+                  <CheckCircle2 className="h-5 w-5 text-[#26845B]" />
+                  <h3 className="text-base sm:text-lg font-bold text-[#29221E]">
                     Return Shoe & Settle Bill
                   </h3>
                 </div>
                 <button
                   onClick={() => setReturnSession(null)}
-                  className="p-1 text-zinc-400 hover:text-white"
+                  className="p-1 text-[#8B8179] hover:text-[#29221E]"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <form onSubmit={handleReturnSubmit} className="mt-4 space-y-4">
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2.5">
-                  <div className="flex justify-between text-xs text-zinc-400">
+                <div className="p-4 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-2.5">
+                  <div className="flex justify-between text-xs text-[#8B8179]">
                     <span>Shoe Asset:</span>
-                    <strong className="text-white font-mono">
+                    <strong className="text-[#29221E] font-mono">
                       {returnSession.shoeId} (Size #{returnSession.shoeSize})
                     </strong>
                   </div>
-                  <div className="flex justify-between text-xs text-zinc-400">
+                  <div className="flex justify-between text-xs text-[#8B8179]">
                     <span>Customer:</span>
-                    <span className="text-white">{returnSession.customerName}</span>
+                    <span className="text-[#29221E] font-medium">{returnSession.customerName}</span>
                   </div>
-                  <div className="flex justify-between text-xs text-zinc-400">
+                  <div className="flex justify-between text-xs text-[#8B8179]">
                     <span>Skate Duration:</span>
-                    <span className="text-white">
+                    <span className="text-[#29221E]">
                       {returnSession.totalMinutes - returnSession.gracePeriodMinutes} mins
                     </span>
                   </div>
 
-                  <div className="pt-2 border-t border-zinc-800/80 flex justify-between text-xs text-zinc-400">
+                  <div className="pt-2 border-t border-[#E9D9C5] flex justify-between text-xs text-[#8B8179]">
                     <span>Skate Rental Fee:</span>
-                    <span className="font-mono text-white">
+                    <span className="font-mono font-bold text-[#29221E]">
                       {formatETB(returnSession.totalRentalFee)}
                     </span>
                   </div>
 
                   {returnSession.tabTotal && returnSession.tabTotal > 0 ? (
-                    <div className="flex justify-between text-xs text-cyan-400 font-semibold">
+                    <div className="flex justify-between text-xs text-[#D96827] font-semibold">
                       <span>Attached Concession Snacks:</span>
                       <span className="font-mono">+{formatETB(returnSession.tabTotal)}</span>
                     </div>
                   ) : null}
 
-                  <div className="pt-2 border-t border-zinc-800 flex justify-between items-baseline">
-                    <span className="text-sm font-semibold text-zinc-200">Combined Total:</span>
-                    <span className="text-xl font-black text-emerald-400 font-mono">
+                  <div className="pt-2 border-t border-[#E9D9C5] flex justify-between items-baseline">
+                    <span className="text-sm font-bold text-[#29221E]">Combined Total:</span>
+                    <span className="text-xl font-black text-[#D96827] font-mono">
                       {formatETB(returnSession.totalRentalFee + (returnSession.tabTotal || 0))}
                     </span>
                   </div>
 
                   {returnSession.paymentStatus === "PAID" && (!returnSession.tabTotal || returnSession.tabTotal === 0) && (
-                    <div className="text-[11px] text-emerald-400 text-right">
+                    <div className="text-[11px] text-[#26845B] font-semibold text-right">
                       ✓ Already pre-paid via {returnSession.paymentMethod}
                     </div>
                   )}
@@ -1206,7 +1206,7 @@ export default function RentalBoardPage() {
                 {/* Payment method selector if unpaid balance exists */}
                 {(returnSession.paymentStatus !== "PAID" || (returnSession.tabTotal && returnSession.tabTotal > 0)) && (
                   <div>
-                    <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1.5">
+                    <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
                       Select Settlement Payment Method
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -1217,8 +1217,8 @@ export default function RentalBoardPage() {
                           onClick={() => setReturnPaymentMethod(method)}
                           className={`p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
                             returnPaymentMethod === method
-                              ? "bg-emerald-500 text-zinc-950 shadow-md shadow-emerald-500/20"
-                              : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                              ? "bg-[#D96827] text-white shadow-sm"
+                              : "bg-white border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
                           }`}
                         >
                           {method}
@@ -1232,14 +1232,14 @@ export default function RentalBoardPage() {
                   <button
                     type="button"
                     onClick={() => setReturnSession(null)}
-                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={returnLoading}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 cursor-pointer"
+                    className="px-5 py-2.5 bg-[#26845B] hover:bg-[#1f6d4a] text-white font-bold text-xs rounded-xl shadow-md shadow-[#26845B]/20 cursor-pointer"
                   >
                     {returnLoading ? "Processing..." : "Confirm Return & Mark Available"}
                   </button>
