@@ -76,7 +76,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: `Session extended by +${minutesToAdd} minutes. New finish time: ${newEndTime.toLocaleTimeString()}`,
+      message: `Session extended by +${minutesToAdd} minutes. New finish time: ${newEndTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`,
       session,
     });
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { formatETB } from "@/lib/utils";
+import { formatETB, format12HourTime } from "@/lib/utils";
 import { ProductCategory } from "@/models/Product";
 import {
   ShoppingBag,
@@ -616,10 +616,7 @@ export default function ConcessionPage() {
                     {salesHistory.map((sale) => (
                       <tr key={sale._id} className="hover:bg-[#FFF4E5]/30 transition-colors">
                         <td className="px-5 py-3 text-[#8B8179] font-mono">
-                          {new Date(sale.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {format12HourTime(sale.createdAt)}
                         </td>
                         <td className="px-5 py-3">
                           {sale.saleType === "TAB" ? (

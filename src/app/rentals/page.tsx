@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { formatETB } from "@/lib/utils";
+import { formatETB, format12HourTime, triggerVibration } from "@/lib/utils";
+import { useAlertModal } from "@/components/ModalAlertProvider";
 import {
   Timer,
   Plus,
@@ -62,6 +63,7 @@ interface ShoeOption {
 }
 
 export default function RentalBoardPage() {
+  const { showAlert, showConfirm } = useAlertModal();
   const [sessions, setSessions] = useState<RentalSessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
@@ -96,7 +98,7 @@ export default function RentalBoardPage() {
   const [returnPaymentMethod, setReturnPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [returnLoading, setReturnLoading] = useState(false);
 
-  // Web Audio synthesizer chime for alerts
+  // Web Audio synthesizer chime and vibration for alerts
   const playAudioCue = (type: "start" | "due" | "overdue" | "chime") => {
     if (!soundEnabled) return;
     try {
@@ -121,13 +123,20 @@ export default function RentalBoardPage() {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
         osc.start();
         osc.stop(ctx.currentTime + 0.4);
+        triggerVibration([200, 100, 200]);
       } else if (type === "overdue") {
-        osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
-        osc.frequency.setValueAtTime(349.23, ctx.currentTime + 0.15); // F4
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        // Distinct pulsing alarm sound for overdue sessions
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(620, ctx.currentTime);
+        osc.frequency.setValueAtTime(440, ctx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(620, ctx.currentTime + 0.3);
+        osc.frequency.setValueAtTime(440, ctx.currentTime + 0.45);
+        gain.gain.setValueAtTime(0.35, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.65);
         osc.start();
-        osc.stop(ctx.currentTime + 0.5);
+        osc.stop(ctx.currentTime + 0.65);
+        // Haptic buzz pattern: 300ms vibration, 100ms pause, 300ms vibration, 100ms pause, 500ms vibration
+        triggerVibration([300, 100, 300, 100, 500]);
       } else {
         osc.frequency.setValueAtTime(880, ctx.currentTime);
         gain.gain.setValueAtTime(0.15, ctx.currentTime);
@@ -223,7 +232,11 @@ export default function RentalBoardPage() {
   const handleStartRental = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShoeId) {
-      alert("Please select an available Shoe ID");
+      showAlert({
+        title: "Shoe Required",
+        message: "Please choose an available shoe asset before starting the rental.",
+        type: "warning",
+      });
       return;
     }
 
@@ -251,17 +264,25 @@ export default function RentalBoardPage() {
         fetchAvailableShoes();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to start rental");
+        showAlert({
+          title: "Failed to Issue Skates",
+          message: data.error || "Unable to start rental session.",
+          type: "error",
+        });
       }
     } catch {
-      alert("Network error starting rental");
+      showAlert({
+        title: "Connection Error",
+        message: "Network error occurred while starting rental. Please check connection.",
+        type: "error",
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handle Extend Minutes (+30 or +60 min)
-  const handleExtend = async (session: RentalSessionItem, addedMinutes: number) => {
+  // Handle Extend Minutes (+30 or +60 min / 1 hr)
+  const handleExtend = (session: RentalSessionItem, addedMinutes: number) => {
     const fee =
       addedMinutes === 30
         ? session.pricingType === "WEEKEND"
@@ -270,28 +291,42 @@ export default function RentalBoardPage() {
         : session.pricingType === "WEEKEND"
         ? 300
         : 250;
-    const confirmed = confirm(
-      `Add +${addedMinutes} minutes for ${fee} ETB to shoe ${session.shoeId} (${session.customerName})?`
-    );
-    if (!confirmed) return;
+    const durationLabel = addedMinutes === 30 ? "30 minutes" : "1 hour (60 minutes)";
 
-    try {
-      const res = await fetch(`/api/rentals/${session._id}/extend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ addedMinutes }),
-      });
+    showConfirm({
+      title: `Extend Session (+${addedMinutes === 30 ? "30m" : "1h"})`,
+      message: `Add +${durationLabel} for ${fee} ETB to shoe ${session.shoeId} (${session.customerName})?\n\nThis will add +${durationLabel} to their countdown timer and append ${fee} ETB to their rental fee.`,
+      confirmText: `Add +${addedMinutes === 30 ? "30m" : "1h"} (${fee} ETB)`,
+      cancelText: "Cancel",
+      type: "warning",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/rentals/${session._id}/extend`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ addedMinutes }),
+          });
 
-      if (res.ok) {
-        playAudioCue("chime");
-        fetchRentals();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to extend session");
-      }
-    } catch {
-      alert("Error extending session");
-    }
+          if (res.ok) {
+            playAudioCue("chime");
+            fetchRentals();
+          } else {
+            const data = await res.json();
+            showAlert({
+              title: "Extension Failed",
+              message: data.error || "Failed to extend session",
+              type: "error",
+            });
+          }
+        } catch {
+          showAlert({
+            title: "Network Error",
+            message: "Error communicating with server while extending session.",
+            type: "error",
+          });
+        }
+      },
+    });
   };
 
   // Handle Swap Shoe
@@ -315,10 +350,18 @@ export default function RentalBoardPage() {
         fetchAvailableShoes();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to swap shoe");
+        showAlert({
+          title: "Swap Failed",
+          message: data.error || "Failed to swap shoe",
+          type: "error",
+        });
       }
     } catch {
-      alert("Error swapping shoe");
+      showAlert({
+        title: "Network Error",
+        message: "Error communicating with server while swapping shoe.",
+        type: "error",
+      });
     } finally {
       setSwapLoading(false);
     }
@@ -344,10 +387,18 @@ export default function RentalBoardPage() {
         fetchAvailableShoes();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to return shoe");
+        showAlert({
+          title: "Return Failed",
+          message: data.error || "Failed to return shoe",
+          type: "error",
+        });
       }
     } catch {
-      alert("Error returning shoe");
+      showAlert({
+        title: "Network Error",
+        message: "Error communicating with server while returning shoe.",
+        type: "error",
+      });
     } finally {
       setReturnLoading(false);
     }
@@ -506,20 +557,22 @@ export default function RentalBoardPage() {
             onClick={() => setStatusTab("ACTIVE")}
             className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "ACTIVE"
-                ? "bg-white border-2 border-[#D96827] shadow-sm"
-                : "bg-white border-[#E9D9C5] hover:border-[#D96827]/50"
+                ? "bg-gradient-to-br from-[#FFF4E5] to-[#FDF0DE] border-2 border-[#D96827] shadow-md shadow-[#D96827]/15 ring-2 ring-[#D96827]/20"
+                : "bg-[#FFFBF5] border border-[#F3D5BD] hover:border-[#D96827] hover:bg-[#FFF4E5]/50"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] sm:text-xs uppercase font-semibold text-[#8B8179]">
+              <span className="text-[11px] sm:text-xs uppercase font-bold text-[#A85822]">
                 Active
               </span>
-              <Clock className="h-4 w-4 text-[#D96827]" />
+              <span className="p-1 rounded-lg bg-[#FFE7D1] text-[#D96827]">
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-extrabold text-[#29221E]">{activeCount}</span>
+              <span className="text-2xl sm:text-3xl font-black text-[#29221E]">{activeCount}</span>
               {dueSoonCount > 0 && (
-                <span className="text-[11px] text-[#D96827] font-bold hidden sm:inline">
+                <span className="text-[11px] text-[#D96827] font-bold">
                   ({dueSoonCount} due)
                 </span>
               )}
@@ -530,34 +583,43 @@ export default function RentalBoardPage() {
             onClick={() => setStatusTab("OVERDUE")}
             className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "OVERDUE"
-                ? "bg-white border-2 border-[#D94B45] shadow-sm"
-                : "bg-white border-[#E9D9C5] hover:border-[#D94B45]/50"
+                ? "bg-gradient-to-br from-[#FDF0EF] to-[#FCE3E1] border-2 border-[#D94B45] shadow-md shadow-[#D94B45]/20 ring-2 ring-[#D94B45]/20"
+                : "bg-[#FFF7F7] border border-[#F8CECC] hover:border-[#D94B45] hover:bg-[#FDF0EF]/50"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] sm:text-xs uppercase font-semibold text-[#8B8179]">
+              <span className="text-[11px] sm:text-xs uppercase font-bold text-[#C43833]">
                 Overdue
               </span>
-              <AlertTriangle className="h-4 w-4 text-[#D94B45]" />
+              <span className="p-1 rounded-lg bg-[#FDE2E0] text-[#D94B45]">
+                <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#D94B45]">{overdueCount}</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-black text-[#D94B45]">{overdueCount}</span>
+              {overdueCount > 0 && (
+                <span className="inline-block h-2 w-2 rounded-full bg-[#D94B45] animate-ping ml-1" />
+              )}
+            </div>
           </button>
 
           <button
             onClick={() => setStatusTab("COMPLETED")}
             className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "COMPLETED"
-                ? "bg-white border-2 border-[#29221E] shadow-sm"
-                : "bg-white border-[#E9D9C5] hover:border-[#29221E]/50"
+                ? "bg-gradient-to-br from-[#F0F7F3] to-[#E2EFE7] border-2 border-[#2D7A4D] shadow-md shadow-[#2D7A4D]/15 ring-2 ring-[#2D7A4D]/20"
+                : "bg-[#F6FAF7] border border-[#CDE6D7] hover:border-[#2D7A4D] hover:bg-[#F0F7F3]/50"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] sm:text-xs uppercase font-semibold text-[#8B8179]">
+              <span className="text-[11px] sm:text-xs uppercase font-bold text-[#23603D]">
                 Returned
               </span>
-              <CheckCircle2 className="h-4 w-4 text-[#8B8179]" />
+              <span className="p-1 rounded-lg bg-[#DEECE3] text-[#2D7A4D]">
+                <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </span>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#8B8179]">
+            <div className="text-2xl sm:text-3xl font-black text-[#2D7A4D]">
               {completedTodayCount}
             </div>
           </button>
@@ -717,19 +779,11 @@ export default function RentalBoardPage() {
 
                         <div className="text-[11px] text-[#8B8179] mt-2 flex items-center justify-center gap-2 font-mono">
                           <span>
-                            Started:{" "}
-                            {new Date(session.startedAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            Started: {format12HourTime(session.startedAt)}
                           </span>
                           <span>•</span>
                           <span className="text-[#29221E] font-bold">
-                            Due:{" "}
-                            {new Date(session.expectedEndTime).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            Due: {format12HourTime(session.expectedEndTime)}
                           </span>
                         </div>
                       </div>
@@ -737,10 +791,7 @@ export default function RentalBoardPage() {
                       <div className="py-2.5 my-2 text-center rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs text-[#8B8179]">
                         Returned at{" "}
                         {session.actualReturnTime
-                          ? new Date(session.actualReturnTime).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                          ? format12HourTime(session.actualReturnTime)
                           : "Closed"}
                       </div>
                     )}
@@ -791,13 +842,13 @@ export default function RentalBoardPage() {
 
                   {/* Bottom Operational Action Buttons */}
                   {isActive && (
-                    <div className="mt-3.5 pt-3 border-t border-[#E9D9C5] grid grid-cols-3 gap-2">
+                    <div className="mt-3.5 pt-3 border-t border-[#E9D9C5] grid grid-cols-4 gap-1.5 sm:gap-2">
                       <button
                         onClick={() => {
                           setSwapSession(session);
                           setSwapNewShoeId("");
                         }}
-                        className="py-2 px-1.5 rounded-xl bg-[#F7F6F3] hover:bg-[#E9D9C5]/40 border border-[#E9D9C5] text-xs font-semibold text-[#29221E] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="py-2 px-1 rounded-xl bg-[#F7F6F3] hover:bg-[#E9D9C5]/40 border border-[#E9D9C5] text-[11px] sm:text-xs font-semibold text-[#29221E] transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         title="Swap shoe for comfortable fit"
                       >
                         <Repeat className="h-3.5 w-3.5 text-[#D96827]" />
@@ -806,11 +857,20 @@ export default function RentalBoardPage() {
 
                       <button
                         onClick={() => handleExtend(session, 30)}
-                        className="py-2 px-1.5 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-xs font-semibold text-[#D96827] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="py-2 px-1 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#D96827] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
                         title="Add +30 minutes"
                       >
-                        <Plus className="h-3.5 w-3.5 text-[#D96827]" />
+                        <Plus className="h-3 w-3 text-[#D96827]" />
                         <span>+30m</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleExtend(session, 60)}
+                        className="py-2 px-1 rounded-xl bg-[#FFF0E6] hover:bg-[#FCD8C2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#C2571A] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
+                        title="Add +1 hour (60 minutes)"
+                      >
+                        <Plus className="h-3 w-3 text-[#C2571A]" />
+                        <span>+1h</span>
                       </button>
 
                       <button
@@ -818,7 +878,7 @@ export default function RentalBoardPage() {
                           setReturnSession(session);
                           setReturnPaymentMethod(session.paymentMethod || "CASH");
                         }}
-                        className="py-2 px-1.5 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+                        className="py-2 px-1 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-[11px] sm:text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                         title="Return shoe & checkout"
                       >
                         <Check className="h-3.5 w-3.5" />
@@ -896,7 +956,7 @@ export default function RentalBoardPage() {
                 {/* Step 2: Specific Shoe ID Asset */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    2. Choose Available Shoe Asset (Unique ID)
+                    2. Choose Shoe Asset (Unique ID)
                   </label>
                   {shoesForSelectedSize.length === 0 ? (
                     <div className="space-y-2.5">
@@ -925,10 +985,7 @@ export default function RentalBoardPage() {
                           <div className="space-y-1.5">
                             {activeSessionsForSelectedSize.map((s, idx) => {
                               const timer = getSessionTimerData(s);
-                              const dueTime = new Date(s.expectedEndTime).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              });
+                              const dueTime = format12HourTime(s.expectedEndTime);
 
                               return (
                                 <div
@@ -981,7 +1038,7 @@ export default function RentalBoardPage() {
                     >
                       {shoesForSelectedSize.map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (Size #{s.size}) — AVAILABLE
+                          {s.shoeId} (Size #{s.size})
                         </option>
                       ))}
                     </select>

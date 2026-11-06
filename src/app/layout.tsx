@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PWARegister } from "@/components/PWARegister";
 import { PWAInstallBanner } from "@/components/PWAInstallBanner";
+import { ModalAlertProvider } from "@/components/ModalAlertProvider";
 import { Suspense } from "react";
 
 const geistSans = Geist({
@@ -47,11 +48,13 @@ export const viewport: Viewport = {
 async function ShellWrapper({ children }: { children: React.ReactNode }) {
   const user = await getSession();
   return (
-    <AppShell user={user}>
-      <PWARegister />
-      <PWAInstallBanner />
-      {children}
-    </AppShell>
+    <ModalAlertProvider>
+      <AppShell user={user}>
+        <PWARegister />
+        <PWAInstallBanner />
+        {children}
+      </AppShell>
+    </ModalAlertProvider>
   );
 }
 

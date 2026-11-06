@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatETB, exportToCSV } from "@/lib/utils";
+import { formatETB, exportToCSV, format12HourTime } from "@/lib/utils";
 import { ExpenseCategory, ExpenseFundSource } from "@/models/Expense";
 import {
   Wallet,
@@ -424,10 +424,7 @@ export default function FinancesPage() {
                   {filteredExpenses.map((exp) => (
                     <tr key={exp._id} className="hover:bg-[#FFF4E5]/20 transition-colors">
                       <td className="px-5 py-3 text-[#8B8179] font-mono">
-                        {new Date(exp.date).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {format12HourTime(exp.date)}
                       </td>
                       <td className="px-5 py-3 font-bold text-[#29221E]">
                         {exp.title}

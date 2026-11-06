@@ -50,9 +50,52 @@ export function exportToCSV(
 }
 
 /**
+ * Format date/time strictly in 12-hour format with AM/PM (e.g., 2:45 PM)
+ */
+export function format12HourTime(date: Date | string | number | null | undefined): string {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+/**
+ * Format date/time with month, day and 12-hour format (e.g., Nov 6, 2:45 PM)
+ */
+export function format12HourDateTime(date: Date | string | number | null | undefined): string {
+  if (!date) return "";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+/**
+ * Trigger mobile haptic vibration if supported by device/browser
+ */
+export function triggerVibration(pattern: number | number[] = [300, 100, 300, 100, 500]) {
+  if (typeof window !== "undefined" && typeof navigator !== "undefined" && "vibrate" in navigator) {
+    try {
+      navigator.vibrate(pattern);
+    } catch {
+      // Ignore vibration permission or browser restrictions
+    }
+  }
+}
+
+/**
  * Web Audio API synthesizer for operational counter sound alerts (zero external audio files required)
  */
-export function playAlertChime(type: "warning" | "success" | "chime" = "chime") {
+export function playAlertChime(type: "warning" | "success" | "chime" | "overdue" = "chime") {
   if (typeof window === "undefined") return;
   try {
     const AudioContextClass =
@@ -69,7 +112,18 @@ export function playAlertChime(type: "warning" | "success" | "chime" = "chime") 
     gain.connect(ctx.destination);
 
     const now = ctx.currentTime;
-    if (type === "warning") {
+    if (type === "overdue") {
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(620, now);
+      osc.frequency.setValueAtTime(440, now + 0.15);
+      osc.frequency.setValueAtTime(620, now + 0.3);
+      osc.frequency.setValueAtTime(440, now + 0.45);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      osc.start(now);
+      osc.stop(now + 0.6);
+      triggerVibration([300, 100, 300, 100, 500]);
+    } else if (type === "warning") {
       osc.type = "sawtooth";
       osc.frequency.setValueAtTime(440, now);
       osc.frequency.setValueAtTime(330, now + 0.15);
@@ -77,6 +131,7 @@ export function playAlertChime(type: "warning" | "success" | "chime" = "chime") 
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
       osc.start(now);
       osc.stop(now + 0.35);
+      triggerVibration([200, 100, 200]);
     } else {
       osc.type = "sine";
       osc.frequency.setValueAtTime(587.33, now); // D5

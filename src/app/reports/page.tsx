@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { formatETB, exportToCSV } from "@/lib/utils";
+import { formatETB, exportToCSV, format12HourTime, format12HourDateTime } from "@/lib/utils";
+import { useAlertModal } from "@/components/ModalAlertProvider";
 import {
   FileText,
   Printer,
@@ -82,6 +83,7 @@ interface HistoryItem {
 }
 
 export default function ReportsPage() {
+  const { showAlert, showConfirm } = useAlertModal();
   const [activeTab, setActiveTab] = useState<"TODAY" | "HISTORY">("TODAY");
   const [data, setData] = useState<RegisterData | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -151,29 +153,62 @@ export default function ReportsPage() {
       if (res.ok) {
         setShowCloseModal(false);
         fetchTodayRegister();
+        showAlert({
+          title: "Shift Closed",
+          message: "The register has been safely closed and locked for today.",
+          type: "success",
+        });
       } else {
-        alert(resJson.error || "Failed to close shift");
+        showAlert({
+          title: "Closure Failed",
+          message: resJson.error || "Failed to close shift register.",
+          type: "error",
+        });
       }
     } catch {
-      alert("Network error closing shift");
+      showAlert({
+        title: "Network Error",
+        message: "Network error occurred while closing shift.",
+        type: "error",
+      });
     } finally {
       setClosing(false);
     }
   };
 
-  const handleReopenShift = async () => {
-    const confirmed = confirm("Re-open today's shift register?");
-    if (!confirmed) return;
-    try {
-      const res = await fetch("/api/register/open", { method: "POST" });
-      if (res.ok) {
-        fetchTodayRegister();
-      } else {
-        alert("Failed to re-open shift");
-      }
-    } catch {
-      alert("Network error");
-    }
+  const handleReopenShift = () => {
+    showConfirm({
+      title: "Re-Open Shift Register",
+      message: "Are you sure you want to re-open today's shift register?\n\nStaff will be able to record new rentals, concession transactions, and operating expenses again.",
+      confirmText: "Yes, Re-Open Shift",
+      cancelText: "Cancel",
+      type: "warning",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/register/open", { method: "POST" });
+          if (res.ok) {
+            fetchTodayRegister();
+            showAlert({
+              title: "Shift Re-Opened",
+              message: "Today's shift register is now active.",
+              type: "success",
+            });
+          } else {
+            showAlert({
+              title: "Failed to Re-Open",
+              message: "Could not re-open the shift register.",
+              type: "error",
+            });
+          }
+        } catch {
+          showAlert({
+            title: "Network Error",
+            message: "Network error communicating with server.",
+            type: "error",
+          });
+        }
+      },
+    });
   };
 
   const handlePrint = () => {
@@ -204,7 +239,7 @@ export default function ReportsPage() {
           </div>
           <div className="text-right text-xs text-[#29221E] font-mono">
             <p className="font-bold">Shift Date: {data?.summary.date}</p>
-            <p className="text-[#8B8179] font-sans text-[11px]">Printed: {new Date().toLocaleString()}</p>
+            <p className="text-[#8B8179] font-sans text-[11px]">Printed: {format12HourDateTime(new Date())}</p>
           </div>
         </div>
 
@@ -320,7 +355,7 @@ export default function ReportsPage() {
                   </div>
                   <p className="text-xs text-[#8B8179] mt-0.5">
                     {data?.register.status === "CLOSED"
-                      ? `Closed at ${new Date(data?.register.closedAt || "").toLocaleTimeString()}`
+                      ? `Closed at ${format12HourTime(data?.register.closedAt)}`
                       : "Register is actively accepting rentals, concession sales, and expenses."}
                   </p>
                 </div>
