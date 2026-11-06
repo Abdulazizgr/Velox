@@ -44,3 +44,4 @@ const DailyRegisterSchema = new Schema<IDailyRegister>(
 export const DailyRegister: Model<IDailyRegister> =
   mongoose.models.DailyRegister ||
   mongoose.model<IDailyRegister>("DailyRegister", DailyRegisterSchema);
+

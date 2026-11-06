@@ -20,3 +20,4 @@ const CapitalFundSchema = new Schema<ICapitalFund>(
 export const CapitalFund: Model<ICapitalFund> =
   mongoose.models.CapitalFund ||
   mongoose.model<ICapitalFund>("CapitalFund", CapitalFundSchema);
+

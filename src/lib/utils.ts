@@ -13,3 +13,4 @@ export function formatETB(amount: number): string {
     maximumFractionDigits: 2,
   }).format(amount).replace("ETB", "ETB ");
 }
+

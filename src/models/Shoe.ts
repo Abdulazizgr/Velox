@@ -43,3 +43,4 @@ const ShoeSchema = new Schema<IShoe>(
 
 export const Shoe: Model<IShoe> =
   mongoose.models.Shoe || mongoose.model<IShoe>("Shoe", ShoeSchema);
+

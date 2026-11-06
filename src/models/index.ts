@@ -6,3 +6,4 @@ export * from "./Sale";
 export * from "./Expense";
 export * from "./CapitalFund";
 export * from "./DailyRegister";
+

@@ -48,3 +48,4 @@ const UserSchema = new Schema<IUser>(
 // Prevent mongoose recompilation during hot-reloads
 export const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+

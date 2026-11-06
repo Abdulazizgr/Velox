@@ -152,3 +152,4 @@ const RentalSessionSchema = new Schema<IRentalSession>(
 export const RentalSession: Model<IRentalSession> =
   mongoose.models.RentalSession ||
   mongoose.model<IRentalSession>("RentalSession", RentalSessionSchema);
+

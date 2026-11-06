@@ -60,3 +60,4 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update staff member" }, { status: 500 });
   }
 }
+
