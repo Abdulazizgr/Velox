@@ -20,6 +20,7 @@ import {
   MoreHorizontal,
   FileText,
 } from "lucide-react";
+import { PWAInlineButton } from "@/components/PWAInstallBanner";
 
 interface AppShellProps {
   user: SessionUser | null;
@@ -147,8 +148,9 @@ export function AppShell({ user, children }: AppShellProps) {
           })}
         </nav>
 
-        {/* Sign Out at bottom of sidebar */}
-        <div className="p-3 border-t border-[#362D28]">
+        {/* PWA Install Button & Sign Out at bottom of sidebar */}
+        <div className="p-3 border-t border-[#362D28] space-y-2">
+          <PWAInlineButton />
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-[#8B8179] hover:text-[#D94B45] hover:bg-[#D94B45]/10 transition-colors border border-transparent hover:border-[#D94B45]/20 cursor-pointer"
@@ -295,8 +297,9 @@ export function AppShell({ user, children }: AppShellProps) {
               </div>
             </div>
 
-            {/* Logout at bottom of drawer */}
-            <div className="pt-4 border-t border-[#362D28]">
+            {/* Install App & Logout at bottom of drawer */}
+            <div className="pt-4 border-t border-[#362D28] space-y-2">
+              <PWAInlineButton />
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold text-[#D94B45] bg-[#D94B45]/10 hover:bg-[#D94B45]/20 border border-[#D94B45]/30 transition-colors"

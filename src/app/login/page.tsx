@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Lock, Phone, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { PWAInlineButton } from "@/components/PWAInstallBanner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -152,6 +153,11 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Quick Install App Action */}
+          <div className="mt-4">
+            <PWAInlineButton />
+          </div>
 
           <div className="mt-6 pt-5 border-t border-[#E9D9C5] text-center">
             <p className="text-[11px] text-[#8B8179]">

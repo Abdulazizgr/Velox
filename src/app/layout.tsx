@@ -4,6 +4,7 @@ import "./globals.css";
 import { getSession } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PWARegister } from "@/components/PWARegister";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { Suspense } from "react";
 
 const geistSans = Geist({
@@ -48,6 +49,7 @@ async function ShellWrapper({ children }: { children: React.ReactNode }) {
   return (
     <AppShell user={user}>
       <PWARegister />
+      <PWAInstallBanner />
       {children}
     </AppShell>
   );
