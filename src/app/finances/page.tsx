@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatETB } from "@/lib/utils";
+import { formatETB, exportToCSV } from "@/lib/utils";
 import { ExpenseCategory, ExpenseFundSource } from "@/models/Expense";
 import {
   Wallet,
@@ -24,6 +24,7 @@ import {
   Banknote,
   Smartphone,
   Landmark,
+  Download,
 } from "lucide-react";
 
 interface FinanceData {

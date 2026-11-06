@@ -64,10 +64,12 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Login error:", error);
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred during login";
     return NextResponse.json(
-      { error: "An unexpected error occurred during login" },
+      { error: message },
       { status: 500 }
     );
   }

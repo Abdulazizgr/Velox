@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { formatETB } from "@/lib/utils";
+import { formatETB, exportToCSV } from "@/lib/utils";
 import {
   FileText,
   Printer,
@@ -21,6 +21,7 @@ import {
   Footprints,
   ShoppingBag,
   X,
+  Download,
 } from "lucide-react";
 
 interface RegisterData {
@@ -521,12 +522,49 @@ export default function ReportsPage() {
         ) : (
           /* TAB 2: HISTORICAL SHIFT ARCHIVE */
           <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-[#E9D9C5] flex items-center justify-between">
+            <div className="p-4 border-b border-[#E9D9C5] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-[#29221E]">Closed Shift Registers</h3>
                 <p className="text-xs text-[#8B8179]">Past daily audit logs and cash balancing records</p>
               </div>
-              <span className="text-xs text-[#8B8179]">Total: {history.length} days</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#8B8179]">Total: {history.length} days</span>
+                {history.length > 0 && (
+                  <button
+                    onClick={() =>
+                      exportToCSV(
+                        "Velox_Shift_Reports",
+                        [
+                          "Date",
+                          "Cash Inflow",
+                          "Telebirr",
+                          "CBE",
+                          "Petty Expenses",
+                          "Expected Cash",
+                          "Counted Cash",
+                          "Discrepancy",
+                          "Status",
+                        ],
+                        history.map((h) => [
+                          h.date,
+                          h.cashInTotal,
+                          h.telebirrTotal,
+                          h.cbeTotal,
+                          h.dailyExpensesTotal,
+                          h.expectedClosingCash,
+                          h.actualClosingCash || 0,
+                          h.discrepancy || 0,
+                          h.status,
+                        ])
+                      )
+                    }
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] hover:bg-[#FFF4E5] transition-colors shadow-xs cursor-pointer"
+                  >
+                    <Download className="h-3.5 w-3.5 text-[#D96827]" />
+                    <span>Export CSV</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {history.length === 0 ? (

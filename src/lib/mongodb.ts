@@ -27,6 +27,12 @@ if (!global.mongooseCache) {
 }
 
 export async function connectDB(): Promise<typeof mongoose> {
+  if (!process.env.MONGODB_URI && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "MONGODB_URI is not set. Please add MONGODB_URI in your Vercel project Environment Variables."
+    );
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -35,6 +41,7 @@ export async function connectDB(): Promise<typeof mongoose> {
     const opts: mongoose.ConnectOptions = {
       dbName: "velox_db",
       bufferCommands: false,
+      serverSelectionTimeoutMS: 5000, // 5s timeout instead of hanging 30s
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
