@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/velox_db";
 
+if (!process.env.MONGODB_URI && process.env.NODE_ENV === "production") {
+  console.error(
+    "❌ MONGODB_URI is not defined in environment variables. Please add it in your Vercel project settings."
+  );
+}
+
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
