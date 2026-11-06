@@ -36,3 +36,4 @@ const ExpenseCategorySchema = new Schema<IExpenseCategory>(
 export const ExpenseCategory: Model<IExpenseCategory> =
   mongoose.models.ExpenseCategory ||
   mongoose.model<IExpenseCategory>("ExpenseCategory", ExpenseCategorySchema);
+
