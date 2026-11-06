@@ -111,7 +111,7 @@ export default async function DashboardPage() {
             <span className="text-xs text-[#8B8179]">/ {totalShoes} total</span>
           </div>
           <div className="mt-3 flex items-center gap-2 text-xs">
-            <span className="text-[#26845B] font-semibold">{rentedShoes} on rink</span>
+            <span className="text-[#26845B] font-semibold">{rentedShoes} active</span>
             {maintenanceShoes > 0 && (
               <span className="text-[#D94B45] font-semibold">• {maintenanceShoes} maintenance</span>
             )}

@@ -184,7 +184,7 @@ export default function ConcessionPage() {
     if (cart.length === 0) return;
 
     if (saleType === "TAB" && !selectedSkaterId) {
-      alert("Please select an active skater from the rink to charge their tab.");
+      alert("Please select an active skater to charge their tab.");
       return;
     }
 
@@ -450,7 +450,7 @@ export default function ConcessionPage() {
                       </label>
                       {activeSkaters.length === 0 ? (
                         <p className="text-[#8B8179] text-xs">
-                          No skaters currently on the rink. Switch to Walk-in to sell.
+                          No skaters currently active. Switch to Walk-in to sell.
                         </p>
                       ) : (
                         <select

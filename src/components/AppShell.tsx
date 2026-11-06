@@ -89,7 +89,7 @@ export function AppShell({ user, children }: AppShellProps) {
             <div className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
               VELOX <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#D96827] text-white">POS</span>
             </div>
-            <p className="text-[11px] text-[#8B8179]">Skate Rink Terminal</p>
+            <p className="text-[11px] text-[#8B8179]">Skate Terminal</p>
           </div>
         </div>
 

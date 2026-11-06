@@ -206,7 +206,7 @@ export default function StaffManagementPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Initial Password / PIN
+                    Initial Password
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8B8179]">

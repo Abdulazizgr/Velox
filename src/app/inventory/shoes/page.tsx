@@ -162,7 +162,7 @@ export default function ShoesInventoryPage() {
           </div>
           <div className="bg-white border border-[#E9D9C5] rounded-2xl p-4 flex items-center justify-between shadow-sm">
             <div>
-              <span className="text-xs text-[#8B8179] uppercase font-semibold">Rented (On Rink)</span>
+              <span className="text-xs text-[#8B8179] uppercase font-semibold">Rented (Active)</span>
               <p className="text-2xl font-black text-[#D96827]">{rentedCount}</p>
             </div>
             <Clock className="h-8 w-8 text-[#D96827]/20" />

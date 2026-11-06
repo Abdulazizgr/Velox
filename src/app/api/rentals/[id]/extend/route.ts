@@ -35,7 +35,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "This session has already ended or been returned. As per rink rules, you must start a new session.",
+            "This session has already ended or been returned. You must start a new session.",
         },
         { status: 400 }
       );

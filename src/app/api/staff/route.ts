@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getSession();
     if (!session || session.role !== "OWNER") {
       return NextResponse.json(
-        { error: "Unauthorized: Only the rink owner can view staff" },
+        { error: "Unauthorized: Only the owner can view staff" },
         { status: 403 }
       );
     }
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const session = await getSession();
     if (!session || session.role !== "OWNER") {
       return NextResponse.json(
-        { error: "Unauthorized: Only the rink owner can register staff" },
+        { error: "Unauthorized: Only the owner can register staff" },
         { status: 403 }
       );
     }

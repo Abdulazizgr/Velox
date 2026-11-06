@@ -2,13 +2,13 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Velox Skate Rink POS",
+    name: "Velox Skate POS",
     short_name: "Velox",
-    description: "Internal operations, timer tracking, equipment inventory, and POS financial accounting for skate rinks.",
+    description: "Internal operations, timer tracking, equipment inventory, and POS financial accounting for skate operations.",
     start_url: "/",
     display: "standalone",
-    background_color: "#09090b",
-    theme_color: "#09090b",
+    background_color: "#F7F6F3",
+    theme_color: "#29221E",
     orientation: "portrait-primary",
     icons: [
       {

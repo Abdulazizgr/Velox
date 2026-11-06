@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Velox — Skate Rink POS & Operations",
+  title: "Velox — Skate POS & Operations",
   description: "Mobile-first POS, live rental timers, equipment asset inventory, and concession management.",
   applicationName: "Velox POS",
   icons: {

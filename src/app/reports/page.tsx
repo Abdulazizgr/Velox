@@ -198,7 +198,7 @@ export default function ReportsPage() {
               />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-[#29221E]">VELOX SKATE RINK</h1>
+              <h1 className="text-xl font-black tracking-tight text-[#29221E]">VELOX SKATE</h1>
               <p className="text-xs text-[#8B8179]">Daily Shift Closing & Financial Audit Receipt</p>
             </div>
           </div>

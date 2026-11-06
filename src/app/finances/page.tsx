@@ -557,7 +557,7 @@ export default function FinancesPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setTitle("Rink Facility Monthly Rent"); setCategory("RENT"); setPaymentMethod("CBE"); }}
+                          onClick={() => { setTitle("Facility Monthly Rent"); setCategory("RENT"); setPaymentMethod("CBE"); }}
                           className="px-2.5 py-1 rounded-lg bg-[#FFF4E5] hover:bg-[#FCEAD2] text-[#D96827] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
                         >
                           Facility Rent
@@ -623,7 +623,7 @@ export default function FinancesPage() {
                         <>
                           <option value="SKATE_SHOES">Purchasing Skate Shoes</option>
                           <option value="SNACK_RESTOCK">Bulk Concession Restock</option>
-                          <option value="RENT">Rink Facility Rent</option>
+                          <option value="RENT">Facility Rent</option>
                           <option value="MAINTENANCE">Equipment Maintenance</option>
                           <option value="OTHER">Other Capital Expense</option>
                         </>

@@ -42,26 +42,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F7F6F3] px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col justify-start sm:justify-center items-center bg-[#F7F6F3] px-4 pt-5 pb-8 sm:py-12 relative overflow-hidden">
       {/* Background ambient accents */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FFF4E5] rounded-full blur-3xl pointer-events-none opacity-80" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#E9D9C5] rounded-full blur-3xl pointer-events-none opacity-50" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="relative mx-auto mb-4 h-24 w-24 overflow-hidden rounded-2xl border-2 border-[#E9D9C5] shadow-lg shadow-[#29221E]/10 bg-black">
+        <div className="text-center mb-4 sm:mb-8">
+          <div className="relative mx-auto mb-2.5 sm:mb-4 h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-2xl border-2 border-[#E9D9C5] shadow-md shadow-[#29221E]/10 bg-black">
             <Image
               src="/logo.jpg"
               alt="Velox Skate"
               fill
-              sizes="96px"
+              sizes="(max-width: 640px) 80px, 96px"
               className="object-cover"
               priority
             />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#29221E]">
-            Velox Skate Rink
+            Velox Skate
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-[#8B8179]">
             Internal Operations & Counter POS System
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#29221E] mb-1.5">
-                Password / PIN
+                Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8B8179]">

@@ -11,7 +11,7 @@ export async function PATCH(
     const session = await getSession();
     if (!session || session.role !== "OWNER") {
       return NextResponse.json(
-        { error: "Unauthorized: Only the rink owner can update staff" },
+        { error: "Unauthorized: Only the owner can update staff" },
         { status: 403 }
       );
     }

@@ -505,7 +505,7 @@ export default function RentalBoardPage() {
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] sm:text-xs uppercase font-semibold text-[#8B8179]">
-                On Rink
+                Active
               </span>
               <Clock className="h-4 w-4 text-[#D96827]" />
             </div>
@@ -593,7 +593,7 @@ export default function RentalBoardPage() {
             <p className="text-base font-bold text-[#29221E]">No sessions match this view</p>
             <p className="text-xs text-[#8B8179] mt-1 max-w-sm mx-auto">
               {statusTab === "ACTIVE"
-                ? "No skaters currently on the rink. Tap 'Issue Skates' to allocate shoes."
+                ? "No skaters currently active. Tap 'Issue Skates' to allocate shoes."
                 : statusTab === "OVERDUE"
                 ? "All skaters are currently on time! No overdue sessions."
                 : "No completed sessions recorded yet."}
