@@ -193,9 +193,66 @@ export default function StockInventoryPage() {
           )}
         </div>
 
-        {/* Products Table */}
+        {/* Products Table & Cards */}
         <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+          {/* 1. Mobile Card View */}
+          <div className="md:hidden divide-y divide-[#E9D9C5]">
+            {filteredProducts.map((p) => {
+              const isLow = p.currentStock <= p.minStockAlert;
+              const profit = p.sellingPrice - p.costPrice;
+              return (
+                <div key={p._id} className="p-4 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-bold text-sm text-[#29221E]">{p.name}</h4>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5] font-semibold mt-1 inline-block">
+                        {p.category}
+                      </span>
+                    </div>
+                    <div>
+                      {isLow ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[#D94B45] font-bold bg-[#FDF0EF] px-2 py-0.5 rounded-lg border border-[#D94B45]/30">
+                          <AlertTriangle className="h-3 w-3" /> Low Stock
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[#26845B] font-semibold bg-[#EBF5F0] px-2 py-0.5 rounded-lg border border-[#26845B]/30">
+                          <CheckCircle2 className="h-3 w-3" /> In Stock
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs bg-[#F7F6F3] p-2.5 rounded-xl border border-[#E9D9C5]/60 font-mono">
+                    <div>
+                      <span className="text-[10px] text-[#8B8179] block font-sans">Selling:</span>
+                      <strong className="text-[#D96827]">{formatETB(p.sellingPrice)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#8B8179] block font-sans">Cost:</span>
+                      <span className="text-[#8B8179]">{formatETB(p.costPrice)}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-[#8B8179] block font-sans">Margin:</span>
+                      <span className="text-[#26845B] font-bold">+{formatETB(profit)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-0.5 font-mono">
+                    <span className="text-[#8B8179] font-sans">Available Units:</span>
+                    <span className={`font-bold ${isLow ? "text-[#D94B45]" : "text-[#29221E]"}`}>
+                      {p.currentStock} units{" "}
+                      <span className="text-[10px] text-[#8B8179] font-normal">
+                        (alert at {p.minStockAlert})
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 2. Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-[#F7F6F3] text-xs uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                 <tr>

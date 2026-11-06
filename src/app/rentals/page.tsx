@@ -297,7 +297,7 @@ export default function RentalBoardPage() {
         body: JSON.stringify({
           shoeId: selectedShoeId,
           durationMinutes: duration,
-          customerName: customerName.trim() || "Walk-in Skater",
+          customerName: customerName.trim() || "Skater",
           customerPhone: customerPhone.trim(),
           paymentStatus: paymentOption,
           paymentMethod: paymentOption === "PAID" ? paymentMethod : undefined,
@@ -1348,58 +1348,97 @@ export default function RentalBoardPage() {
                     </span>
                   </div>
 
-                  <div className="pt-2 border-t border-[#E9D9C5] flex justify-between text-xs text-[#8B8179]">
-                    <span>Skate Rental Fee:</span>
-                    <span className="font-mono font-bold text-[#29221E]">
-                      {formatETB(returnSession.totalRentalFee)}
-                    </span>
+                  {/* Cost breakdown */}
+                  <div className="pt-2 border-t border-[#E9D9C5] space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center text-[#8B8179]">
+                      <span>Skate Rental Fee:</span>
+                      <div className="flex items-center gap-1.5 font-mono">
+                        <span className={returnSession.paymentStatus === "PAID" ? "line-through text-[#8B8179]" : "font-bold text-[#29221E]"}>
+                          {formatETB(returnSession.totalRentalFee)}
+                        </span>
+                        {returnSession.paymentStatus === "PAID" && (
+                          <span className="text-[10px] font-bold text-[#26845B] bg-[#EBF5F0] px-1.5 py-0.5 rounded border border-[#26845B]/30">
+                            ✓ PAID ({returnSession.paymentMethod || "PAID"})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {returnSession.tabTotal && returnSession.tabTotal > 0 ? (
+                      <div className="flex justify-between items-center text-[#D96827] font-semibold">
+                        <span>Attached Concession Snacks:</span>
+                        <span className="font-mono font-bold">+{formatETB(returnSession.tabTotal)}</span>
+                      </div>
+                    ) : null}
                   </div>
 
-                  {returnSession.tabTotal && returnSession.tabTotal > 0 ? (
-                    <div className="flex justify-between text-xs text-[#D96827] font-semibold">
-                      <span>Attached Concession Snacks:</span>
-                      <span className="font-mono">+{formatETB(returnSession.tabTotal)}</span>
-                    </div>
-                  ) : null}
+                  {/* Amount Due to Collect Now */}
+                  {(() => {
+                    const isSkatePaid = returnSession.paymentStatus === "PAID";
+                    const skateDue = isSkatePaid ? 0 : returnSession.totalRentalFee;
+                    const snackDue = returnSession.tabTotal || 0;
+                    const totalDueNow = skateDue + snackDue;
 
-                  <div className="pt-2 border-t border-[#E9D9C5] flex justify-between items-baseline">
-                    <span className="text-sm font-bold text-[#29221E]">Combined Total:</span>
-                    <span className="text-xl font-black text-[#D96827] font-mono">
-                      {formatETB(returnSession.totalRentalFee + (returnSession.tabTotal || 0))}
-                    </span>
-                  </div>
-
-                  {returnSession.paymentStatus === "PAID" && (!returnSession.tabTotal || returnSession.tabTotal === 0) && (
-                    <div className="text-[11px] text-[#26845B] font-semibold text-right">
-                      ✓ Already pre-paid via {returnSession.paymentMethod}
-                    </div>
-                  )}
+                    return (
+                      <div className="pt-2.5 border-t border-[#E9D9C5]">
+                        <div className="flex justify-between items-baseline">
+                          <div>
+                            <span className="text-sm font-bold text-[#29221E] block">
+                              {totalDueNow > 0 ? "Amount Due Now:" : "Settlement Status:"}
+                            </span>
+                            {isSkatePaid && snackDue > 0 && (
+                              <span className="text-[10px] text-[#8B8179]">
+                                (Skate already pre-paid, collecting snacks only)
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-xl font-black font-mono ${totalDueNow > 0 ? "text-[#D96827]" : "text-[#26845B]"}`}>
+                            {formatETB(totalDueNow)}
+                          </span>
+                        </div>
+                        {totalDueNow === 0 && (
+                          <div className="mt-1 text-[11px] text-[#26845B] font-semibold text-right">
+                            ✓ All fees cleared. Ready for return.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                {/* Payment method selector if unpaid balance exists */}
-                {(returnSession.paymentStatus !== "PAID" || (returnSession.tabTotal && returnSession.tabTotal > 0)) && (
-                  <div>
-                    <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
-                      Select Settlement Payment Method
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setReturnPaymentMethod(method)}
-                          className={`p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
-                            returnPaymentMethod === method
-                              ? "bg-[#D96827] text-white shadow-sm"
-                              : "bg-white border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
-                          }`}
-                        >
-                          {method}
-                        </button>
-                      ))}
+                {/* Payment method selector if balance is owed */}
+                {(() => {
+                  const isSkatePaid = returnSession.paymentStatus === "PAID";
+                  const skateDue = isSkatePaid ? 0 : returnSession.totalRentalFee;
+                  const snackDue = returnSession.tabTotal || 0;
+                  const totalDueNow = skateDue + snackDue;
+
+                  if (totalDueNow <= 0) return null;
+
+                  return (
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
+                        Select Settlement Payment Method ({formatETB(totalDueNow)})
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
+                          <button
+                            key={method}
+                            type="button"
+                            onClick={() => setReturnPaymentMethod(method)}
+                            className={`p-2.5 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                              returnPaymentMethod === method
+                                ? "bg-[#D96827] text-white shadow-sm"
+                                : "bg-white border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
+                            }`}
+                          >
+                            {method}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button

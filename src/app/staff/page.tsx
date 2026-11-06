@@ -287,7 +287,57 @@ export default function StaffManagementPage() {
                   <p className="text-sm">No staff members found.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+              <div>
+                {/* 1. Mobile Cards View */}
+                <div className="md:hidden divide-y divide-[#E9D9C5]">
+                  {staffList.map((member) => (
+                    <div key={member._id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-[#FFF4E5] border border-[#E9D9C5] flex items-center justify-center font-bold text-[#D96827]">
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-bold text-[#29221E] text-sm">{member.name}</div>
+                            <div className="text-[11px] text-[#8B8179]">
+                              Joined {new Date(member.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-wide border ${
+                            member.role === "OWNER"
+                              ? "bg-[#FFF4E5] text-[#D96827] border-[#E9D9C5]"
+                              : "bg-[#F7F6F3] text-[#29221E] border-[#E9D9C5]"
+                          }`}
+                        >
+                          {member.role}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <div className="font-mono text-xs text-[#29221E] font-semibold">
+                          📞 {member.phone}
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleActive(member._id, member.isActive)}
+                          className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer ${
+                            member.isActive
+                              ? "border-[#D94B45]/30 text-[#D94B45] hover:bg-[#D94B45]/10"
+                              : "border-[#26845B]/30 text-[#26845B] hover:bg-[#26845B]/10"
+                          }`}
+                        >
+                          {member.isActive ? "Deactivate" : "Activate"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 2. Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="bg-[#F7F6F3] text-xs uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                       <tr>
@@ -358,6 +408,7 @@ export default function StaffManagementPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
               )}
             </div>
           </div>

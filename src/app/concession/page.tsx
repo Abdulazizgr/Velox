@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { formatETB, format12HourTime } from "@/lib/utils";
+import { useAlertModal } from "@/components/ModalAlertProvider";
 import { ProductCategory } from "@/models/Product";
 import {
   ShoppingBag,
@@ -20,6 +21,7 @@ import {
   History,
   Tag,
   ArrowRight,
+  Clock,
 } from "lucide-react";
 
 interface ProductItem {
@@ -57,6 +59,7 @@ interface SaleRecordItem {
 }
 
 export default function ConcessionPage() {
+  const { showAlert } = useAlertModal();
   const [activeTab, setActiveTab] = useState<"POS" | "HISTORY">("POS");
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [activeSkaters, setActiveSkaters] = useState<ActiveSkater[]>([]);
@@ -64,11 +67,13 @@ export default function ConcessionPage() {
   const [loading, setLoading] = useState(true);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [historyStatusFilter, setHistoryStatusFilter] = useState<"ALL" | "PAID" | "UNPAID">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
   const [saleType, setSaleType] = useState<"TAB" | "WALK_IN">("WALK_IN");
+  const [paymentTiming, setPaymentTiming] = useState<"PAY_NOW" | "PAY_LATER">("PAY_NOW");
   const [selectedSkaterId, setSelectedSkaterId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [submitting, setSubmitting] = useState(false);
@@ -131,7 +136,11 @@ export default function ConcessionPage() {
   // Cart operations
   const addToCart = (product: ProductItem) => {
     if (product.currentStock <= 0) {
-      alert("This item is currently out of stock!");
+      showAlert({
+        title: "Out of Stock",
+        message: `${product.name} is currently out of stock.`,
+        type: "warning",
+      });
       return;
     }
 
@@ -139,7 +148,11 @@ export default function ConcessionPage() {
       const existing = prev.find((item) => item.product._id === product._id);
       if (existing) {
         if (existing.quantity >= product.currentStock) {
-          alert(`Cannot add more. Only ${product.currentStock} units available in inventory.`);
+          showAlert({
+            title: "Stock Limit",
+            message: `Only ${product.currentStock} units available for ${product.name}.`,
+            type: "warning",
+          });
           return prev;
         }
         return prev.map((item) =>
@@ -157,7 +170,11 @@ export default function ConcessionPage() {
           if (item.product._id === productId) {
             const newQty = item.quantity + delta;
             if (newQty > item.product.currentStock) {
-              alert(`Maximum available stock is ${item.product.currentStock}`);
+              showAlert({
+                title: "Stock Limit",
+                message: `Maximum available inventory is ${item.product.currentStock} units.`,
+                type: "warning",
+              });
               return item;
             }
             return newQty > 0 ? { ...item, quantity: newQty } : null;
@@ -178,13 +195,36 @@ export default function ConcessionPage() {
     return cart.reduce((acc, item) => acc + item.product.sellingPrice * item.quantity, 0);
   }, [cart]);
 
+  const paidSalesCount = useMemo(
+    () => salesHistory.filter((s) => s.paymentStatus === "PAID").length,
+    [salesHistory]
+  );
+  const openTabsCount = useMemo(
+    () => salesHistory.filter((s) => s.paymentStatus === "UNPAID").length,
+    [salesHistory]
+  );
+
+  const filteredSalesHistory = useMemo(() => {
+    if (historyStatusFilter === "PAID") {
+      return salesHistory.filter((s) => s.paymentStatus === "PAID");
+    }
+    if (historyStatusFilter === "UNPAID") {
+      return salesHistory.filter((s) => s.paymentStatus === "UNPAID");
+    }
+    return salesHistory;
+  }, [salesHistory, historyStatusFilter]);
+
   // Checkout submission
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
     if (saleType === "TAB" && !selectedSkaterId) {
-      alert("Please select an active skater to charge their tab.");
+      showAlert({
+        title: "Skater Required",
+        message: "Please select an active skater shoe ID to attach this order.",
+        type: "warning",
+      });
       return;
     }
 
@@ -192,6 +232,8 @@ export default function ConcessionPage() {
 
     try {
       const selectedSkater = activeSkaters.find((s) => s._id === selectedSkaterId);
+      const isPayNow = paymentTiming === "PAY_NOW" || saleType === "WALK_IN";
+
       const res = await fetch("/api/concession/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -200,7 +242,8 @@ export default function ConcessionPage() {
           rentalSessionId: saleType === "TAB" ? selectedSkaterId : undefined,
           shoeId: saleType === "TAB" ? selectedSkater?.shoeId : undefined,
           items: cart.map((i) => ({ productId: i.product._id, quantity: i.quantity })),
-          paymentMethod: saleType === "WALK_IN" ? paymentMethod : undefined,
+          paymentStatus: isPayNow ? "PAID" : "UNPAID",
+          paymentMethod: isPayNow ? paymentMethod : undefined,
         }),
       });
 
@@ -210,10 +253,18 @@ export default function ConcessionPage() {
         clearCart();
         fetchData();
       } else {
-        alert(data.error || "Failed to process sale");
+        showAlert({
+          title: "Order Failed",
+          message: data.error || "Failed to process sale.",
+          type: "error",
+        });
       }
     } catch {
-      alert("Network error during checkout");
+      showAlert({
+        title: "Connection Error",
+        message: "Network error occurred during checkout.",
+        type: "error",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -339,16 +390,15 @@ export default function ConcessionPage() {
                   const inCart = cart.find((i) => i.product._id === product._id);
 
                   return (
-                    <button
+                    <div
                       key={product._id}
-                      onClick={() => addToCart(product)}
-                      disabled={isOutOfStock}
-                      className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all flex flex-col justify-between relative cursor-pointer select-none min-h-[125px] ${
+                      onClick={() => !isOutOfStock && addToCart(product)}
+                      className={`p-3.5 sm:p-4 rounded-2xl border text-left transition-all flex flex-col justify-between relative select-none min-h-[125px] ${
                         isOutOfStock
                           ? "bg-[#F7F6F3] border-[#E9D9C5] opacity-40 cursor-not-allowed"
                           : inCart
-                          ? "bg-[#FFF4E5]/50 border-2 border-[#D96827] shadow-sm"
-                          : "bg-white border-[#E9D9C5] hover:border-[#D96827]/60 hover:shadow-sm"
+                          ? "bg-[#FFF4E5]/50 border-2 border-[#D96827] shadow-sm cursor-pointer"
+                          : "bg-white border-[#E9D9C5] hover:border-[#D96827]/60 hover:shadow-sm cursor-pointer"
                       }`}
                     >
                       <div>
@@ -357,9 +407,30 @@ export default function ConcessionPage() {
                             {product.name}
                           </span>
                           {inCart && (
-                            <span className="shrink-0 h-5 w-5 rounded-full bg-[#D96827] text-white font-black text-[10px] flex items-center justify-center">
-                              {inCart.quantity}
-                            </span>
+                            <div
+                              className="shrink-0 flex items-center gap-1 bg-white p-0.5 rounded-full border border-[#D96827] shadow-xs"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(product._id, -1)}
+                                className="h-5 w-5 rounded-full bg-[#FDF0EF] hover:bg-[#D94B45] text-[#D94B45] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                title="Decrease or remove"
+                              >
+                                <Minus className="h-3 w-3 stroke-[2.5]" />
+                              </button>
+                              <span className="font-mono font-bold text-[11px] text-[#D96827] px-1 min-w-[16px] text-center">
+                                {inCart.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => addToCart(product)}
+                                className="h-5 w-5 rounded-full bg-[#FFF4E5] hover:bg-[#D96827] text-[#D96827] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                title="Add one more"
+                              >
+                                <Plus className="h-3 w-3 stroke-[2.5]" />
+                              </button>
+                            </div>
                           )}
                         </div>
                         <span className="text-[10px] text-[#8B8179] uppercase font-semibold">
@@ -383,7 +454,7 @@ export default function ConcessionPage() {
                           {isOutOfStock ? "Out of stock" : `${product.currentStock} left`}
                         </span>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -408,15 +479,18 @@ export default function ConcessionPage() {
                     )}
                   </div>
 
-                  {/* Billing Mode Toggle: Skater Tab vs Walk-in */}
+                  {/* Billing Mode Toggle: Skater vs Counter */}
                   <div className="mb-3">
                     <label className="block text-[11px] font-semibold text-[#8B8179] uppercase tracking-wider mb-1.5">
-                      Destination / Bill Type
+                      Destination / Customer
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => setSaleType("WALK_IN")}
+                        onClick={() => {
+                          setSaleType("WALK_IN");
+                          setPaymentTiming("PAY_NOW");
+                        }}
                         className={`p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all flex items-center justify-center gap-1.5 ${
                           saleType === "WALK_IN"
                             ? "bg-[#D96827] text-white font-bold shadow-sm"
@@ -424,7 +498,7 @@ export default function ConcessionPage() {
                         }`}
                       >
                         <User className="h-3.5 w-3.5" />
-                        <span>Walk-in</span>
+                        <span>Counter Sale</span>
                       </button>
 
                       <button
@@ -437,12 +511,12 @@ export default function ConcessionPage() {
                         }`}
                       >
                         <Footprints className="h-3.5 w-3.5" />
-                        <span>Skater&apos;s Tab</span>
+                        <span>Skater&apos;s Order</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Skater Selection for TAB sales */}
+                  {/* Skater Selection for Skater Orders */}
                   {saleType === "TAB" && (
                     <div className="mb-3 p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-xs">
                       <label className="block text-[10px] font-bold text-[#D96827] uppercase mb-1">
@@ -450,7 +524,7 @@ export default function ConcessionPage() {
                       </label>
                       {activeSkaters.length === 0 ? (
                         <p className="text-[#8B8179] text-xs">
-                          No skaters currently active. Switch to Walk-in to sell.
+                          No skaters currently active. Switch to Counter Sale to sell.
                         </p>
                       ) : (
                         <select
@@ -458,16 +532,63 @@ export default function ConcessionPage() {
                           onChange={(e) => setSelectedSkaterId(e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                         >
-                          {activeSkaters.map((s) => (
-                            <option key={s._id} value={s._id}>
-                              Shoe {s.shoeId} (Size #{s.shoeSize}) — {s.customerName}
-                            </option>
-                          ))}
+                          {activeSkaters.map((s) => {
+                            const hasRealName =
+                              s.customerName &&
+                              !s.customerName.toLowerCase().includes("walk-in") &&
+                              s.customerName.trim().length > 0;
+                            const label = hasRealName
+                              ? `Shoe ${s.shoeId} (Size #${s.shoeSize}) — ${s.customerName}`
+                              : `Shoe ${s.shoeId} (Size #${s.shoeSize})`;
+
+                            return (
+                              <option key={s._id} value={s._id}>
+                                {label}
+                              </option>
+                            );
+                          })}
                         </select>
                       )}
-                      <p className="text-[10px] text-[#8B8179] mt-1 italic">
-                        *Will be paid when customer returns their shoes at checkout.
-                      </p>
+                    </div>
+                  )}
+
+                  {/* Payment Timing: Pay Now vs Pay Later (Tab) */}
+                  {saleType === "TAB" && (
+                    <div className="mb-3">
+                      <label className="block text-[10px] font-semibold text-[#8B8179] uppercase mb-1">
+                        Payment Timing
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentTiming("PAY_NOW")}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                            paymentTiming === "PAY_NOW"
+                              ? "bg-[#26845B] text-white shadow-sm"
+                              : "bg-[#F7F6F3] border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
+                          }`}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Pay Now</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentTiming("PAY_LATER")}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                            paymentTiming === "PAY_LATER"
+                              ? "bg-[#D96827] text-white shadow-sm"
+                              : "bg-[#F7F6F3] border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
+                          }`}
+                        >
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>Add to Tab</span>
+                        </button>
+                      </div>
+                      {paymentTiming === "PAY_LATER" && (
+                        <p className="text-[10px] text-[#8B8179] mt-1.5 italic">
+                          *Will be added to skater&apos;s tab and collected upon returning shoes.
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -537,8 +658,8 @@ export default function ConcessionPage() {
                     </span>
                   </div>
 
-                  {/* Payment method selector for Walk-in */}
-                  {saleType === "WALK_IN" && cart.length > 0 && (
+                  {/* Payment method selector when paying now */}
+                  {(saleType === "WALK_IN" || paymentTiming === "PAY_NOW") && cart.length > 0 && (
                     <div>
                       <label className="block text-[10px] font-semibold text-[#8B8179] uppercase mb-1">
                         Settlement Method
@@ -571,9 +692,9 @@ export default function ConcessionPage() {
                   >
                     {submitting
                       ? "Recording..."
-                      : saleType === "TAB"
-                      ? `Charge to Tab (${formatETB(totalAmount)})`
-                      : `Settle Walk-in (${formatETB(totalAmount)})`}
+                      : saleType === "TAB" && paymentTiming === "PAY_LATER"
+                      ? `Add to Skater's Tab (${formatETB(totalAmount)})`
+                      : `Settle & Pay Now (${formatETB(totalAmount)})`}
                   </button>
                 </div>
               </div>
@@ -582,12 +703,48 @@ export default function ConcessionPage() {
         ) : (
           /* TAB 2: CONCESSION SALES HISTORY */
           <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-[#E9D9C5] flex items-center justify-between">
+            <div className="p-4 border-b border-[#E9D9C5] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-[#29221E]">Concession Transaction Log</h3>
                 <p className="text-xs text-[#8B8179]">All recent snack and drink orders</p>
               </div>
-              <span className="text-xs text-[#8B8179]">Total: {salesHistory.length} orders</span>
+
+              {/* Status Filter Tabs: All, Paid, Open Tabs */}
+              <div className="flex items-center gap-1.5 p-1 bg-[#F7F6F3] rounded-xl border border-[#E9D9C5] text-xs self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setHistoryStatusFilter("ALL")}
+                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    historyStatusFilter === "ALL"
+                      ? "bg-white text-[#29221E] shadow-xs"
+                      : "text-[#8B8179] hover:text-[#29221E]"
+                  }`}
+                >
+                  All ({salesHistory.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryStatusFilter("PAID")}
+                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    historyStatusFilter === "PAID"
+                      ? "bg-[#26845B] text-white shadow-xs"
+                      : "text-[#8B8179] hover:text-[#26845B]"
+                  }`}
+                >
+                  Paid ({paidSalesCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryStatusFilter("UNPAID")}
+                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                    historyStatusFilter === "UNPAID"
+                      ? "bg-[#D96827] text-white shadow-xs"
+                      : "text-[#8B8179] hover:text-[#D96827]"
+                  }`}
+                >
+                  Open Tabs ({openTabsCount})
+                </button>
+              </div>
             </div>
 
             {historyLoading ? (
@@ -595,68 +752,127 @@ export default function ConcessionPage() {
                 <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#D96827]" />
                 <p className="text-xs">Loading sales history...</p>
               </div>
-            ) : salesHistory.length === 0 ? (
+            ) : filteredSalesHistory.length === 0 ? (
               <div className="p-12 text-center text-[#8B8179]">
                 <Receipt className="h-10 w-10 mx-auto mb-2 opacity-30 text-[#D96827]" />
-                <p className="text-xs">No sales recorded yet today.</p>
+                <p className="text-xs">
+                  {historyStatusFilter === "ALL"
+                    ? "No sales recorded yet today."
+                    : `No ${historyStatusFilter === "PAID" ? "paid sales" : "open unpaid tabs"} found.`}
+                </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
-                    <tr>
-                      <th className="px-5 py-3">Time</th>
-                      <th className="px-5 py-3">Type / Destination</th>
-                      <th className="px-5 py-3">Items Sold</th>
-                      <th className="px-5 py-3">Total Amount</th>
-                      <th className="px-5 py-3">Payment</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E9D9C5]">
-                    {salesHistory.map((sale) => (
-                      <tr key={sale._id} className="hover:bg-[#FFF4E5]/30 transition-colors">
-                        <td className="px-5 py-3 text-[#8B8179] font-mono">
-                          {format12HourTime(sale.createdAt)}
-                        </td>
-                        <td className="px-5 py-3">
-                          {sale.saleType === "TAB" ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] font-semibold border border-[#E9D9C5]">
-                              <Footprints className="h-3 w-3" />
-                              Shoe {sale.shoeId || "Tab"}
+              <div>
+                {/* 1. Mobile Card View */}
+                <div className="md:hidden divide-y divide-[#E9D9C5]">
+                  {filteredSalesHistory.map((sale) => (
+                    <div key={sale._id} className="p-4 space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            {sale.saleType === "TAB" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] font-bold text-xs border border-[#E9D9C5]">
+                                <Footprints className="h-3 w-3" />
+                                Shoe {sale.shoeId || "Tab"}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F7F6F3] text-[#29221E] font-bold text-xs border border-[#E9D9C5]">
+                                <User className="h-3 w-3" />
+                                Counter Sale
+                              </span>
+                            )}
+                            <span className="text-[11px] text-[#8B8179] font-mono">
+                              {format12HourTime(sale.createdAt)}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F7F6F3] text-[#29221E] font-semibold border border-[#E9D9C5]">
-                              <User className="h-3 w-3" />
-                              Walk-in Sale
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3 text-[#29221E]">
-                          {sale.items.map((i, idx) => (
-                            <span key={idx} className="mr-2">
-                              {i.quantity}x {i.productName}
-                              {idx < sale.items.length - 1 ? "," : ""}
-                            </span>
-                          ))}
-                        </td>
-                        <td className="px-5 py-3 font-mono font-bold text-[#29221E]">
-                          {formatETB(sale.totalAmount)}
-                        </td>
-                        <td className="px-5 py-3">
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="font-mono font-black text-sm text-[#29221E]">
+                            {formatETB(sale.totalAmount)}
+                          </div>
                           {sale.paymentStatus === "PAID" ? (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30 inline-block mt-0.5">
                               PAID ({sale.paymentMethod || "CASH"})
                             </span>
                           ) : (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5] inline-block mt-0.5">
                               OPEN TAB
                             </span>
                           )}
-                        </td>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-[#8B8179] bg-[#F7F6F3] p-2 rounded-xl border border-[#E9D9C5]/60">
+                        {sale.items.map((i, idx) => (
+                          <span key={idx} className="mr-2 inline-block">
+                            <strong>{i.quantity}x</strong> {i.productName}
+                            {idx < sale.items.length - 1 ? "," : ""}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 2. Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
+                      <tr>
+                        <th className="px-5 py-3">Time</th>
+                        <th className="px-5 py-3">Destination</th>
+                        <th className="px-5 py-3">Items Sold</th>
+                        <th className="px-5 py-3">Total Amount</th>
+                        <th className="px-5 py-3">Payment</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-[#E9D9C5]">
+                      {filteredSalesHistory.map((sale) => (
+                        <tr key={sale._id} className="hover:bg-[#FFF4E5]/30 transition-colors">
+                          <td className="px-5 py-3 text-[#8B8179] font-mono">
+                            {format12HourTime(sale.createdAt)}
+                          </td>
+                          <td className="px-5 py-3">
+                            {sale.saleType === "TAB" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] font-semibold border border-[#E9D9C5]">
+                                <Footprints className="h-3 w-3" />
+                                Shoe {sale.shoeId || "Tab"}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F7F6F3] text-[#29221E] font-semibold border border-[#E9D9C5]">
+                                <User className="h-3 w-3" />
+                                Counter Sale
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 text-[#29221E]">
+                            {sale.items.map((i, idx) => (
+                              <span key={idx} className="mr-2">
+                                {i.quantity}x {i.productName}
+                                {idx < sale.items.length - 1 ? "," : ""}
+                              </span>
+                            ))}
+                          </td>
+                          <td className="px-5 py-3 font-mono font-bold text-[#29221E]">
+                            {formatETB(sale.totalAmount)}
+                          </td>
+                          <td className="px-5 py-3">
+                            {sale.paymentStatus === "PAID" ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
+                                PAID ({sale.paymentMethod || "CASH"})
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                                OPEN TAB
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
@@ -666,14 +882,26 @@ export default function ConcessionPage() {
         {completedSale && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
-              <div className="text-center pb-3 border-b border-[#E9D9C5]">
+              {/* Top Close Button (X to back) */}
+              <button
+                type="button"
+                onClick={() => setCompletedSale(null)}
+                className="absolute top-4 right-4 p-1 rounded-lg text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="text-center pb-3 border-b border-[#E9D9C5] pr-6">
                 <div className="h-10 w-10 rounded-full bg-[#EBF5F0] text-[#26845B] flex items-center justify-center mx-auto mb-2">
                   <CheckCircle2 className="h-6 w-6" />
                 </div>
                 <h3 className="text-base font-bold text-[#29221E]">Order Recorded!</h3>
                 <p className="text-xs text-[#8B8179]">
                   {completedSale.saleType === "TAB"
-                    ? `Charged to Shoe ${completedSale.shoeId}'s Tab`
+                    ? completedSale.paymentStatus === "PAID"
+                      ? `Settled for Shoe ${completedSale.shoeId} via ${completedSale.paymentMethod || "CASH"}`
+                      : `Charged to Shoe ${completedSale.shoeId}'s Tab (Pay on Return)`
                     : `Settled via ${completedSale.paymentMethod || "CASH"}`}
                 </p>
               </div>
@@ -695,18 +923,11 @@ export default function ConcessionPage() {
                 </div>
               </div>
 
-              <div className="pt-3 flex items-center justify-end gap-2">
+              <div className="pt-3">
                 <button
                   type="button"
-                  onClick={() => window.print()}
-                  className="flex items-center justify-center gap-1.5 py-2.5 px-3.5 bg-white border border-[#E9D9C5] text-[#29221E] hover:bg-[#FFF4E5] rounded-xl text-xs font-semibold cursor-pointer transition-colors shadow-xs"
-                >
-                  <Printer className="h-3.5 w-3.5 text-[#D96827]" />
-                  <span>Print Slip</span>
-                </button>
-                <button
                   onClick={() => setCompletedSale(null)}
-                  className="flex-1 py-2.5 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors shadow-sm"
+                  className="w-full py-2.5 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm"
                 >
                   Done / Next Order
                 </button>

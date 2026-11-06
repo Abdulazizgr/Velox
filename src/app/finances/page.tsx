@@ -408,56 +408,104 @@ export default function FinancesPage() {
               <p className="text-xs">No expenses recorded for this filter today.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
-                  <tr>
-                    <th className="px-5 py-3">Time</th>
-                    <th className="px-5 py-3">Expense Title</th>
-                    <th className="px-5 py-3">Category</th>
-                    <th className="px-5 py-3">Fund Source</th>
-                    <th className="px-5 py-3">Channel</th>
-                    <th className="px-5 py-3 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E9D9C5]">
-                  {filteredExpenses.map((exp) => (
-                    <tr key={exp._id} className="hover:bg-[#FFF4E5]/20 transition-colors">
-                      <td className="px-5 py-3 text-[#8B8179] font-mono">
-                        {format12HourTime(exp.date)}
-                      </td>
-                      <td className="px-5 py-3 font-bold text-[#29221E]">
-                        {exp.title}
-                        {exp.notes && (
-                          <span className="block text-[11px] text-[#8B8179] font-normal">
-                            {exp.notes}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3">
-                        <span className="px-2 py-0.5 rounded bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5] font-mono text-[10px]">
-                          {exp.category}
+            <div>
+              {/* 1. Mobile Cards View */}
+              <div className="md:hidden divide-y divide-[#E9D9C5]">
+                {filteredExpenses.map((exp) => (
+                  <div key={exp._id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-[#29221E]">{exp.title}</h4>
+                        <div className="text-[11px] text-[#8B8179] font-mono mt-0.5">
+                          {format12HourTime(exp.date)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-black text-sm text-[#D94B45]">
+                          -{formatETB(exp.amount)}
                         </span>
-                      </td>
-                      <td className="px-5 py-3">
-                        {exp.fundSource === "DAILY_CASH" ? (
-                          <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
-                            Daily Cash Drawer
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                            General Capital Reserve
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-3 text-[#29221E] font-bold">{exp.paymentMethod}</td>
-                      <td className="px-5 py-3 text-right font-mono font-black text-[#D94B45] text-sm">
-                        -{formatETB(exp.amount)}
-                      </td>
+                      </div>
+                    </div>
+
+                    {exp.notes && (
+                      <p className="text-xs text-[#8B8179] bg-[#F7F6F3] p-2 rounded-xl border border-[#E9D9C5]/60">
+                        {exp.notes}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px]">
+                      <span className="px-2 py-0.5 rounded bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5] font-mono">
+                        {exp.category}
+                      </span>
+                      {exp.fundSource === "DAILY_CASH" ? (
+                        <span className="px-2 py-0.5 rounded font-semibold bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
+                          Daily Cash Drawer
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded font-semibold bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                          General Capital Reserve
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded bg-white text-[#29221E] font-bold border border-[#E9D9C5]">
+                        {exp.paymentMethod}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 2. Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
+                    <tr>
+                      <th className="px-5 py-3">Time</th>
+                      <th className="px-5 py-3">Expense Title</th>
+                      <th className="px-5 py-3">Category</th>
+                      <th className="px-5 py-3">Fund Source</th>
+                      <th className="px-5 py-3">Channel</th>
+                      <th className="px-5 py-3 text-right">Amount</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#E9D9C5]">
+                    {filteredExpenses.map((exp) => (
+                      <tr key={exp._id} className="hover:bg-[#FFF4E5]/20 transition-colors">
+                        <td className="px-5 py-3 text-[#8B8179] font-mono">
+                          {format12HourTime(exp.date)}
+                        </td>
+                        <td className="px-5 py-3 font-bold text-[#29221E]">
+                          {exp.title}
+                          {exp.notes && (
+                            <span className="block text-[11px] text-[#8B8179] font-normal">
+                              {exp.notes}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3">
+                          <span className="px-2 py-0.5 rounded bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5] font-mono text-[10px]">
+                            {exp.category}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3">
+                          {exp.fundSource === "DAILY_CASH" ? (
+                            <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
+                              Daily Cash Drawer
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                              General Capital Reserve
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-[#29221E] font-bold">{exp.paymentMethod}</td>
+                        <td className="px-5 py-3 text-right font-mono font-black text-[#D94B45] text-sm">
+                          -{formatETB(exp.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

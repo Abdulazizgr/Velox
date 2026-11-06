@@ -608,55 +608,119 @@ export default function ReportsPage() {
                 <p className="text-xs">No historical closed registers found.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
-                    <tr>
-                      <th className="px-5 py-3">Date</th>
-                      <th className="px-5 py-3">Cash Inflow</th>
-                      <th className="px-5 py-3">Telebirr</th>
-                      <th className="px-5 py-3">CBE</th>
-                      <th className="px-5 py-3">Petty Expenses</th>
-                      <th className="px-5 py-3">Expected Cash</th>
-                      <th className="px-5 py-3">Counted Cash</th>
-                      <th className="px-5 py-3">Discrepancy</th>
-                      <th className="px-5 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E9D9C5] font-mono">
-                    {history.map((h) => (
-                      <tr key={h._id} className="hover:bg-[#FFF4E5]/20 transition-colors">
-                        <td className="px-5 py-3 font-sans font-bold text-[#29221E]">{h.date}</td>
-                        <td className="px-5 py-3 text-[#29221E]">{formatETB(h.cashInTotal)}</td>
-                        <td className="px-5 py-3 text-[#D96827]">{formatETB(h.telebirrTotal)}</td>
-                        <td className="px-5 py-3 text-[#29221E]">{formatETB(h.cbeTotal)}</td>
-                        <td className="px-5 py-3 text-[#D94B45]">-{formatETB(h.dailyExpensesTotal)}</td>
-                        <td className="px-5 py-3 text-[#29221E] font-bold">{formatETB(h.expectedClosingCash)}</td>
-                        <td className="px-5 py-3 text-[#29221E]">{formatETB(h.actualClosingCash || 0)}</td>
-                        <td className="px-5 py-3 font-bold">
+              <div>
+                {/* 1. Mobile Cards View */}
+                <div className="md:hidden divide-y divide-[#E9D9C5]">
+                  {history.map((h) => (
+                    <div key={h._id} className="p-4 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-[#29221E]">{h.date}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            h.status === "CLOSED"
+                              ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
+                              : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
+                          }`}
+                        >
+                          {h.status}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-[#F7F6F3] p-2.5 rounded-xl border border-[#E9D9C5]/60 font-mono">
+                        <div>
+                          <span className="text-[10px] text-[#8B8179] block font-sans">Cash Inflow:</span>
+                          <span className="font-bold text-[#29221E]">{formatETB(h.cashInTotal)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#8B8179] block font-sans">Telebirr:</span>
+                          <span className="font-bold text-[#D96827]">{formatETB(h.telebirrTotal)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#8B8179] block font-sans">CBE Bank:</span>
+                          <span className="font-bold text-[#29221E]">{formatETB(h.cbeTotal)}</span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-[#8B8179] block font-sans">Petty Expenses:</span>
+                          <span className="font-bold text-[#D94B45]">-{formatETB(h.dailyExpensesTotal)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <div>
+                          <span className="text-[10px] text-[#8B8179]">Counted Cash: </span>
+                          <strong className="font-mono text-[#29221E]">
+                            {formatETB(h.actualClosingCash || 0)}
+                          </strong>
+                        </div>
+                        <div>
                           {(h.discrepancy || 0) === 0 ? (
-                            <span className="text-[#26845B] font-sans">✓ Balanced</span>
+                            <span className="text-xs font-bold text-[#26845B]">✓ Balanced</span>
                           ) : (h.discrepancy || 0) > 0 ? (
-                            <span className="text-[#D96827] font-sans">+{formatETB(h.discrepancy || 0)}</span>
+                            <span className="text-xs font-bold text-[#D96827]">
+                              +{formatETB(h.discrepancy || 0)} Over
+                            </span>
                           ) : (
-                            <span className="text-[#D94B45] font-sans">{formatETB(h.discrepancy || 0)}</span>
+                            <span className="text-xs font-bold text-[#D94B45]">
+                              {formatETB(h.discrepancy || 0)} Short
+                            </span>
                           )}
-                        </td>
-                        <td className="px-5 py-3 font-sans">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              h.status === "CLOSED"
-                                ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
-                                : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
-                            }`}
-                          >
-                            {h.status}
-                          </span>
-                        </td>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 2. Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
+                      <tr>
+                        <th className="px-5 py-3">Date</th>
+                        <th className="px-5 py-3">Cash Inflow</th>
+                        <th className="px-5 py-3">Telebirr</th>
+                        <th className="px-5 py-3">CBE</th>
+                        <th className="px-5 py-3">Petty Expenses</th>
+                        <th className="px-5 py-3">Expected Cash</th>
+                        <th className="px-5 py-3">Counted Cash</th>
+                        <th className="px-5 py-3">Discrepancy</th>
+                        <th className="px-5 py-3">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-[#E9D9C5] font-mono">
+                      {history.map((h) => (
+                        <tr key={h._id} className="hover:bg-[#FFF4E5]/20 transition-colors">
+                          <td className="px-5 py-3 font-sans font-bold text-[#29221E]">{h.date}</td>
+                          <td className="px-5 py-3 text-[#29221E]">{formatETB(h.cashInTotal)}</td>
+                          <td className="px-5 py-3 text-[#D96827]">{formatETB(h.telebirrTotal)}</td>
+                          <td className="px-5 py-3 text-[#29221E]">{formatETB(h.cbeTotal)}</td>
+                          <td className="px-5 py-3 text-[#D94B45]">-{formatETB(h.dailyExpensesTotal)}</td>
+                          <td className="px-5 py-3 text-[#29221E] font-bold">{formatETB(h.expectedClosingCash)}</td>
+                          <td className="px-5 py-3 text-[#29221E]">{formatETB(h.actualClosingCash || 0)}</td>
+                          <td className="px-5 py-3 font-bold">
+                            {(h.discrepancy || 0) === 0 ? (
+                              <span className="text-[#26845B] font-sans">✓ Balanced</span>
+                            ) : (h.discrepancy || 0) > 0 ? (
+                              <span className="text-[#D96827] font-sans">+{formatETB(h.discrepancy || 0)}</span>
+                            ) : (
+                              <span className="text-[#D94B45] font-sans">{formatETB(h.discrepancy || 0)}</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3 font-sans">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                h.status === "CLOSED"
+                                  ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
+                                  : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
+                              }`}
+                            >
+                              {h.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

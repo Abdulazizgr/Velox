@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       shoeId,
-      customerName = "Walk-in Skater",
+      customerName = "Skater",
       customerPhone = "",
       durationMinutes, // 30 or 60
       paymentStatus = "UNPAID", // "PAID" | "UNPAID"
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     const rental = await RentalSession.create({
       shoeId: shoe.shoeId,
       shoeSize: shoe.size,
-      customerName: customerName.trim() || "Walk-in Skater",
+      customerName: customerName.trim() || "Skater",
       customerPhone: customerPhone.trim(),
       baseDurationMinutes: baseDuration,
       gracePeriodMinutes,

@@ -40,11 +40,13 @@ export async function POST(
     // 2. Mark session completed and settled
     session.status = "COMPLETED";
     session.actualReturnTime = new Date();
-    session.paymentStatus = "PAID";
-    session.paymentMethod = paymentMethod;
+    if (session.paymentStatus !== "PAID") {
+      session.paymentStatus = "PAID";
+      session.paymentMethod = paymentMethod;
+    }
     await session.save();
 
-    // 3. Mark any attached Tab snacks as PAID
+    // 3. Mark any attached unpaid Tab snacks as PAID
     await Sale.updateMany(
       { rentalSessionId: session._id, paymentStatus: "UNPAID" },
       { $set: { paymentStatus: "PAID", paymentMethod } }

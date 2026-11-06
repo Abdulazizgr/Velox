@@ -57,7 +57,7 @@ const RentalSessionSchema = new Schema<IRentalSession>(
     },
     customerName: {
       type: String,
-      default: "Walk-in Skater",
+      default: "Skater",
     },
     customerPhone: {
       type: String,

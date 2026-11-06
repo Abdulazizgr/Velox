@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
       rentalSessionId,
       shoeId,
       items, // Array of { productId, quantity }
-      paymentMethod = "CASH", // If WALK_IN
+      paymentStatus = "PAID", // "PAID" | "UNPAID"
+      paymentMethod = "CASH", // If PAID
     } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -89,24 +90,29 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Create Sale record
+    const isPaid = paymentStatus === "PAID" || saleType === "WALK_IN";
+
     const sale = await Sale.create({
-      rentalSessionId: saleType === "TAB" ? activeRental?._id : undefined,
-      shoeId: saleType === "TAB" ? activeRental?.shoeId || shoeId : undefined,
-      saleType: saleType === "TAB" ? "TAB" : "WALK_IN",
+      rentalSessionId: activeRental?._id,
+      shoeId: activeRental?.shoeId || shoeId,
+      saleType: activeRental ? "TAB" : "WALK_IN",
       items: saleItems,
       totalAmount: calculatedTotal,
-      paymentStatus: saleType === "TAB" ? "UNPAID" : "PAID",
-      paymentMethod: saleType === "WALK_IN" ? paymentMethod : undefined,
+      paymentStatus: isPaid ? "PAID" : "UNPAID",
+      paymentMethod: isPaid ? paymentMethod : undefined,
       registeredByStaffId: sessionUser.userId,
     });
+
+    const successMessage = isPaid
+      ? activeRental
+        ? `Order settled for Shoe ${activeRental.shoeId} (${calculatedTotal} ETB via ${paymentMethod})`
+        : `Sale settled for ${calculatedTotal} ETB via ${paymentMethod}`
+      : `Items charged to Shoe ${activeRental?.shoeId}'s tab (+${calculatedTotal} ETB to collect on return)`;
 
     return NextResponse.json(
       {
         success: true,
-        message:
-          saleType === "TAB"
-            ? `Items charged to Shoe ${activeRental?.shoeId}'s tab (+${calculatedTotal} ETB)`
-            : `Walk-in sale settled for ${calculatedTotal} ETB via ${paymentMethod}`,
+        message: successMessage,
         sale,
       },
       { status: 201 }
