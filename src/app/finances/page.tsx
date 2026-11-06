@@ -1,0 +1,691 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { formatETB } from "@/lib/utils";
+import { ExpenseCategory, ExpenseFundSource } from "@/models/Expense";
+import {
+  Wallet,
+  Plus,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Building2,
+  DollarSign,
+  Coffee,
+  Truck,
+  Package,
+  Footprints,
+  FileText,
+  AlertCircle,
+  CheckCircle2,
+  X,
+  CreditCard,
+  Layers,
+  Banknote,
+  Smartphone,
+  Landmark,
+} from "lucide-react";
+
+interface FinanceData {
+  capital: {
+    totalCapital: number;
+    remainingBalance: number;
+    lastUpdated: string;
+  };
+  today: {
+    date: string;
+    rentalRevenue: { cash: number; telebirr: number; cbe: number; total: number };
+    concessionRevenue: { cash: number; telebirr: number; cbe: number; total: number };
+    grossTotal: { cash: number; telebirr: number; cbe: number; total: number };
+    dailyPettyCashExpenses: number;
+    capitalExpenses: number;
+    netDailyCashInDrawer: number;
+  };
+  expenses: {
+    _id: string;
+    title: string;
+    amount: number;
+    category: ExpenseCategory;
+    fundSource: ExpenseFundSource;
+    paymentMethod: "CASH" | "TELEBIRR" | "CBE";
+    notes?: string;
+    date: string;
+  }[];
+}
+
+export default function FinancesPage() {
+  const [data, setData] = useState<FinanceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [expenseFilter, setExpenseFilter] = useState<"ALL" | "DAILY_CASH" | "CAPITAL">("ALL");
+
+  // Record Expense Modal
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [fundSource, setFundSource] = useState<ExpenseFundSource>("DAILY_CASH");
+  const [category, setCategory] = useState<ExpenseCategory>("LUNCH");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Capital Top-up Modal
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupLoading, setTopupLoading] = useState(false);
+
+  const fetchFinances = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/finances");
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFinances();
+  }, []);
+
+  const handleRecordExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !amount) return;
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/finances/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          amount: Number(amount),
+          category,
+          fundSource,
+          paymentMethod,
+          notes,
+        }),
+      });
+
+      const resJson = await res.json();
+      if (res.ok) {
+        setShowExpenseModal(false);
+        setTitle("");
+        setAmount("");
+        setNotes("");
+        fetchFinances();
+      } else {
+        alert(resJson.error || "Failed to record expense");
+      }
+    } catch {
+      alert("Network error recording expense");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleTopupCapital = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!topupAmount || Number(topupAmount) <= 0) return;
+
+    setTopupLoading(true);
+    try {
+      const res = await fetch("/api/finances/capital", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: Number(topupAmount) }),
+      });
+
+      if (res.ok) {
+        setShowTopupModal(false);
+        setTopupAmount("");
+        fetchFinances();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to top up capital");
+      }
+    } catch {
+      alert("Error adding capital");
+    } finally {
+      setTopupLoading(false);
+    }
+  };
+
+  // Filtered expenses list
+  const filteredExpenses = (data?.expenses || []).filter((e) => {
+    if (expenseFilter === "ALL") return true;
+    return e.fundSource === expenseFilter;
+  });
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+          <div>
+            <div className="flex items-center gap-2">
+              <Wallet className="h-6 w-6 text-emerald-400" />
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                Finances & Cash Accounting
+              </h1>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Phase 4
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">
+              Strict two-tier separation: Daily Operating Cash (lunch, transport) vs General Capital (shoes, restock, rent).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={fetchFinances}
+              disabled={loading}
+              className="p-2 sm:px-3 sm:py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
+            <button
+              onClick={() => setShowExpenseModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 rounded-xl transition-all shadow-lg shadow-emerald-600/30 cursor-pointer"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Record Expense</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 1. TOP METRICS: TWO-TIER ACCOUNTING CARDS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: General Capital Reserve */}
+          <div className="p-5 rounded-2xl bg-zinc-900/90 border border-amber-500/30 shadow-lg relative overflow-hidden">
+            <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <span className="text-xs uppercase font-semibold text-amber-300">
+                General Capital Reserve
+              </span>
+              <Building2 className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-amber-300 font-mono">
+              {formatETB(data?.capital.remainingBalance || 0)}
+            </div>
+            <div className="mt-2 text-[11px] text-zinc-400 flex items-center justify-between">
+              <span>Total Capital: {formatETB(data?.capital.totalCapital || 0)}</span>
+              <button
+                onClick={() => setShowTopupModal(true)}
+                className="text-amber-400 font-bold hover:underline cursor-pointer"
+              >
+                + Top Up
+              </button>
+            </div>
+          </div>
+
+          {/* Card 2: Today's Gross Inflow */}
+          <div className="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-sm">
+            <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <span className="text-xs uppercase font-semibold text-zinc-400">
+                Today&apos;s Gross Revenue
+              </span>
+              <TrendingUp className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-emerald-400 font-mono">
+              {formatETB(data?.today.grossTotal.total || 0)}
+            </div>
+            <div className="mt-2 text-[11px] text-zinc-400 flex items-center justify-between">
+              <span>Rentals: {formatETB(data?.today.rentalRevenue.total || 0)}</span>
+              <span>Snacks: {formatETB(data?.today.concessionRevenue.total || 0)}</span>
+            </div>
+          </div>
+
+          {/* Card 3: Daily Petty Cash Expenses (OpEx) */}
+          <div className="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-sm">
+            <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <span className="text-xs uppercase font-semibold text-zinc-400">
+                Daily Petty Expenses
+              </span>
+              <TrendingDown className="h-5 w-5 text-rose-400" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-rose-400 font-mono">
+              -{formatETB(data?.today.dailyPettyCashExpenses || 0)}
+            </div>
+            <div className="mt-2 text-[11px] text-zinc-400">
+              Staff lunch, transport, supplies
+            </div>
+          </div>
+
+          {/* Card 4: Net Daily Cash in Drawer */}
+          <div className="p-5 rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-950 border border-emerald-500/40 shadow-lg">
+            <div className="flex items-center justify-between text-zinc-400 mb-2">
+              <span className="text-xs uppercase font-semibold text-emerald-400">
+                Net Cash in Drawer
+              </span>
+              <Banknote className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-white font-mono">
+              {formatETB(data?.today.netDailyCashInDrawer || 0)}
+            </div>
+            <div className="mt-2 text-[11px] text-zinc-400">
+              Gross Cash ({formatETB(data?.today.grossTotal.cash || 0)}) minus petty cash out
+            </div>
+          </div>
+        </div>
+
+        {/* 2. REVENUE INFLOWS BY PAYMENT CHANNEL */}
+        <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 shadow-xl">
+          <h2 className="text-sm font-bold text-zinc-200 mb-3 uppercase tracking-wider">
+            Today&apos;s Revenue by Payment Channel
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Cash Channel */}
+            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-zinc-400 font-semibold uppercase flex items-center gap-1.5 mb-1">
+                  <Banknote className="h-4 w-4 text-emerald-400" />
+                  Physical Cash
+                </span>
+                <div className="text-xl font-black text-white font-mono">
+                  {formatETB(data?.today.grossTotal.cash || 0)}
+                </div>
+              </div>
+              <span className="text-[10px] text-zinc-500">Drawer notes</span>
+            </div>
+
+            {/* Telebirr Channel */}
+            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-zinc-400 font-semibold uppercase flex items-center gap-1.5 mb-1">
+                  <Smartphone className="h-4 w-4 text-cyan-400" />
+                  Telebirr
+                </span>
+                <div className="text-xl font-black text-cyan-400 font-mono">
+                  {formatETB(data?.today.grossTotal.telebirr || 0)}
+                </div>
+              </div>
+              <span className="text-[10px] text-zinc-500">Mobile transfer</span>
+            </div>
+
+            {/* CBE Channel */}
+            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-zinc-400 font-semibold uppercase flex items-center gap-1.5 mb-1">
+                  <Landmark className="h-4 w-4 text-purple-400" />
+                  Commercial Bank (CBE)
+                </span>
+                <div className="text-xl font-black text-purple-400 font-mono">
+                  {formatETB(data?.today.grossTotal.cbe || 0)}
+                </div>
+              </div>
+              <span className="text-[10px] text-zinc-500">Direct deposit</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. EXPENSES AUDIT LOG & FILTER */}
+        <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="p-4 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-white">Expenses Ledger</h3>
+              <p className="text-xs text-zinc-400">
+                Audited breakdown of daily petty operating costs and capital fund withdrawals.
+              </p>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1.5 bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
+              <button
+                onClick={() => setExpenseFilter("ALL")}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  expenseFilter === "ALL"
+                    ? "bg-zinc-800 text-white font-bold"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                All ({data?.expenses.length || 0})
+              </button>
+              <button
+                onClick={() => setExpenseFilter("DAILY_CASH")}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  expenseFilter === "DAILY_CASH"
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Daily Cash (OpEx)
+              </button>
+              <button
+                onClick={() => setExpenseFilter("CAPITAL")}
+                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                  expenseFilter === "CAPITAL"
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                Capital (CapEx)
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-12 text-center text-zinc-500">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+              <p className="text-xs">Loading financial ledgers...</p>
+            </div>
+          ) : filteredExpenses.length === 0 ? (
+            <div className="p-12 text-center text-zinc-500">
+              <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <p className="text-xs">No expenses recorded for this filter today.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-zinc-950/60 uppercase tracking-wider text-zinc-400 border-b border-zinc-800">
+                  <tr>
+                    <th className="px-5 py-3">Time</th>
+                    <th className="px-5 py-3">Expense Title</th>
+                    <th className="px-5 py-3">Category</th>
+                    <th className="px-5 py-3">Fund Source</th>
+                    <th className="px-5 py-3">Channel</th>
+                    <th className="px-5 py-3 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/80">
+                  {filteredExpenses.map((exp) => (
+                    <tr key={exp._id} className="hover:bg-zinc-800/30 transition-colors">
+                      <td className="px-5 py-3 text-zinc-400 font-mono">
+                        {new Date(exp.date).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="px-5 py-3 font-semibold text-white">
+                        {exp.title}
+                        {exp.notes && (
+                          <span className="block text-[11px] text-zinc-500 font-normal">
+                            {exp.notes}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono text-[10px]">
+                          {exp.category}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        {exp.fundSource === "DAILY_CASH" ? (
+                          <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Daily Cash Drawer
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                            General Capital Reserve
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-zinc-300 font-bold">{exp.paymentMethod}</td>
+                      <td className="px-5 py-3 text-right font-mono font-bold text-rose-400 text-sm">
+                        -{formatETB(exp.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* MODAL 1: RECORD EXPENSE */}
+        {showExpenseModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-rose-500/10 text-rose-400">
+                    <TrendingDown className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Record Business Expense</h3>
+                    <p className="text-xs text-zinc-400">Classify fund source & payment channel</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowExpenseModal(false)}
+                  className="p-1 text-zinc-400 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleRecordExpense} className="mt-4 space-y-4">
+                {/* 1. FUND SOURCE SELECTOR (Two-Tier) */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1.5">
+                    1. Funding Source (Strict Segregation)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFundSource("DAILY_CASH");
+                        setCategory("LUNCH");
+                      }}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        fundSource === "DAILY_CASH"
+                          ? "bg-emerald-500/20 border-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <div className="font-bold text-xs">Daily Cash Register</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">
+                        Lunch, transport, petty supplies
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFundSource("CAPITAL");
+                        setCategory("SKATE_SHOES");
+                      }}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        fundSource === "CAPITAL"
+                          ? "bg-amber-500/20 border-amber-500 text-white shadow-md shadow-amber-500/20"
+                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <div className="font-bold text-xs text-amber-300">General Capital Reserve</div>
+                      <div className="text-[10px] text-zinc-400 mt-0.5">
+                        Buying shoes, bulk restock, rent
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Expense Title */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    Expense Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={
+                      fundSource === "DAILY_CASH"
+                        ? "e.g. Staff Lunch, Taxi Transport"
+                        : "e.g. 10x New Skate Shoes, Shop Rent Deposit"
+                    }
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+
+                {/* 3. Amount & Category */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1">
+                      Amount (ETB)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs sm:text-sm font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-zinc-300 mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
+                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs sm:text-sm focus:outline-none"
+                    >
+                      {fundSource === "DAILY_CASH" ? (
+                        <>
+                          <option value="LUNCH">Staff Lunch</option>
+                          <option value="TRANSPORT">Transportation</option>
+                          <option value="SUPPLIES">Daily Cleaning Supplies</option>
+                          <option value="OTHER">Other Operational</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="SKATE_SHOES">Purchasing Skate Shoes</option>
+                          <option value="SNACK_RESTOCK">Bulk Concession Restock</option>
+                          <option value="RENT">Rink Facility Rent</option>
+                          <option value="MAINTENANCE">Equipment Maintenance</option>
+                          <option value="OTHER">Other Capital Expense</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 4. Payment Method */}
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1">
+                    Paid Via Channel
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setPaymentMethod(method)}
+                        className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          paymentMethod === method
+                            ? "bg-zinc-800 text-white border-zinc-600 shadow-sm"
+                            : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        {method}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5. Notes */}
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    Notes (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Receipt #1234, driver name"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowExpenseModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 cursor-pointer"
+                  >
+                    {submitting ? "Saving..." : "Record Expense"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 2: CAPITAL TOP-UP */}
+        {showTopupModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-amber-400" />
+                  <h3 className="text-base font-bold text-white">Top Up Capital Fund</h3>
+                </div>
+                <button
+                  onClick={() => setShowTopupModal(false)}
+                  className="p-1 text-zinc-400 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleTopupCapital} className="mt-4 space-y-3.5">
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Inject additional capital reserves for purchasing new skates, paying facility rent, or large stock replenishments.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                    Deposit Amount (ETB)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    placeholder="e.g. 20000"
+                    value={topupAmount}
+                    onChange={(e) => setTopupAmount(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm font-mono focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTopupModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={topupLoading}
+                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-600/30 cursor-pointer"
+                  >
+                    {topupLoading ? "Saving..." : "Deposit Capital"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
