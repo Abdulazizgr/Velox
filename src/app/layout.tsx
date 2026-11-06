@@ -4,7 +4,6 @@ import "./globals.css";
 import { getSession } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { PWARegister } from "@/components/PWARegister";
-import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { Suspense } from "react";
 
 const geistSans = Geist({
@@ -49,7 +48,6 @@ async function ShellWrapper({ children }: { children: React.ReactNode }) {
   return (
     <AppShell user={user}>
       <PWARegister />
-      <KeyboardShortcuts />
       {children}
     </AppShell>
   );

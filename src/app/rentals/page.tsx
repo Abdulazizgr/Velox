@@ -1043,6 +1043,14 @@ export default function RentalBoardPage() {
                   )}
                 </div>
 
+                {/* Hygiene Foot Covers (Festal) Staff Reminder */}
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-xs text-[#29221E]">
+                  <Sparkles className="h-4 w-4 text-[#D96827] shrink-0" />
+                  <span>
+                    <strong className="text-[#D96827]">Hygiene Reminder:</strong> Give <strong>2 plastic foot covers (festal/lastics)</strong> to the customer with this shoe!
+                  </span>
+                </div>
+
                 <div className="pt-2">
                   <button
                     type="submit"
