@@ -83,7 +83,6 @@ export default function RentalBoardPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentOption, setPaymentOption] = useState<"UNPAID" | "PAID">("UNPAID");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
-  const [festalGiven, setFestalGiven] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Swap Modal State
@@ -198,6 +197,14 @@ export default function RentalBoardPage() {
   const shoesForSelectedSize = useMemo(() => {
     return availableShoes.filter((s) => s.size === selectedSize && s.status === "AVAILABLE");
   }, [availableShoes, selectedSize]);
+
+  // Top 3 active rented shoes for selected size returning earliest with remaining time
+  const activeSessionsForSelectedSize = useMemo(() => {
+    return sessions
+      .filter((s) => s.status === "ACTIVE" && s.shoeSize === selectedSize)
+      .sort((a, b) => new Date(a.expectedEndTime).getTime() - new Date(b.expectedEndTime).getTime())
+      .slice(0, 3);
+  }, [sessions, selectedSize]);
 
   // Set default shoe id when size changes
   useEffect(() => {
@@ -852,16 +859,6 @@ export default function RentalBoardPage() {
               </div>
 
               <form onSubmit={handleStartRental} className="mt-4 space-y-4">
-                {/* Hygiene protocol reminder */}
-                <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#29221E] text-xs flex items-start gap-2.5">
-                  <Sparkles className="h-4 w-4 text-[#D96827] shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block font-bold text-[#D96827]">Hygiene Requirement:</strong>
-                    Hand over <strong>2 disposable plastic liners (festal/lastics)</strong> with the
-                    skate shoes before the customer puts them on.
-                  </div>
-                </div>
-
                 {/* Step 1: Select Shoe Size */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
@@ -902,9 +899,79 @@ export default function RentalBoardPage() {
                     2. Choose Available Shoe Asset (Unique ID)
                   </label>
                   {shoesForSelectedSize.length === 0 ? (
-                    <div className="p-3 rounded-xl bg-[#FDF0EF] border border-[#D94B45]/30 text-[#D94B45] text-xs">
-                      ⚠️ No shoes of Size #{selectedSize} are currently available. Customer will
-                      need to wait for one to be returned.
+                    <div className="space-y-2.5">
+                      <div className="p-3 rounded-xl bg-[#FDF0EF] border border-[#D94B45]/30 text-[#D94B45] text-xs flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-[#D94B45] mt-0.5" />
+                        <div>
+                          <strong className="block font-bold">
+                            No shoes of Size #{selectedSize} are currently available.
+                          </strong>
+                          <span className="text-[11px] text-[#D94B45]/90">
+                            Customer will need to wait for one to be returned.
+                          </span>
+                        </div>
+                      </div>
+
+                      {activeSessionsForSelectedSize.length > 0 ? (
+                        <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] space-y-2">
+                          <div className="flex items-center justify-between text-xs pb-1 border-b border-[#E9D9C5]/60">
+                            <span className="font-bold text-[#29221E] flex items-center gap-1.5">
+                              <Clock className="h-3.5 w-3.5 text-[#D96827]" />
+                              Top {activeSessionsForSelectedSize.length} Returning Soonest (Size #{selectedSize}):
+                            </span>
+                            <span className="text-[10px] text-[#8B8179] font-medium">Est. Wait</span>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            {activeSessionsForSelectedSize.map((s, idx) => {
+                              const timer = getSessionTimerData(s);
+                              const dueTime = new Date(s.expectedEndTime).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              });
+
+                              return (
+                                <div
+                                  key={s._id}
+                                  className="flex items-center justify-between p-2 rounded-lg bg-white border border-[#E9D9C5] text-xs shadow-2xs"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="h-5 w-5 rounded-full bg-[#FFF4E5] text-[#D96827] font-bold text-[10px] flex items-center justify-center border border-[#E9D9C5]">
+                                      #{idx + 1}
+                                    </span>
+                                    <span className="font-mono font-bold text-[#29221E]">{s.shoeId}</span>
+                                    <span className="text-[#8B8179] text-[11px] truncate max-w-[110px]">
+                                      ({s.customerName})
+                                    </span>
+                                  </div>
+
+                                  <div className="text-right">
+                                    {timer.isOverdue ? (
+                                      <span className="text-[#D94B45] font-bold font-mono text-[11px] flex items-center gap-1">
+                                        <span className="h-2 w-2 rounded-full bg-[#D94B45] animate-ping" />
+                                        Overdue (+{timer.timeFormatted})
+                                      </span>
+                                    ) : (
+                                      <div className="text-right">
+                                        <span className="font-mono font-bold text-[#D96827] text-xs">
+                                          ~{timer.timeFormatted} left
+                                        </span>
+                                        <span className="block text-[10px] text-[#8B8179]">
+                                          (due {dueTime})
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-[11px] text-[#8B8179] text-center">
+                          No active sessions currently on track for Size #{selectedSize}.
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <select
@@ -1041,14 +1108,6 @@ export default function RentalBoardPage() {
                       ))}
                     </div>
                   )}
-                </div>
-
-                {/* Hygiene Foot Covers (Festal) Staff Reminder */}
-                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-xs text-[#29221E]">
-                  <Sparkles className="h-4 w-4 text-[#D96827] shrink-0" />
-                  <span>
-                    <strong className="text-[#D96827]">Hygiene Reminder:</strong> Give <strong>2 plastic foot covers (festal/lastics)</strong> to the customer with this shoe!
-                  </span>
                 </div>
 
                 <div className="pt-2">

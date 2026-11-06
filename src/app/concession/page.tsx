@@ -700,8 +700,16 @@ export default function ConcessionPage() {
 
               <div className="pt-3 flex items-center justify-end gap-2">
                 <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center justify-center gap-1.5 py-2.5 px-3.5 bg-white border border-[#E9D9C5] text-[#29221E] hover:bg-[#FFF4E5] rounded-xl text-xs font-semibold cursor-pointer transition-colors shadow-xs"
+                >
+                  <Printer className="h-3.5 w-3.5 text-[#D96827]" />
+                  <span>Print Slip</span>
+                </button>
+                <button
                   onClick={() => setCompletedSale(null)}
-                  className="w-full py-2.5 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors shadow-sm"
+                  className="flex-1 py-2.5 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors shadow-sm"
                 >
                   Done / Next Order
                 </button>

@@ -352,9 +352,6 @@ export default async function DashboardPage() {
                 <div className="mt-1 font-black text-[#D96827]">250 ETB <span className="text-[10px] text-[#8B8179] font-normal">(300 weekend)</span></div>
               </div>
             </div>
-            <p className="text-[11px] text-[#8B8179] italic">
-              *All shoe rentals include 2 disposable plastic liners (festal).
-            </p>
           </div>
         </div>
       </div>
