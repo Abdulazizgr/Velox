@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@prisma/client':
-        specifier: ^7.10.1
-        version: 7.10.1(typescript@5.9.3)
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -45,9 +42,6 @@ importers:
       '@tailwindcss/turbopack':
         specifier: ^4
         version: 4.3.4
-      '@types/bcryptjs':
-        specifier: ^3.0.0
-        version: 3.0.0
       '@types/node':
         specifier: ^20
         version: 20.19.43
@@ -604,21 +598,6 @@ packages:
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
 
-  '@prisma/client-runtime-utils@7.10.1':
-    resolution: {integrity: sha512-AzoATVIgmO3lcZfM443+9SI7+cyLMW2+Psw4op8WQHpHvHCX//CKxv8fwhiL0yGWF8DjdQrFewxrZo5McBdB8g==}
-
-  '@prisma/client@7.10.1':
-    resolution: {integrity: sha512-5tgAbFGh//zVOC6WPNVgziOErJHYkUE+wmqCwbIyq6IrTXUYtv9y2iBFGh/Owo99Mx0+cr0j1FOrxkYBMuyhaQ==}
-    engines: {node: ^20.19 || ^22.12 || >=24.0}
-    peerDependencies:
-      prisma: '*'
-      typescript: '>=5.4.0'
-    peerDependenciesMeta:
-      prisma:
-        optional: true
-      typescript:
-        optional: true
-
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
@@ -714,10 +693,6 @@ packages:
 
   '@tailwindcss/turbopack@4.3.4':
     resolution: {integrity: sha512-zaGyyqTe+7Leowbp5HZ6SXBQ/XFbGK4sV/I5ZPwiO/bWD1j/ukJGzyKOZLj9//uD11790obelpdQHjXJRTpORA==}
-
-  '@types/bcryptjs@3.0.0':
-    resolution: {integrity: sha512-WRZOuCuaz8UcZZE4R5HXTco2goQSI2XxjGY3hbM/xDvwmqFWd4ivooImsMx65OKM6CtNKbnZ5YL+YwAwK7c1dg==}
-    deprecated: This is a stub types definition. bcryptjs provides its own type definitions, so you do not need this installed.
 
   '@types/estree@1.0.10':
     resolution: {integrity: sha512-lTyOMnOcmRBzdCv6/4zUZCrEhV0xrqQiUZBZtVcbmLHBXKLnN8q89v/wKRF/Q0HbwVsqbIG3o5HDoFl9sduM+g==}
@@ -2702,14 +2677,6 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
-  '@prisma/client-runtime-utils@7.10.1': {}
-
-  '@prisma/client@7.10.1(typescript@5.9.3)':
-    dependencies:
-      '@prisma/client-runtime-utils': 7.10.1
-    optionalDependencies:
-      typescript: 5.9.3
-
   '@rtsao/scc@1.1.0': {}
 
   '@standard-schema/spec@1.1.0': {}
@@ -2785,10 +2752,6 @@ snapshots:
       '@tailwindcss/node': 4.3.4
       '@tailwindcss/oxide': 4.3.4
       tailwindcss: 4.3.4
-
-  '@types/bcryptjs@3.0.0':
-    dependencies:
-      bcryptjs: 3.0.3
 
   '@types/estree@1.0.10': {}
 
