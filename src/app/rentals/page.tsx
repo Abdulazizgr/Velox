@@ -74,6 +74,8 @@ export default function RentalBoardPage() {
 
   // Audio trigger ref to prevent repeating sound every second
   const playedAlertsRef = useRef<Set<string>>(new Set());
+  // 30-second recurring alert timestamp ref for overdue sessions
+  const lastOverdueReminderRef = useRef<number>(0);
 
   // New Rental Modal State
   const [showNewModal, setShowNewModal] = useState(false);
@@ -100,11 +102,21 @@ export default function RentalBoardPage() {
 
   // Web Audio synthesizer chime and vibration for alerts
   const playAudioCue = (type: "start" | "due" | "overdue" | "chime") => {
+    // Mobile haptic vibration alerts (supported on Android/Chrome/PWA)
+    if (type === "overdue") {
+      triggerVibration([300, 100, 300, 100, 500]);
+    } else if (type === "due") {
+      triggerVibration([200, 100, 200]);
+    }
+
     if (!soundEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      if (ctx.state === "suspended") {
+        ctx.resume();
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
@@ -123,7 +135,6 @@ export default function RentalBoardPage() {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
         osc.start();
         osc.stop(ctx.currentTime + 0.4);
-        triggerVibration([200, 100, 200]);
       } else if (type === "overdue") {
         // Distinct pulsing alarm sound for overdue sessions
         osc.type = "sawtooth";
@@ -135,8 +146,6 @@ export default function RentalBoardPage() {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.65);
         osc.start();
         osc.stop(ctx.currentTime + 0.65);
-        // Haptic buzz pattern: 300ms vibration, 100ms pause, 300ms vibration, 100ms pause, 500ms vibration
-        triggerVibration([300, 100, 300, 100, 500]);
       } else {
         osc.frequency.setValueAtTime(880, ctx.currentTime);
         gain.gain.setValueAtTime(0.15, ctx.currentTime);
@@ -149,24 +158,64 @@ export default function RentalBoardPage() {
     }
   };
 
+  // Unlock audio autoplay on first interaction
+  useEffect(() => {
+    const unlockAudio = () => {
+      try {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          const dummy = new AudioCtx();
+          if (dummy.state === "suspended") {
+            dummy.resume();
+          }
+        }
+      } catch {}
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+    };
+    window.addEventListener("click", unlockAudio);
+    window.addEventListener("touchstart", unlockAudio);
+    return () => {
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
+    };
+  }, []);
+
   // 1-second interval to update live countdown timers & check alerts
   useEffect(() => {
     const timer = setInterval(() => {
       const currentNow = Date.now();
       setNow(currentNow);
 
-      // Check for overdue or due soon transitions
-      sessions.forEach((s) => {
-        if (s.status === "ACTIVE") {
-          const diffMs = new Date(s.expectedEndTime).getTime() - currentNow;
-          // Overdue alert
-          if (diffMs < 0 && !playedAlertsRef.current.has(`${s._id}-overdue`)) {
+      // Find all currently active sessions that are overdue
+      const activeOverdueSessions = sessions.filter(
+        (s) => s.status === "ACTIVE" && new Date(s.expectedEndTime).getTime() < currentNow
+      );
+
+      if (activeOverdueSessions.length > 0) {
+        // Check if any session just transitioned into overdue status
+        let hasNewOverdue = false;
+        activeOverdueSessions.forEach((s) => {
+          if (!playedAlertsRef.current.has(`${s._id}-overdue`)) {
             playedAlertsRef.current.add(`${s._id}-overdue`);
-            playAudioCue("overdue");
+            hasNewOverdue = true;
           }
+        });
+
+        // Trigger alarm + vibration immediately on first transition, OR every 30 seconds while overdue
+        const timeSinceLastAlert = currentNow - lastOverdueReminderRef.current;
+        if (hasNewOverdue || timeSinceLastAlert >= 30_000) {
+          lastOverdueReminderRef.current = currentNow;
+          playAudioCue("overdue");
         }
-      });
+      } else {
+        // Reset reminder timestamp when there are no overdue sessions
+        lastOverdueReminderRef.current = 0;
+      }
     }, 1000);
+
     return () => clearInterval(timer);
   }, [sessions, soundEnabled]);
 
