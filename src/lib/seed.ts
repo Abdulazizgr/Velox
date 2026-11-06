@@ -11,15 +11,15 @@ export async function seedDatabase() {
   // 1. Seed Owner Account if not exists
   const existingOwner = await User.findOne({ role: "OWNER" });
   if (!existingOwner) {
-    const ownerHash = await hashPassword("admin");
+    const ownerHash = await hashPassword("1234");
     const owner = await User.create({
-      name: "Rink Owner",
+      name: "Admin Owner",
       phone: "0911000000",
       passwordHash: ownerHash,
       role: "OWNER",
       isActive: true,
     });
-    console.log(`✅ Created default Owner account: Phone: 0911000000 / Password: admin (${owner.name})`);
+    console.log(`✅ Created default Owner account: Phone: 0911000000 / Password: 1234 (${owner.name})`);
   } else {
     console.log(`ℹ️ Owner already exists: ${existingOwner.name} (${existingOwner.phone})`);
   }
@@ -27,15 +27,15 @@ export async function seedDatabase() {
   // 2. Seed Default Staff Member
   const existingStaff = await User.findOne({ phone: "0922000000" });
   if (!existingStaff) {
-    const staffHash = await hashPassword("staff");
+    const staffHash = await hashPassword("1234");
     await User.create({
-      name: "Dawit Operator",
+      name: "Staff Operator",
       phone: "0922000000",
       passwordHash: staffHash,
       role: "STAFF",
       isActive: true,
     });
-    console.log(`✅ Created default Staff account: Phone: 0922000000 / Password: staff`);
+    console.log(`✅ Created default Staff account: Phone: 0922000000 / Password: 1234`);
   }
 
   // 3. Seed Skate Shoes
