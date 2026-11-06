@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { formatETB } from "@/lib/utils";
 import {
   FileText,
@@ -159,6 +160,21 @@ export default function ReportsPage() {
     }
   };
 
+  const handleReopenShift = async () => {
+    const confirmed = confirm("Re-open today's shift register?");
+    if (!confirmed) return;
+    try {
+      const res = await fetch("/api/register/open", { method: "POST" });
+      if (res.ok) {
+        fetchTodayRegister();
+      } else {
+        alert("Failed to re-open shift");
+      }
+    } catch {
+      alert("Network error");
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -168,21 +184,54 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+        {/* Print-Only Official Receipt Header */}
+        <div className="hidden print:flex items-center justify-between pb-4 mb-4 border-b-2 border-zinc-700 text-zinc-900">
+          <div className="flex items-center gap-3">
+            <div className="relative h-14 w-14 rounded-xl overflow-hidden border border-zinc-700 bg-black shrink-0">
+              <Image
+                src="/logo.jpg"
+                alt="Velox Skate Logo"
+                fill
+                sizes="56px"
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-white">VELOX SKATE RINK</h1>
+              <p className="text-xs text-zinc-400">Daily Shift Closing & Financial Audit Receipt</p>
+            </div>
+          </div>
+          <div className="text-right text-xs text-zinc-300 font-mono">
+            <p className="font-bold">Shift Date: {data?.summary.date}</p>
+            <p className="text-zinc-400 font-sans text-[11px]">Printed: {new Date().toLocaleString()}</p>
+          </div>
+        </div>
+
         {/* Top Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800 print:hidden">
-          <div>
-            <div className="flex items-center gap-2">
-              <FileText className="h-6 w-6 text-emerald-400" />
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                Daily Closing & Audit Reports
-              </h1>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Phase 5
-              </span>
+          <div className="flex items-center gap-3.5">
+            <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-amber-500/30 shadow-md shadow-amber-500/10 shrink-0 bg-black">
+              <Image
+                src="/logo.jpg"
+                alt="Velox Skate"
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
             </div>
-            <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">
-              End-of-day register balancing, physical cash drawer counting, and multi-channel audit reports.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                  Daily Closing & Audit Reports
+                </h1>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                  Phase 5
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">
+                End-of-day register balancing, physical cash drawer counting, and multi-channel audit reports.
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

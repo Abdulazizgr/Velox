@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   title: "Velox — Skate Rink POS & Operations",
   description: "Mobile-first POS, live rental timers, equipment asset inventory, and concession management.",
   applicationName: "Velox POS",
+  icons: {
+    icon: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

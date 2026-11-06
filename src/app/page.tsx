@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import { Shoe, Product, CapitalFund, DailyRegister, User } from "@/models";
@@ -50,29 +51,41 @@ export default async function DashboardPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-zinc-900 via-zinc-900 to-zinc-900/60 border border-zinc-800 shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-80 bg-emerald-500/5 blur-2xl pointer-events-none" />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Terminal Online
-            </span>
-            <span
-              className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
-                isWeekend
-                  ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
-                  : "bg-blue-500/10 text-blue-300 border-blue-500/30"
-              }`}
-            >
-              {isWeekend ? "Weekend Pricing Active (200 / 300 ETB)" : "Weekday Pricing Active (150 / 250 ETB)"}
-            </span>
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-2xl overflow-hidden border border-amber-500/30 shadow-xl shadow-amber-500/10 shrink-0 bg-black">
+            <Image
+              src="/logo.jpg"
+              alt="Velox Skate Logo"
+              fill
+              sizes="80px"
+              className="object-cover"
+              priority
+            />
           </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Terminal Online
+              </span>
+              <span
+                className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                  isWeekend
+                    ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                    : "bg-blue-500/10 text-blue-300 border-blue-500/30"
+                }`}
+              >
+                {isWeekend ? "Weekend Pricing Active (200 / 300 ETB)" : "Weekday Pricing Active (150 / 250 ETB)"}
+              </span>
+            </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            Welcome back, {session.name}
-          </h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            Logged in as <strong className="text-zinc-200">{session.role}</strong> ({session.phone}) • Ready for counter operations
-          </p>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Welcome back, {session.name}
+            </h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              Logged in as <strong className="text-zinc-200">{session.role}</strong> ({session.phone}) • Ready for counter operations
+            </p>
+          </div>
         </div>
 
         <div className="relative z-10 flex items-center gap-3">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { SessionUser } from "@/lib/auth";
 import {
@@ -75,8 +76,15 @@ export function AppShell({ user, children }: AppShellProps) {
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50 bg-zinc-950 border-r border-zinc-800">
         {/* Brand */}
         <div className="h-16 flex items-center gap-3 px-6 border-b border-zinc-800/80">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 to-emerald-500 text-zinc-950 font-black shadow-md shadow-emerald-500/20">
-            ⚡
+          <div className="relative h-10 w-10 rounded-xl overflow-hidden border border-amber-500/30 shadow-md shadow-amber-500/10 shrink-0 bg-black">
+            <Image
+              src="/logo.jpg"
+              alt="Velox Skate"
+              fill
+              sizes="40px"
+              className="object-cover"
+              priority
+            />
           </div>
           <div>
             <div className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
@@ -152,9 +160,15 @@ export function AppShell({ user, children }: AppShellProps) {
 
       {/* 2. MOBILE TOP HEADER (Hidden on desktop) */}
       <header className="md:hidden sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-amber-500 to-emerald-500 text-zinc-950 font-black text-xs">
-            ⚡
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-amber-500/30 shadow-sm shrink-0 bg-black">
+            <Image
+              src="/logo.jpg"
+              alt="Velox Skate"
+              fill
+              sizes="32px"
+              className="object-cover"
+            />
           </div>
           <span className="text-sm font-bold tracking-tight text-white">VELOX</span>
           <span
@@ -230,9 +244,15 @@ export function AppShell({ user, children }: AppShellProps) {
           <div className="relative ml-auto w-72 max-w-full bg-zinc-900 border-l border-zinc-800 h-full p-5 flex flex-col justify-between shadow-2xl z-10">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
-                    ⚡
+                <div className="flex items-center gap-3">
+                  <div className="relative h-9 w-9 rounded-xl overflow-hidden border border-amber-500/30 shadow-sm shrink-0 bg-black">
+                    <Image
+                      src="/logo.jpg"
+                      alt="Velox Skate"
+                      fill
+                      sizes="36px"
+                      className="object-cover"
+                    />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white">Velox POS</h3>

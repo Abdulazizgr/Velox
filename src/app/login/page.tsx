@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Lock, Phone, ArrowRight, ShieldCheck, AlertCircle } from "lucide-react";
 
@@ -54,8 +55,15 @@ export default function LoginPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Brand header */}
         <div className="text-center mb-8">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 to-emerald-500 text-zinc-950 font-black text-2xl shadow-xl shadow-emerald-500/20 mb-4">
-            ⚡
+          <div className="relative mx-auto mb-4 h-28 w-28 overflow-hidden rounded-3xl border-2 border-amber-500/40 shadow-2xl shadow-amber-500/20 bg-black">
+            <Image
+              src="/logo.jpg"
+              alt="Velox Skate"
+              fill
+              sizes="112px"
+              className="object-cover"
+              priority
+            />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
             Velox Skate Rink
