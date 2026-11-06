@@ -15,7 +15,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { addStock, currentStock, sellingPrice, costPrice, minStockAlert, name } = body;
+    const { addStock, currentStock, sellingPrice, costPrice, minStockAlert, name, category } = body;
 
     await connectDB();
     const product = await Product.findById(id);
@@ -24,6 +24,7 @@ export async function PATCH(
     }
 
     if (name) product.name = name.trim();
+    if (category) product.category = category.trim();
     if (sellingPrice != null) product.sellingPrice = Number(sellingPrice);
     if (costPrice != null) product.costPrice = Number(costPrice);
     if (minStockAlert != null) product.minStockAlert = Number(minStockAlert);

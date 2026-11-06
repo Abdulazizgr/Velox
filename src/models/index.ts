@@ -1,6 +1,7 @@
 export * from "./User";
 export * from "./Shoe";
 export * from "./Product";
+export * from "./Category";
 export * from "./RentalSession";
 export * from "./Sale";
 export * from "./Expense";

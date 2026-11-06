@@ -1,10 +1,10 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export type ProductCategory = "SNACK" | "BEVERAGE" | "OTHER";
+export type ProductCategory = string;
 
 export interface IProduct extends Document {
   name: string;
-  category: ProductCategory;
+  category: string;
   costPrice: number;
   sellingPrice: number;
   currentStock: number;
@@ -22,8 +22,10 @@ const ProductSchema = new Schema<IProduct>(
     },
     category: {
       type: String,
-      enum: ["SNACK", "BEVERAGE", "OTHER"],
+      required: true,
+      trim: true,
       default: "SNACK",
+      index: true,
     },
     costPrice: {
       type: Number,
@@ -52,4 +54,3 @@ const ProductSchema = new Schema<IProduct>(
 
 export const Product: Model<IProduct> =
   mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema);
-

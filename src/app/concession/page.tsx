@@ -205,6 +205,15 @@ export default function ConcessionPage() {
     [salesHistory]
   );
 
+  const dynamicCategories = useMemo(() => {
+    const cats = Array.from(new Set(products.map((p) => p.category))).filter(Boolean);
+    const standard = ["BEVERAGE", "SNACK"];
+    standard.forEach((s) => {
+      if (!cats.includes(s)) cats.push(s);
+    });
+    return ["ALL", ...cats];
+  }, [products]);
+
   const filteredSalesHistory = useMemo(() => {
     if (historyStatusFilter === "PAID") {
       return salesHistory.filter((s) => s.paymentStatus === "PAID");
@@ -350,12 +359,12 @@ export default function ConcessionPage() {
             <div className="lg:col-span-7 xl:col-span-8 space-y-4">
               {/* Category Pills & Search */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-[#E9D9C5] rounded-2xl p-3 shadow-sm">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                  {(["ALL", "BEVERAGE", "SNACK"] as const).map((cat) => (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-thin whitespace-nowrap">
+                  {dynamicCategories.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setCategoryFilter(cat)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
                         categoryFilter === cat
                           ? "bg-[#D96827] text-white font-bold shadow-sm"
                           : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
@@ -365,7 +374,9 @@ export default function ConcessionPage() {
                         ? "All Items"
                         : cat === "BEVERAGE"
                         ? "Drinks & Water"
-                        : "Snacks & Food"}
+                        : cat === "SNACK"
+                        ? "Snacks & Food"
+                        : cat.replace(/_/g, " ")}
                     </button>
                   ))}
                 </div>
