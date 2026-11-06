@@ -1,26 +1,26 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { formatETB } from "@/lib/utils";
 import {
   Timer,
   Plus,
   Search,
-  Filter,
   RefreshCw,
   Clock,
   AlertTriangle,
   CheckCircle2,
   Repeat,
   Sparkles,
-  Phone,
   User,
-  CreditCard,
   Check,
   X,
   Volume2,
   VolumeX,
-  Layers,
+  ArrowUpDown,
+  History,
+  QrCode,
+  BellRing,
 } from "lucide-react";
 
 interface ShoeSwapLog {
@@ -50,6 +50,8 @@ interface RentalSessionItem {
   paymentStatus: "PAID" | "UNPAID";
   paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
   shoeSwaps?: ShoeSwapLog[];
+  tabTotal?: number;
+  tabItemsCount?: number;
 }
 
 interface ShoeOption {
@@ -65,7 +67,11 @@ export default function RentalBoardPage() {
   const [now, setNow] = useState(Date.now());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusTab, setStatusTab] = useState<"ACTIVE" | "OVERDUE" | "COMPLETED">("ACTIVE");
+  const [sortBy, setSortBy] = useState<"EARLIEST_END" | "SHOE_ID" | "SIZE">("EARLIEST_END");
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Audio trigger ref to prevent repeating sound every second
+  const playedAlertsRef = useRef<Set<string>>(new Set());
 
   // New Rental Modal State
   const [showNewModal, setShowNewModal] = useState(false);
@@ -77,6 +83,7 @@ export default function RentalBoardPage() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentOption, setPaymentOption] = useState<"UNPAID" | "PAID">("UNPAID");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
+  const [festalGiven, setFestalGiven] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Swap Modal State
@@ -90,13 +97,70 @@ export default function RentalBoardPage() {
   const [returnPaymentMethod, setReturnPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [returnLoading, setReturnLoading] = useState(false);
 
-  // 1-second interval to update live countdown timers
+  // Web Audio synthesizer chime for alerts
+  const playAudioCue = (type: "start" | "due" | "overdue" | "chime") => {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === "start") {
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      } else if (type === "due") {
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+      } else if (type === "overdue") {
+        osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+        osc.frequency.setValueAtTime(349.23, ctx.currentTime + 0.15); // F4
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      } else {
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      }
+    } catch (e) {
+      console.error("Audio playback error:", e);
+    }
+  };
+
+  // 1-second interval to update live countdown timers & check alerts
   useEffect(() => {
     const timer = setInterval(() => {
-      setNow(Date.now());
+      const currentNow = Date.now();
+      setNow(currentNow);
+
+      // Check for overdue or due soon transitions
+      sessions.forEach((s) => {
+        if (s.status === "ACTIVE") {
+          const diffMs = new Date(s.expectedEndTime).getTime() - currentNow;
+          // Overdue alert
+          if (diffMs < 0 && !playedAlertsRef.current.has(`${s._id}-overdue`)) {
+            playedAlertsRef.current.add(`${s._id}-overdue`);
+            playAudioCue("overdue");
+          }
+        }
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [sessions, soundEnabled]);
 
   const fetchRentals = async () => {
     setLoading(true);
@@ -172,6 +236,7 @@ export default function RentalBoardPage() {
       });
 
       if (res.ok) {
+        playAudioCue("start");
         setShowNewModal(false);
         setCustomerName("");
         setCustomerPhone("");
@@ -190,8 +255,17 @@ export default function RentalBoardPage() {
 
   // Handle Extend Minutes (+30 or +60 min)
   const handleExtend = async (session: RentalSessionItem, addedMinutes: number) => {
-    const fee = addedMinutes === 30 ? (session.pricingType === "WEEKEND" ? 200 : 150) : (session.pricingType === "WEEKEND" ? 300 : 250);
-    const confirmed = confirm(`Add +${addedMinutes} minutes for ${fee} ETB to shoe ${session.shoeId}?`);
+    const fee =
+      addedMinutes === 30
+        ? session.pricingType === "WEEKEND"
+          ? 200
+          : 150
+        : session.pricingType === "WEEKEND"
+        ? 300
+        : 250;
+    const confirmed = confirm(
+      `Add +${addedMinutes} minutes for ${fee} ETB to shoe ${session.shoeId} (${session.customerName})?`
+    );
     if (!confirmed) return;
 
     try {
@@ -202,6 +276,7 @@ export default function RentalBoardPage() {
       });
 
       if (res.ok) {
+        playAudioCue("chime");
         fetchRentals();
       } else {
         const data = await res.json();
@@ -226,6 +301,7 @@ export default function RentalBoardPage() {
       });
 
       if (res.ok) {
+        playAudioCue("chime");
         setSwapSession(null);
         setSwapNewShoeId("");
         fetchRentals();
@@ -255,6 +331,7 @@ export default function RentalBoardPage() {
       });
 
       if (res.ok) {
+        playAudioCue("chime");
         setReturnSession(null);
         fetchRentals();
         fetchAvailableShoes();
@@ -269,7 +346,7 @@ export default function RentalBoardPage() {
     }
   };
 
-  // Helper to compute countdown status
+  // Compute remaining timer metrics
   const getSessionTimerData = (session: RentalSessionItem) => {
     const endMs = new Date(session.expectedEndTime).getTime();
     const diffMs = endMs - now;
@@ -280,7 +357,14 @@ export default function RentalBoardPage() {
     const absDiffSeconds = Math.floor(Math.abs(diffMs) / 1000);
     const minutes = Math.floor(absDiffSeconds / 60);
     const seconds = absDiffSeconds % 60;
-    const timeFormatted = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    const timeFormatted = `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+
+    // Progress percentage
+    const totalMs = session.totalMinutes * 60 * 1000;
+    const elapsedMs = now - new Date(session.startedAt).getTime();
+    const progressPercent = Math.min(100, Math.max(0, Math.round((elapsedMs / totalMs) * 100)));
 
     return {
       isOverdue,
@@ -288,10 +372,11 @@ export default function RentalBoardPage() {
       diffMs,
       timeFormatted,
       minutes,
+      progressPercent,
     };
   };
 
-  // Filtered Sessions
+  // Filter & Sort Sessions
   const filteredSessions = useMemo(() => {
     return sessions
       .filter((s) => {
@@ -316,48 +401,74 @@ export default function RentalBoardPage() {
         return true;
       })
       .sort((a, b) => {
-        // Sort active sessions by earliest expectedEndTime first (Requirement #14)
-        return new Date(a.expectedEndTime).getTime() - new Date(b.expectedEndTime).getTime();
+        if (sortBy === "EARLIEST_END") {
+          // Requirement #14: Sort based on expected finish time (who will be out early)
+          return (
+            new Date(a.expectedEndTime).getTime() - new Date(b.expectedEndTime).getTime()
+          );
+        }
+        if (sortBy === "SHOE_ID") {
+          return a.shoeId.localeCompare(b.shoeId);
+        }
+        if (sortBy === "SIZE") {
+          return a.shoeSize - b.shoeSize;
+        }
+        return 0;
       });
-  }, [sessions, searchQuery, statusTab, now]);
+  }, [sessions, searchQuery, statusTab, sortBy, now]);
 
   const activeCount = sessions.filter((s) => s.status === "ACTIVE").length;
-  const overdueCount = sessions.filter((s) => s.status === "ACTIVE" && getSessionTimerData(s).isOverdue).length;
+  const overdueCount = sessions.filter(
+    (s) => s.status === "ACTIVE" && getSessionTimerData(s).isOverdue
+  ).length;
   const dueSoonCount = sessions.filter(
     (s) => s.status === "ACTIVE" && getSessionTimerData(s).isDueSoon
   ).length;
+  const completedTodayCount = sessions.filter((s) => s.status === "COMPLETED").length;
 
-  const distinctSizes = Array.from(new Set(availableShoes.map((s) => s.size))).sort((a, b) => a - b);
+  const distinctSizes = Array.from(new Set(availableShoes.map((s) => s.size))).sort(
+    (a, b) => a - b
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
         {/* Top Control Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
           <div>
             <div className="flex items-center gap-2">
               <Timer className="h-6 w-6 text-emerald-400" />
-              <h1 className="text-2xl font-bold tracking-tight text-white">Live Rental Timer Board</h1>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                Live Rental Timer Board
+              </h1>
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 Phase 2
               </span>
             </div>
-            <p className="mt-1 text-sm text-zinc-400">
-              Real-time countdowns (+5m prep buffer), sorted by earliest finish time. Manage shoe swaps & returns.
+            <p className="mt-0.5 text-xs sm:text-sm text-zinc-400">
+              Sorted by finish time • +5m grace period • In-flight shoe swaps & extensions
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Audio Toggle & Sound Test */}
             <button
-              onClick={() => setSoundEnabled(!soundEnabled)}
+              onClick={() => {
+                const nextState = !soundEnabled;
+                setSoundEnabled(nextState);
+                if (nextState) playAudioCue("chime");
+              }}
               title={soundEnabled ? "Mute audio cues" : "Unmute audio cues"}
-              className={`p-2.5 rounded-xl border text-xs transition-colors cursor-pointer ${
+              className={`p-2.5 rounded-xl border text-xs transition-colors cursor-pointer flex items-center gap-1.5 ${
                 soundEnabled
-                  ? "bg-zinc-900 border-zinc-800 text-emerald-400 hover:bg-zinc-800"
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
                   : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"
               }`}
             >
               {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              <span className="text-[11px] hidden sm:inline">
+                {soundEnabled ? "Sound ON" : "Muted"}
+              </span>
             </button>
 
             <button
@@ -366,110 +477,130 @@ export default function RentalBoardPage() {
                 fetchAvailableShoes();
               }}
               disabled={loading}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors"
+              className="p-2.5 sm:px-3.5 sm:py-2 text-xs font-medium text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
 
             <button
               onClick={() => setShowNewModal(true)}
-              className="flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 rounded-xl transition-all shadow-lg shadow-emerald-600/30 cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 rounded-xl transition-all shadow-lg shadow-emerald-600/30 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              Start New Rental
+              <span>Issue Skates</span>
             </button>
           </div>
         </div>
 
-        {/* Counter Stats & Status Tabs */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Status Highlight Tabs */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <button
             onClick={() => setStatusTab("ACTIVE")}
-            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+            className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "ACTIVE"
                 ? "bg-zinc-900 border-emerald-500 shadow-md shadow-emerald-500/10"
                 : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs uppercase font-semibold text-zinc-400">Active on Rink</span>
+              <span className="text-[11px] sm:text-xs uppercase font-semibold text-zinc-400">
+                On Rink
+              </span>
               <Clock className="h-4 w-4 text-emerald-400" />
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold text-white">{activeCount}</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-extrabold text-white">{activeCount}</span>
               {dueSoonCount > 0 && (
-                <span className="text-xs text-amber-400 font-semibold">({dueSoonCount} due soon)</span>
+                <span className="text-[11px] text-amber-400 font-bold hidden sm:inline">
+                  ({dueSoonCount} due)
+                </span>
               )}
             </div>
           </button>
 
           <button
             onClick={() => setStatusTab("OVERDUE")}
-            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+            className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "OVERDUE"
                 ? "bg-zinc-900 border-rose-500 shadow-md shadow-rose-500/10"
                 : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs uppercase font-semibold text-zinc-400">Overdue Skaters</span>
+              <span className="text-[11px] sm:text-xs uppercase font-semibold text-zinc-400">
+                Overdue
+              </span>
               <AlertTriangle className="h-4 w-4 text-rose-400" />
             </div>
-            <div className="text-3xl font-extrabold text-rose-400">{overdueCount}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-rose-400">{overdueCount}</div>
           </button>
 
           <button
             onClick={() => setStatusTab("COMPLETED")}
-            className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+            className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
               statusTab === "COMPLETED"
                 ? "bg-zinc-900 border-zinc-500 shadow-md"
                 : "bg-zinc-900/60 border-zinc-800 hover:border-zinc-700"
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs uppercase font-semibold text-zinc-400">Completed Today</span>
+              <span className="text-[11px] sm:text-xs uppercase font-semibold text-zinc-400">
+                Returned
+              </span>
               <CheckCircle2 className="h-4 w-4 text-zinc-400" />
             </div>
-            <div className="text-3xl font-extrabold text-zinc-300">
-              {sessions.filter((s) => s.status === "COMPLETED").length}
+            <div className="text-2xl sm:text-3xl font-extrabold text-zinc-300">
+              {completedTodayCount}
             </div>
           </button>
         </div>
 
-        {/* Search & Quick Filter Bar */}
-        <div className="flex items-center justify-between gap-4 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4">
-          <div className="relative flex-1 max-w-md">
+        {/* Search, Filter & Sort Controls */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 sm:p-4">
+          <div className="relative flex-1">
             <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-zinc-500" />
             <input
               type="text"
-              placeholder="Search by Shoe ID (e.g. SK-40-01) or customer name..."
+              placeholder="Search Shoe ID (e.g. SK-40-01) or skater name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full pl-10 pr-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
             />
           </div>
 
-          <div className="text-xs text-zinc-400 hidden sm:block">
-            Showing <strong className="text-white">{filteredSessions.length}</strong> sessions
+          <div className="flex items-center justify-between sm:justify-end gap-2 text-xs">
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              <span>Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "EARLIEST_END" | "SHOE_ID" | "SIZE")}
+                className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-white text-xs focus:outline-none cursor-pointer"
+              >
+                <option value="EARLIEST_END">Earliest Finish Time (Default)</option>
+                <option value="SHOE_ID">Shoe ID</option>
+                <option value="SIZE">Shoe Size</option>
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Live Timer Grid */}
         {filteredSessions.length === 0 ? (
-          <div className="p-16 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800/80 text-zinc-500">
-            <Timer className="h-12 w-12 mx-auto mb-3 opacity-40" />
-            <p className="text-base font-semibold text-zinc-300">No sessions match this filter</p>
-            <p className="text-xs text-zinc-500 mt-1">
+          <div className="p-12 sm:p-16 text-center rounded-2xl bg-zinc-900/40 border border-zinc-800/80 text-zinc-500">
+            <Timer className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p className="text-base font-semibold text-zinc-300">No sessions match this view</p>
+            <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
               {statusTab === "ACTIVE"
-                ? "No skaters currently on the rink. Click 'Start New Rental' to issue skates."
+                ? "No skaters currently on the rink. Tap 'Issue Skates' to allocate shoes."
                 : statusTab === "OVERDUE"
-                ? "Great! No skaters are currently overdue."
-                : "No completed sessions recorded yet today."}
+                ? "All skaters are currently on time! No overdue sessions."
+                : "No completed sessions recorded yet."}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
             {filteredSessions.map((session) => {
               const timer = getSessionTimerData(session);
               const isActive = session.status === "ACTIVE";
@@ -477,19 +608,19 @@ export default function RentalBoardPage() {
               return (
                 <div
                   key={session._id}
-                  className={`rounded-2xl border p-5 transition-all flex flex-col justify-between relative overflow-hidden ${
+                  className={`rounded-2xl border p-4 sm:p-5 transition-all flex flex-col justify-between relative overflow-hidden ${
                     !isActive
-                      ? "bg-zinc-900/40 border-zinc-800 opacity-80"
+                      ? "bg-zinc-900/40 border-zinc-800 opacity-75"
                       : timer.isOverdue
-                      ? "bg-gradient-to-b from-rose-950/30 to-zinc-900 border-rose-500 shadow-lg shadow-rose-950/20"
+                      ? "bg-gradient-to-b from-rose-950/40 to-zinc-900 border-rose-500 shadow-xl shadow-rose-950/30"
                       : timer.isDueSoon
-                      ? "bg-gradient-to-b from-amber-950/30 to-zinc-900 border-amber-500 shadow-lg shadow-amber-950/20"
+                      ? "bg-gradient-to-b from-amber-950/40 to-zinc-900 border-amber-500 shadow-xl shadow-amber-950/30"
                       : "bg-zinc-900/90 border-emerald-500/40 hover:border-emerald-500"
                   }`}
                 >
-                  {/* Status ribbon accent */}
+                  {/* Top Progress / Alert Strip */}
                   <div
-                    className={`absolute top-0 left-0 right-0 h-1.5 ${
+                    className={`absolute top-0 left-0 right-0 h-1.5 transition-all ${
                       !isActive
                         ? "bg-zinc-700"
                         : timer.isOverdue
@@ -501,30 +632,32 @@ export default function RentalBoardPage() {
                   />
 
                   <div>
-                    {/* Top Row: Shoe Tag & Status Badge */}
-                    <div className="flex items-start justify-between gap-2 mb-3">
+                    {/* Header: Shoe ID + Status Tag */}
+                    <div className="flex items-start justify-between gap-2 mb-2.5">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-xl font-black text-white tracking-tight">
+                          <span className="font-mono text-xl sm:text-2xl font-black text-white tracking-tight">
                             {session.shoeId}
                           </span>
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-zinc-800 text-zinc-200 border border-zinc-700">
                             Size #{session.shoeSize}
                           </span>
                         </div>
-                        <div className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1.5">
-                          <User className="h-3 w-3 text-zinc-500" />
-                          <span>{session.customerName}</span>
+                        <div className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5 truncate">
+                          <User className="h-3 w-3 text-zinc-500 shrink-0" />
+                          <span className="font-medium text-zinc-300">{session.customerName}</span>
                           {session.customerPhone && (
-                            <span className="text-zinc-500 font-mono">({session.customerPhone})</span>
+                            <span className="text-zinc-500 font-mono text-[11px]">
+                              ({session.customerPhone})
+                            </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Timer / Status Pill */}
-                      <div>
+                      {/* Status Tag */}
+                      <div className="shrink-0">
                         {!isActive ? (
-                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
                             Returned
                           </span>
                         ) : timer.isOverdue ? (
@@ -543,11 +676,11 @@ export default function RentalBoardPage() {
                       </div>
                     </div>
 
-                    {/* Countdown Display */}
+                    {/* Countdown Digits */}
                     {isActive ? (
-                      <div className="py-4 my-2 text-center rounded-xl bg-zinc-950/80 border border-zinc-800/80">
-                        <div className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-1">
-                          {timer.isOverdue ? "Overdue Time" : "Remaining Time"}
+                      <div className="py-3 my-2 text-center rounded-xl bg-zinc-950/80 border border-zinc-800/80">
+                        <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold mb-0.5">
+                          {timer.isOverdue ? "Overdue Exceeded" : "Time Remaining"}
                         </div>
                         <div
                           className={`font-mono text-4xl sm:text-5xl font-black tracking-tight ${
@@ -560,30 +693,61 @@ export default function RentalBoardPage() {
                         >
                           {timer.timeFormatted}
                         </div>
-                        <div className="text-[11px] text-zinc-500 mt-1.5 flex items-center justify-center gap-2">
+
+                        {/* Progress Bar */}
+                        <div className="w-48 mx-auto mt-2 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-1000 ${
+                              timer.isOverdue
+                                ? "bg-rose-500"
+                                : timer.isDueSoon
+                                ? "bg-amber-400"
+                                : "bg-emerald-500"
+                            }`}
+                            style={{ width: `${timer.progressPercent}%` }}
+                          />
+                        </div>
+
+                        <div className="text-[11px] text-zinc-500 mt-2 flex items-center justify-center gap-2 font-mono">
                           <span>
-                            Started: {new Date(session.startedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            Started:{" "}
+                            {new Date(session.startedAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                           <span>•</span>
-                          <span>
-                            Due: {new Date(session.expectedEndTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          <span className="text-zinc-300 font-bold">
+                            Due:{" "}
+                            {new Date(session.expectedEndTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
                       </div>
                     ) : (
-                      <div className="py-3 my-2 text-center rounded-xl bg-zinc-950/40 border border-zinc-800/40 text-xs text-zinc-500">
-                        Session ended at {session.actualReturnTime ? new Date(session.actualReturnTime).toLocaleTimeString() : "Closed"}
+                      <div className="py-2.5 my-2 text-center rounded-xl bg-zinc-950/40 border border-zinc-800/40 text-xs text-zinc-500">
+                        Returned at{" "}
+                        {session.actualReturnTime
+                          ? new Date(session.actualReturnTime).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "Closed"}
                       </div>
                     )}
 
-                    {/* Financial details & Swaps */}
-                    <div className="mt-3 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-xs">
+                    {/* Financial summary & Snack Tabs */}
+                    <div className="mt-2.5 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-xs">
                       <div>
-                        <span className="text-zinc-500">Total Fee: </span>
-                        <strong className="text-white font-mono">{formatETB(session.totalRentalFee)}</strong>
+                        <span className="text-zinc-500">Skate Fee: </span>
+                        <strong className="text-white font-mono">
+                          {formatETB(session.totalRentalFee)}
+                        </strong>
                         {session.extensionPrice > 0 && (
-                          <span className="text-[10px] text-amber-400 block">
-                            (Includes +{formatETB(session.extensionPrice)} ext.)
+                          <span className="text-[10px] text-amber-400 block font-mono">
+                            (+{formatETB(session.extensionPrice)} ext.)
                           </span>
                         )}
                       </div>
@@ -601,22 +765,32 @@ export default function RentalBoardPage() {
                       </div>
                     </div>
 
+                    {/* Attached Snack Concession Tab if any */}
+                    {session.tabTotal && session.tabTotal > 0 ? (
+                      <div className="mt-2 text-[11px] text-cyan-300 bg-cyan-950/30 p-2 rounded-lg border border-cyan-800/50 flex items-center justify-between">
+                        <span>🍿 Attached Concession ({session.tabItemsCount || 0} items)</span>
+                        <strong className="font-mono font-bold">+{formatETB(session.tabTotal)}</strong>
+                      </div>
+                    ) : null}
+
+                    {/* Swap notice */}
                     {session.shoeSwaps && session.shoeSwaps.length > 0 && (
-                      <div className="mt-2 text-[11px] text-zinc-400 bg-zinc-950/50 p-2 rounded-lg border border-zinc-800">
-                        🔄 Swapped from {session.shoeSwaps[0].oldShoeId} to {session.shoeSwaps[0].newShoeId}
+                      <div className="mt-2 text-[10px] text-zinc-400 bg-zinc-950/60 p-1.5 rounded-lg border border-zinc-800 truncate">
+                        🔄 Swapped from {session.shoeSwaps[0].oldShoeId} to{" "}
+                        {session.shoeSwaps[0].newShoeId}
                       </div>
                     )}
                   </div>
 
-                  {/* Bottom Action Buttons (Only for Active sessions) */}
+                  {/* Bottom Operational Action Buttons */}
                   {isActive && (
-                    <div className="mt-4 pt-3 border-t border-zinc-800 grid grid-cols-3 gap-2">
+                    <div className="mt-3.5 pt-3 border-t border-zinc-800 grid grid-cols-3 gap-2">
                       <button
                         onClick={() => {
                           setSwapSession(session);
                           setSwapNewShoeId("");
                         }}
-                        className="py-2 px-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="py-2 px-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         title="Swap shoe for comfortable fit"
                       >
                         <Repeat className="h-3.5 w-3.5 text-cyan-400" />
@@ -625,7 +799,7 @@ export default function RentalBoardPage() {
 
                       <button
                         onClick={() => handleExtend(session, 30)}
-                        className="py-2 px-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="py-2 px-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs font-semibold text-zinc-300 hover:text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         title="Add +30 minutes"
                       >
                         <Plus className="h-3.5 w-3.5 text-amber-400" />
@@ -637,8 +811,8 @@ export default function RentalBoardPage() {
                           setReturnSession(session);
                           setReturnPaymentMethod(session.paymentMethod || "CASH");
                         }}
-                        className="py-2 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-emerald-600/20"
-                        title="Return shoe and settle bill"
+                        className="py-2 px-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-emerald-600/20"
+                        title="Return shoe & checkout"
                       >
                         <Check className="h-3.5 w-3.5" />
                         <span>Return</span>
@@ -653,16 +827,20 @@ export default function RentalBoardPage() {
 
         {/* 1. START NEW RENTAL MODAL */}
         {showNewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative my-8">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative my-auto">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
                     <Timer className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">Start Skate Rental Session</h3>
-                    <p className="text-xs text-zinc-400">Assign shoe, set duration, and launch countdown.</p>
+                    <h3 className="text-base sm:text-lg font-bold text-white">
+                      Start Skate Rental Session
+                    </h3>
+                    <p className="text-xs text-zinc-400">
+                      Allocate shoe asset, apply rates, and launch countdown timer.
+                    </p>
                   </div>
                 </div>
                 <button
@@ -673,30 +851,34 @@ export default function RentalBoardPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleStartRental} className="mt-5 space-y-4">
-                {/* Hygiene reminder banner (Requirement 5: lastics / festal) */}
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
-                  <Sparkles className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>
-                    <strong>Hygiene Protocol:</strong> Remember to give the customer <strong>2 plastic foot liners (festal/lastics)</strong> with these skates!
-                  </span>
+              <form onSubmit={handleStartRental} className="mt-4 space-y-4">
+                {/* Hygiene protocol reminder (Requirement #5: 2 lastics / festal) */}
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2.5">
+                  <Sparkles className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-semibold">Hygiene Requirement:</strong>
+                    Hand over <strong>2 disposable plastic liners (festal/lastics)</strong> with the
+                    skate shoes before the customer puts them on.
+                  </div>
                 </div>
 
                 {/* Step 1: Select Shoe Size */}
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
                     1. Select Shoe Size
                   </label>
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none">
                     {distinctSizes.map((size) => {
-                      const avail = availableShoes.filter((s) => s.size === size && s.status === "AVAILABLE").length;
+                      const avail = availableShoes.filter(
+                        (s) => s.size === size && s.status === "AVAILABLE"
+                      ).length;
                       const isSelected = selectedSize === size;
                       return (
                         <button
                           key={size}
                           type="button"
                           onClick={() => setSelectedSize(size)}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center min-w-[58px] ${
+                          className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center min-w-[56px] ${
                             isSelected
                               ? "bg-emerald-500 text-zinc-950 shadow-lg shadow-emerald-500/20 scale-105"
                               : avail > 0
@@ -714,14 +896,15 @@ export default function RentalBoardPage() {
                   </div>
                 </div>
 
-                {/* Step 2: Specific Shoe ID */}
+                {/* Step 2: Specific Shoe ID Asset */}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
                     2. Choose Available Shoe Asset (Unique ID)
                   </label>
                   {shoesForSelectedSize.length === 0 ? (
                     <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-                      ⚠️ No shoes of Size #{selectedSize} are currently available. All units are currently on the rink or in maintenance.
+                      ⚠️ No shoes of Size #{selectedSize} are currently available. Customer will
+                      need to wait for one to be returned.
                     </div>
                   ) : (
                     <select
@@ -738,12 +921,12 @@ export default function RentalBoardPage() {
                   )}
                 </div>
 
-                {/* Step 3: Duration & Price */}
+                {/* Step 3: Duration & Pricing */}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
                     3. Rental Duration & Timing
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setDuration(30)}
@@ -783,10 +966,10 @@ export default function RentalBoardPage() {
                 </div>
 
                 {/* Step 4: Customer Details */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-xs font-medium text-zinc-300 mb-1">
-                      Customer Name (Optional)
+                      Customer Name
                     </label>
                     <input
                       type="text"
@@ -798,19 +981,19 @@ export default function RentalBoardPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-zinc-300 mb-1">
-                      Phone Number (Optional)
+                      Phone Number
                     </label>
                     <input
                       type="text"
                       placeholder="09..."
                       value={customerPhone}
                       onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
                     />
                   </div>
                 </div>
 
-                {/* Step 5: Payment Timing (Pay Upfront vs Pay Later) */}
+                {/* Step 5: Payment Timing */}
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-1.5">
                     4. Payment Timing
@@ -860,14 +1043,15 @@ export default function RentalBoardPage() {
                   )}
                 </div>
 
-                {/* Submit button */}
                 <div className="pt-2">
                   <button
                     type="submit"
                     disabled={submitting || !selectedShoeId}
                     className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-emerald-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    {submitting ? "Launching Session..." : `Start Session (${duration + 5} min total timer)`}
+                    {submitting
+                      ? "Launching..."
+                      : `Start Rental (${duration + 5} min countdown)`}
                   </button>
                 </div>
               </form>
@@ -875,14 +1059,14 @@ export default function RentalBoardPage() {
           </div>
         )}
 
-        {/* 2. SHOE SWAP MODAL */}
+        {/* 2. SHOE SWAP MODAL (Requirement #8: uncomfortable fit) */}
         {swapSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                 <div className="flex items-center gap-2">
                   <Repeat className="h-5 w-5 text-cyan-400" />
-                  <h3 className="text-lg font-bold text-white">Swap Skate Shoe</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Swap Skate Shoe</h3>
                 </div>
                 <button
                   onClick={() => setSwapSession(null)}
@@ -893,13 +1077,15 @@ export default function RentalBoardPage() {
               </div>
 
               <form onSubmit={handleSwapSubmit} className="mt-4 space-y-4">
-                <p className="text-xs text-zinc-400">
-                  Swapping from current shoe <strong className="text-white font-mono">{swapSession.shoeId}</strong> (Size #{swapSession.shoeSize}). The timer will continue without interruption.
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Currently assigned to shoe{" "}
+                  <strong className="text-white font-mono">{swapSession.shoeId}</strong> (Size #
+                  {swapSession.shoeSize}). The timer will continue without interruption.
                 </p>
 
                 <div>
                   <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1">
-                    Select New Available Shoe
+                    Select New Available Shoe Asset
                   </label>
                   <select
                     value={swapNewShoeId}
@@ -907,7 +1093,7 @@ export default function RentalBoardPage() {
                     required
                     className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-white font-mono text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
                   >
-                    <option value="">-- Choose available replacement shoe --</option>
+                    <option value="">-- Choose replacement shoe --</option>
                     {availableShoes
                       .filter((s) => s.status === "AVAILABLE" && s.shoeId !== swapSession.shoeId)
                       .map((s) => (
@@ -934,7 +1120,7 @@ export default function RentalBoardPage() {
                   <button
                     type="button"
                     onClick={() => setSwapSession(null)}
-                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white"
+                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -951,14 +1137,16 @@ export default function RentalBoardPage() {
           </div>
         )}
 
-        {/* 3. RETURN & CHECKOUT MODAL */}
+        {/* 3. RETURN & CHECKOUT MODAL (Requirement #10 & #12: check by shoe id, settle, mark returned) */}
         {returnSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                  <h3 className="text-lg font-bold text-white">Return Shoe & Settle Bill</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    Return Shoe & Settle Bill
+                  </h3>
                 </div>
                 <button
                   onClick={() => setReturnSession(null)}
@@ -969,36 +1157,57 @@ export default function RentalBoardPage() {
               </div>
 
               <form onSubmit={handleReturnSubmit} className="mt-4 space-y-4">
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2">
+                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2.5">
                   <div className="flex justify-between text-xs text-zinc-400">
                     <span>Shoe Asset:</span>
-                    <strong className="text-white font-mono">{returnSession.shoeId} (Size #{returnSession.shoeSize})</strong>
+                    <strong className="text-white font-mono">
+                      {returnSession.shoeId} (Size #{returnSession.shoeSize})
+                    </strong>
                   </div>
                   <div className="flex justify-between text-xs text-zinc-400">
                     <span>Customer:</span>
                     <span className="text-white">{returnSession.customerName}</span>
                   </div>
                   <div className="flex justify-between text-xs text-zinc-400">
-                    <span>Rental Duration:</span>
-                    <span className="text-white">{returnSession.totalMinutes - returnSession.gracePeriodMinutes} mins</span>
+                    <span>Skate Duration:</span>
+                    <span className="text-white">
+                      {returnSession.totalMinutes - returnSession.gracePeriodMinutes} mins
+                    </span>
                   </div>
-                  <div className="pt-2 border-t border-zinc-800 flex justify-between items-baseline">
-                    <span className="text-sm font-semibold text-zinc-300">Total Amount Due:</span>
-                    <span className="text-xl font-black text-emerald-400 font-mono">
+
+                  <div className="pt-2 border-t border-zinc-800/80 flex justify-between text-xs text-zinc-400">
+                    <span>Skate Rental Fee:</span>
+                    <span className="font-mono text-white">
                       {formatETB(returnSession.totalRentalFee)}
                     </span>
                   </div>
-                  {returnSession.paymentStatus === "PAID" && (
+
+                  {returnSession.tabTotal && returnSession.tabTotal > 0 ? (
+                    <div className="flex justify-between text-xs text-cyan-400 font-semibold">
+                      <span>Attached Concession Snacks:</span>
+                      <span className="font-mono">+{formatETB(returnSession.tabTotal)}</span>
+                    </div>
+                  ) : null}
+
+                  <div className="pt-2 border-t border-zinc-800 flex justify-between items-baseline">
+                    <span className="text-sm font-semibold text-zinc-200">Combined Total:</span>
+                    <span className="text-xl font-black text-emerald-400 font-mono">
+                      {formatETB(returnSession.totalRentalFee + (returnSession.tabTotal || 0))}
+                    </span>
+                  </div>
+
+                  {returnSession.paymentStatus === "PAID" && (!returnSession.tabTotal || returnSession.tabTotal === 0) && (
                     <div className="text-[11px] text-emerald-400 text-right">
-                      Already pre-paid via {returnSession.paymentMethod}
+                      ✓ Already pre-paid via {returnSession.paymentMethod}
                     </div>
                   )}
                 </div>
 
-                {returnSession.paymentStatus !== "PAID" && (
+                {/* Payment method selector if unpaid balance exists */}
+                {(returnSession.paymentStatus !== "PAID" || (returnSession.tabTotal && returnSession.tabTotal > 0)) && (
                   <div>
                     <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1.5">
-                      Select Payment Method
+                      Select Settlement Payment Method
                     </label>
                     <div className="grid grid-cols-3 gap-2">
                       {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
@@ -1023,7 +1232,7 @@ export default function RentalBoardPage() {
                   <button
                     type="button"
                     onClick={() => setReturnSession(null)}
-                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white"
+                    className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -1032,7 +1241,7 @@ export default function RentalBoardPage() {
                     disabled={returnLoading}
                     className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 cursor-pointer"
                   >
-                    {returnLoading ? "Closing..." : "Confirm Return & Mark Available"}
+                    {returnLoading ? "Processing..." : "Confirm Return & Mark Available"}
                   </button>
                 </div>
               </form>

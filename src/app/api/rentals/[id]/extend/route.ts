@@ -84,3 +84,4 @@ export async function POST(
     return NextResponse.json({ error: "Failed to extend rental session" }, { status: 500 });
   }
 }
+

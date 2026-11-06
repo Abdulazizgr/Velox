@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
-import { RentalSession, Shoe } from "@/models";
+import { RentalSession, Shoe, Sale } from "@/models";
 import { getSession } from "@/lib/auth";
 
-// GET /api/rentals - List active sessions (sorted by expected finish time)
+// GET /api/rentals - List active sessions (sorted by expected finish time) with attached tab totals
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
@@ -15,10 +15,36 @@ export async function GET(req: NextRequest) {
       query.status = status;
     }
 
-    // Default sort: earliest expectedEndTime first (so staff see who is coming out next)
-    const sessions = await RentalSession.find(query).sort({ expectedEndTime: 1 });
+    // Default sort: earliest expectedEndTime first
+    const sessions = await RentalSession.find(query).sort({ expectedEndTime: 1 }).lean();
 
-    return NextResponse.json({ sessions });
+    // Fetch attached unpaid tab snack sales for these sessions
+    const sessionIds = sessions.map((s) => s._id);
+    const tabSales = await Sale.find({
+      rentalSessionId: { $in: sessionIds },
+      paymentStatus: "UNPAID",
+    }).lean();
+
+    // Map tab sales to their respective sessions
+    const sessionsWithTabs = sessions.map((session) => {
+      const attachedSales = tabSales.filter(
+        (sale) => sale.rentalSessionId?.toString() === session._id.toString()
+      );
+      const tabTotal = attachedSales.reduce((acc, sale) => acc + (sale.totalAmount || 0), 0);
+      const tabItemsCount = attachedSales.reduce(
+        (acc, sale) => acc + (sale.items?.reduce((iAcc, item) => iAcc + item.quantity, 0) || 0),
+        0
+      );
+
+      return {
+        ...session,
+        tabTotal,
+        tabItemsCount,
+        attachedSales,
+      };
+    });
+
+    return NextResponse.json({ sessions: sessionsWithTabs });
   } catch (error) {
     console.error("Fetch rentals error:", error);
     return NextResponse.json({ error: "Failed to fetch rental sessions" }, { status: 500 });
@@ -81,9 +107,6 @@ export async function POST(req: NextRequest) {
     const gracePeriodMinutes = 5; // Automatic +5 min buffer
     const totalMinutes = baseDuration + gracePeriodMinutes;
 
-    // Pricing Rule:
-    // Weekday: 30 min = 150 ETB, 60 min = 250 ETB
-    // Weekend: 30 min = 200 ETB, 60 min = 300 ETB
     let basePrice = 0;
     if (baseDuration === 30) {
       basePrice = isWeekend ? 200 : 150;
