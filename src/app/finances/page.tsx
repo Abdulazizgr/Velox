@@ -336,38 +336,64 @@ export default function FinancesPage() {
               </p>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-1.5 bg-[#F7F6F3] p-1 rounded-xl border border-[#E9D9C5] text-xs">
-              <button
-                onClick={() => setExpenseFilter("ALL")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  expenseFilter === "ALL"
-                    ? "bg-[#D96827] text-white font-bold shadow-sm"
-                    : "text-[#8B8179] hover:text-[#29221E]"
-                }`}
-              >
-                All ({data?.expenses.length || 0})
-              </button>
-              <button
-                onClick={() => setExpenseFilter("DAILY_CASH")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  expenseFilter === "DAILY_CASH"
-                    ? "bg-[#D96827] text-white font-bold shadow-sm"
-                    : "text-[#8B8179] hover:text-[#29221E]"
-                }`}
-              >
-                Daily Cash (OpEx)
-              </button>
-              <button
-                onClick={() => setExpenseFilter("CAPITAL")}
-                className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                  expenseFilter === "CAPITAL"
-                    ? "bg-[#29221E] text-white font-bold shadow-sm"
-                    : "text-[#8B8179] hover:text-[#29221E]"
-                }`}
-              >
-                Capital (CapEx)
-              </button>
+            {/* Action & Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-[#F7F6F3] p-1 rounded-xl border border-[#E9D9C5] text-xs">
+                <button
+                  onClick={() => setExpenseFilter("ALL")}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    expenseFilter === "ALL"
+                      ? "bg-[#D96827] text-white font-bold shadow-sm"
+                      : "text-[#8B8179] hover:text-[#29221E]"
+                  }`}
+                >
+                  All ({data?.expenses.length || 0})
+                </button>
+                <button
+                  onClick={() => setExpenseFilter("DAILY_CASH")}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    expenseFilter === "DAILY_CASH"
+                      ? "bg-[#D96827] text-white font-bold shadow-sm"
+                      : "text-[#8B8179] hover:text-[#29221E]"
+                  }`}
+                >
+                  Daily Cash (OpEx)
+                </button>
+                <button
+                  onClick={() => setExpenseFilter("CAPITAL")}
+                  className={`px-3 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                    expenseFilter === "CAPITAL"
+                      ? "bg-[#29221E] text-white font-bold shadow-sm"
+                      : "text-[#8B8179] hover:text-[#29221E]"
+                  }`}
+                >
+                  Capital (CapEx)
+                </button>
+              </div>
+
+              {filteredExpenses.length > 0 && (
+                <button
+                  onClick={() =>
+                    exportToCSV(
+                      "Velox_Expenses_Ledger",
+                      ["Date", "Title", "Category", "Fund Source", "Payment Method", "Amount", "Notes"],
+                      filteredExpenses.map((exp) => [
+                        exp.date,
+                        exp.title,
+                        exp.category,
+                        exp.fundSource,
+                        exp.paymentMethod,
+                        exp.amount,
+                        exp.notes || "",
+                      ])
+                    )
+                  }
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] hover:bg-[#FFF4E5] transition-colors shadow-xs cursor-pointer"
+                >
+                  <Download className="h-3.5 w-3.5 text-[#D96827]" />
+                  <span>Export CSV</span>
+                </button>
+              )}
             </div>
           </div>
 

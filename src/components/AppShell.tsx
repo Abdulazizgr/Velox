@@ -163,7 +163,19 @@ export function AppShell({ user, children }: AppShellProps) {
 
       {/* 2. MOBILE TOP HEADER (Hidden on desktop) */}
       <header className="md:hidden sticky top-0 z-40 bg-[#29221E] text-white border-b border-[#433832] px-4 h-14 flex items-center justify-between shadow-md">
-        <Link href="/" className="flex items-center gap-2.5">
+        {/* App Drawer on the left */}
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-2 -ml-2 rounded-xl text-[#E9D9C5] hover:text-white hover:bg-[#362D28] transition-colors cursor-pointer"
+          title="Open Menu"
+          aria-label="Open Navigation Drawer"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
+        {/* Logo & Brand on the right */}
+        <Link href="/" className="flex items-center gap-2">
+          <span className="text-sm font-bold tracking-tight text-white">VELOX</span>
           <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[#D96827]/40 shadow-sm shrink-0 bg-black">
             <Image
               src="/logo.jpg"
@@ -173,27 +185,7 @@ export function AppShell({ user, children }: AppShellProps) {
               className="object-cover"
             />
           </div>
-          <span className="text-sm font-bold tracking-tight text-white">VELOX</span>
-          <span
-            className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase tracking-wider border ${
-              user.role === "OWNER"
-                ? "bg-[#D96827]/20 text-[#D96827] border-[#D96827]/40"
-                : "bg-[#FFF4E5]/10 text-[#E9D9C5] border-[#E9D9C5]/30"
-            }`}
-          >
-            {user.role}
-          </span>
         </Link>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="p-2 rounded-lg text-[#E9D9C5] hover:text-white hover:bg-[#362D28]"
-            title="Open Menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-        </div>
       </header>
 
       {/* 3. MAIN CONTENT CONTAINER */}
@@ -244,7 +236,7 @@ export function AppShell({ user, children }: AppShellProps) {
           />
 
           {/* Drawer content */}
-          <div className="relative ml-auto w-72 max-w-full bg-[#29221E] text-white border-l border-[#433832] h-full p-5 flex flex-col justify-between shadow-2xl z-10">
+          <div className="relative mr-auto w-72 max-w-[85vw] bg-[#29221E] text-white border-r border-[#433832] h-full p-5 flex flex-col justify-between shadow-2xl z-10 animate-in slide-in-from-left duration-200">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#362D28]">
                 <div className="flex items-center gap-3">

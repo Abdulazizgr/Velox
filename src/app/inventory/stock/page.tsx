@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatETB } from "@/lib/utils";
+import { formatETB, exportToCSV } from "@/lib/utils";
 import { ProductCategory } from "@/models/Product";
 import {
   Package,
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Coffee,
   ShoppingBag,
+  Download,
 } from "lucide-react";
 
 interface ProductItem {
@@ -141,21 +142,55 @@ export default function StockInventoryPage() {
           </div>
         )}
 
-        {/* Categories Tab */}
-        <div className="flex items-center gap-2 border-b border-[#E9D9C5] pb-3">
-          {(["ALL", "BEVERAGE", "SNACK", "OTHER"] as const).map((cat) => (
+        {/* Categories Tab & Export */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E9D9C5] pb-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {(["ALL", "BEVERAGE", "SNACK", "OTHER"] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  categoryFilter === cat
+                    ? "bg-[#D96827] text-white font-bold shadow-sm"
+                    : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+                }`}
+              >
+                {cat === "ALL" ? "All Items" : cat === "BEVERAGE" ? "Drinks & Water" : "Snacks & Food"}
+              </button>
+            ))}
+          </div>
+
+          {filteredProducts.length > 0 && (
             <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
-                categoryFilter === cat
-                  ? "bg-[#D96827] text-white font-bold shadow-sm"
-                  : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
-              }`}
+              onClick={() =>
+                exportToCSV(
+                  "Velox_Stock_Inventory",
+                  [
+                    "Product Name",
+                    "Category",
+                    "Cost Price",
+                    "Selling Price",
+                    "Profit Margin",
+                    "Current Stock",
+                    "Alert Level",
+                  ],
+                  filteredProducts.map((p) => [
+                    p.name,
+                    p.category,
+                    p.costPrice,
+                    p.sellingPrice,
+                    p.sellingPrice - p.costPrice,
+                    p.currentStock,
+                    p.minStockAlert,
+                  ])
+                )
+              }
+              className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] hover:bg-[#FFF4E5] transition-colors shadow-xs cursor-pointer"
             >
-              {cat === "ALL" ? "All Items" : cat === "BEVERAGE" ? "Drinks & Water" : "Snacks & Food"}
+              <Download className="h-3.5 w-3.5 text-[#D96827]" />
+              <span>Export CSV</span>
             </button>
-          ))}
+          )}
         </div>
 
         {/* Products Table */}
