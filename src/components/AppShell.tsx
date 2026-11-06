@@ -18,6 +18,7 @@ import {
   ChevronRight,
   ShieldCheck,
   MoreHorizontal,
+  FileText,
 } from "lucide-react";
 
 interface AppShellProps {
@@ -53,6 +54,7 @@ export function AppShell({ user, children }: AppShellProps) {
     { href: "/inventory/shoes", label: "Skate Shoes", icon: Footprints },
     { href: "/inventory/stock", label: "Stock Control", icon: Package },
     { href: "/finances", label: "Finances & Cash", icon: Wallet, badge: "Phase 4" },
+    { href: "/reports", label: "Daily Reports", icon: FileText, badge: "Phase 5" },
   ];
 
   if (user?.role === "OWNER") {
