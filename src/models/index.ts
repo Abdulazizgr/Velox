@@ -5,6 +5,6 @@ export * from "./Category";
 export * from "./RentalSession";
 export * from "./Sale";
 export * from "./Expense";
+export * from "./ExpenseCategory";
 export * from "./CapitalFund";
 export * from "./DailyRegister";
-

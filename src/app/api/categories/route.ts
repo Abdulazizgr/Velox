@@ -85,3 +85,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
   }
 }
+

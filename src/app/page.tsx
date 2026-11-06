@@ -262,7 +262,7 @@ export default async function DashboardPage() {
               </div>
             </Link>
 
-            {/* Module 4: Finances & Cash */}
+            {/* Module 4: Expenses */}
             <Link
               href="/finances"
               className="group p-5 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-md transition-all flex flex-col justify-between"
@@ -272,19 +272,16 @@ export default async function DashboardPage() {
                   <div className="p-3 rounded-xl bg-[#FFF4E5] text-[#D96827] group-hover:scale-105 transition-transform">
                     <Wallet className="h-6 w-6" />
                   </div>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                    Ledgers
-                  </span>
                 </div>
                 <h3 className="text-base font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
-                  Finances & Petty Cash
+                  Expenses
                 </h3>
                 <p className="mt-1 text-xs text-[#8B8179] leading-relaxed">
-                  Two-tier accounting: Daily Cash Drawer (minus lunch/transport) vs General Capital (shoes/restock/rent). Multi-channel: Cash, Telebirr, CBE.
+                  Track daily operating expenses (lunch, transport, supplies) and capital expenditures (shoes, restock, rent).
                 </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-bold text-[#D96827] group-hover:translate-x-1 transition-transform">
-                <span>View Ledgers</span> &rarr;
+                <span>View Expenses</span> &rarr;
               </div>
             </Link>
           </div>

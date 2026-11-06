@@ -29,3 +29,4 @@ const CategorySchema = new Schema<ICategory>(
 
 export const Category: Model<ICategory> =
   mongoose.models.Category || mongoose.model<ICategory>("Category", CategorySchema);
+

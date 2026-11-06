@@ -54,7 +54,7 @@ export function AppShell({ user, children }: AppShellProps) {
     { href: "/concession", label: "Snacks & Drinks", icon: ShoppingBag, badge: "POS" },
     { href: "/inventory/shoes", label: "Skate Shoes", icon: Footprints },
     { href: "/inventory/stock", label: "Stock Control", icon: Package },
-    { href: "/finances", label: "Finances & Cash", icon: Wallet, badge: "Ledger" },
+    { href: "/finances", label: "Expenses", icon: Wallet },
     { href: "/reports", label: "Daily Reports", icon: FileText, badge: "EOD" },
   ];
 

@@ -1,20 +1,11 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type ExpenseFundSource = "DAILY_CASH" | "CAPITAL";
-export type ExpenseCategory =
-  | "LUNCH"
-  | "TRANSPORT"
-  | "SUPPLIES"
-  | "SKATE_SHOES"
-  | "SNACK_RESTOCK"
-  | "RENT"
-  | "MAINTENANCE"
-  | "OTHER";
 
 export interface IExpense extends Document {
   title: string;
   amount: number;
-  category: ExpenseCategory;
+  category: string;
   fundSource: ExpenseFundSource;
   paymentMethod: "CASH" | "TELEBIRR" | "CBE";
   notes?: string;
@@ -30,17 +21,9 @@ const ExpenseSchema = new Schema<IExpense>(
     amount: { type: Number, required: true },
     category: {
       type: String,
-      enum: [
-        "LUNCH",
-        "TRANSPORT",
-        "SUPPLIES",
-        "SKATE_SHOES",
-        "SNACK_RESTOCK",
-        "RENT",
-        "MAINTENANCE",
-        "OTHER",
-      ],
       required: true,
+      trim: true,
+      index: true,
     },
     fundSource: {
       type: String,
@@ -64,4 +47,3 @@ const ExpenseSchema = new Schema<IExpense>(
 
 export const Expense: Model<IExpense> =
   mongoose.models.Expense || mongoose.model<IExpense>("Expense", ExpenseSchema);
-
