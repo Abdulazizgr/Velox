@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getSession } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
+import { PWARegister } from "@/components/PWARegister";
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { Suspense } from "react";
 
 const geistSans = Geist({
@@ -40,7 +42,13 @@ export const viewport: Viewport = {
 
 async function ShellWrapper({ children }: { children: React.ReactNode }) {
   const user = await getSession();
-  return <AppShell user={user}>{children}</AppShell>;
+  return (
+    <AppShell user={user}>
+      <PWARegister />
+      <KeyboardShortcuts />
+      {children}
+    </AppShell>
+  );
 }
 
 export default function RootLayout({
