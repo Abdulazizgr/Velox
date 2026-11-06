@@ -466,7 +466,7 @@ export default function FinancesPage() {
                   <label className="block text-xs font-semibold text-zinc-300 uppercase mb-1.5">
                     1. Funding Source (Strict Segregation)
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 mb-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -502,6 +502,67 @@ export default function FinancesPage() {
                         Buying shoes, bulk restock, rent
                       </div>
                     </button>
+                  </div>
+
+                  {/* Quick Preset Chips */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    <span className="text-[10px] text-zinc-500 uppercase font-bold shrink-0">Quick Fill:</span>
+                    {fundSource === "DAILY_CASH" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => { setTitle("Staff Lunch"); setAmount("200"); setCategory("LUNCH"); setPaymentMethod("CASH"); }}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold whitespace-nowrap cursor-pointer"
+                        >
+                          Lunch 200 ETB
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTitle("Staff Lunch"); setAmount("250"); setCategory("LUNCH"); setPaymentMethod("CASH"); }}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold whitespace-nowrap cursor-pointer"
+                        >
+                          Lunch 250 ETB
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTitle("Taxi Transport"); setAmount("100"); setCategory("TRANSPORT"); setPaymentMethod("CASH"); }}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold whitespace-nowrap cursor-pointer"
+                        >
+                          Taxi 100 ETB
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTitle("Cleaning Supplies & Detergents"); setAmount("150"); setCategory("SUPPLIES"); setPaymentMethod("CASH"); }}
+                          className="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-semibold whitespace-nowrap cursor-pointer"
+                        >
+                          Supplies 150 ETB
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => { setTitle("New Skate Shoes Batch"); setCategory("SKATE_SHOES"); setPaymentMethod("CBE"); }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-amber-500/30"
+                        >
+                          Skate Shoes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTitle("Bulk Snack Restock"); setCategory("SNACK_RESTOCK"); setPaymentMethod("CBE"); }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-amber-500/30"
+                        >
+                          Snack Restock
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setTitle("Rink Facility Monthly Rent"); setCategory("RENT"); setPaymentMethod("CBE"); }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-amber-500/30"
+                        >
+                          Facility Rent
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
