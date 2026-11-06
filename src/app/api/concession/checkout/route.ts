@@ -116,3 +116,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
   }
 }
+
