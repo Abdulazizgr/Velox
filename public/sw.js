@@ -1,6 +1,15 @@
 // Simple Service Worker for Velox POS PWA
-const CACHE_NAME = "velox-pos-cache-v1";
-const STATIC_ASSETS = ["/", "/favicon.ico", "/manifest.webmanifest"];
+const CACHE_NAME = "velox-pos-cache-v2";
+const STATIC_ASSETS = [
+  "/",
+  "/favicon.ico",
+  "/favicon.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
+  "/logo.jpg",
+  "/manifest.webmanifest",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

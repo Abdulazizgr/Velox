@@ -108,6 +108,69 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const sessionUser = await getSession();
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { id, title, amount, category, paymentMethod, date, notes } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Expense ID is required" }, { status: 400 });
+    }
+
+    await connectDB();
+    const expense = await Expense.findById(id);
+    if (!expense) {
+      return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+    }
+
+    // If staff, prevent editing capital expenses
+    if (sessionUser.role === "STAFF" && expense.fundSource === "CAPITAL") {
+      return NextResponse.json({ error: "Unauthorized to edit capital expenses" }, { status: 403 });
+    }
+
+    const oldAmount = expense.amount;
+    const newAmount = amount !== undefined ? Number(amount) : oldAmount;
+
+    if (newAmount <= 0 || isNaN(newAmount)) {
+      return NextResponse.json({ error: "A valid positive amount is required" }, { status: 400 });
+    }
+
+    // Adjust capital balance if capital expense
+    if (expense.fundSource === "CAPITAL" && newAmount !== oldAmount) {
+      const diff = newAmount - oldAmount;
+      const capital = await CapitalFund.findOne();
+      if (capital) {
+        capital.remainingBalance -= diff;
+        capital.lastUpdated = new Date();
+        await capital.save();
+      }
+    }
+
+    if (title) expense.title = title.trim();
+    expense.amount = newAmount;
+    if (category) expense.category = category;
+    if (paymentMethod) expense.paymentMethod = paymentMethod;
+    if (date) expense.date = new Date(date);
+    if (notes !== undefined) expense.notes = notes.trim();
+
+    await expense.save();
+
+    return NextResponse.json({
+      success: true,
+      message: "Expense updated successfully",
+      expense,
+    });
+  } catch (error) {
+    console.error("Update expense error:", error);
+    return NextResponse.json({ error: "Failed to update expense" }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const sessionUser = await getSession();

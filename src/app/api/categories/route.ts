@@ -86,3 +86,31 @@ export async function POST(req: NextRequest) {
   }
 }
 
+
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== "OWNER") {
+      return NextResponse.json({ error: "Unauthorized: Owner only" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    const name = searchParams.get("name");
+
+    await connectDB();
+    if (id) {
+      await Category.findByIdAndDelete(id);
+    } else if (name) {
+      await Category.findOneAndDelete({ name });
+    } else {
+      return NextResponse.json({ error: "Category ID or name required" }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, message: "Category deleted" });
+  } catch (error) {
+    console.error("Delete category error:", error);
+    return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });
+  }
+}

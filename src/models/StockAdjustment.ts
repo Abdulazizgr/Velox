@@ -43,3 +43,4 @@ const StockAdjustmentSchema = new Schema<IStockAdjustment>(
 export const StockAdjustment: Model<IStockAdjustment> =
   mongoose.models.StockAdjustment ||
   mongoose.model<IStockAdjustment>("StockAdjustment", StockAdjustmentSchema);
+

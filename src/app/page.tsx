@@ -51,6 +51,11 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  // Hide dashboard from staff
+  if (session.role !== "OWNER") {
+    redirect("/rentals");
+  }
+
   await connectDB();
   const now = new Date();
 
@@ -165,7 +170,7 @@ export default async function DashboardPage() {
   // 4. Daily Register & Expected Drawer Cash
   const todayStr = format(now, "yyyy-MM-dd");
   const dailyRegister = await DailyRegister.findOne({ date: todayStr });
-  const openingFloat = dailyRegister?.openingCash || 500;
+  const openingFloat = dailyRegister?.openingCash ?? 0;
   const expectedInDrawer = openingFloat + channelData.cash - todayDay.expenses;
   const isShiftOpen = dailyRegister?.status !== "CLOSED";
 
@@ -232,171 +237,153 @@ export default async function DashboardPage() {
     : 0;
 
   return (
-    <div className="min-h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8 text-[#29221E]">
-      {/* 1. TOP EXECUTIVE WELCOME BANNER */}
-      <div className="p-4 sm:p-6 rounded-3xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5 sm:gap-4">
-          <div className="relative h-14 w-14 sm:h-18 sm:w-18 rounded-2xl overflow-hidden border border-[#E9D9C5] shadow-xs shrink-0 bg-black">
+    <div className="min-h-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 text-[#29221E] overflow-x-hidden">
+      {/* 1. TOP WELCOME BANNER (Mobile-First) */}
+      <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-2xl overflow-hidden border border-[#E9D9C5] shadow-xs shrink-0 bg-black">
             <Image
-              src="/logo.jpg"
+              src="/icon-192.png"
               alt="Velox Skate"
               fill
-              sizes="72px"
+              sizes="56px"
               className="object-cover"
               priority
             />
           </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30 shrink-0">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#26845B] animate-pulse" />
-                {isShiftOpen ? "Shift Live & Open" : "Shift Closed"}
-              </span>
-              <span
-                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                  isWeekend
-                    ? "bg-[#FFF4E5] text-[#D96827] border-[#E9D9C5]"
-                    : "bg-[#F7F6F3] text-[#29221E] border-[#E9D9C5]"
-                }`}
-              >
-                {isWeekend
-                  ? "Weekend Rates (200 / 300 ETB)"
-                  : "Weekday Rates (150 / 250 ETB)"}
+                {isShiftOpen ? "Shift Open" : "Shift Closed"}
               </span>
             </div>
-
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-[#29221E]">
-              Welcome back, {session.name}
+            <h1 className="text-base sm:text-xl font-black tracking-tight text-[#29221E] truncate">
+              Welcome, {session.name}
             </h1>
-            <p className="text-xs text-[#8B8179] mt-0.5">
-              Logged in as <strong className="text-[#29221E]">{session.role}</strong> • Float:{" "}
-              <strong className="text-[#29221E] font-mono">{formatETB(openingFloat)}</strong>
+            <p className="text-xs text-[#8B8179] truncate">
+              Float: <strong className="text-[#29221E] font-mono">{formatETB(openingFloat)}</strong>
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
+        <div className="shrink-0 self-start md:self-center">
           <Link
             href="/rentals"
-            className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#D96827]/20 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs sm:text-sm shadow-sm transition-all"
           >
             <Timer className="h-4 w-4" />
-            <span>Open Rental Board</span>
-            <ArrowRight className="h-4 w-4 ml-0.5" />
+            <span>Rental Board</span>
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>
 
-      {/* 2. TOP 4 EXECUTIVE KPI CARDS (Mobile 2x2 grid, Desktop 4-column) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Card 1: Today's Revenue */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col justify-between">
+      {/* 2. TOP 4 KPI CARDS (Mobile 2x2 grid, Desktop 4-column) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 min-w-0">
+        {/* Card 1: Revenue */}
+        <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
           <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1.5 sm:mb-2">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#26845B]">
-                Today&apos;s Revenue
+            <div className="flex items-center justify-between text-[#8B8179] mb-1">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#26845B] truncate">
+                Revenue
               </span>
-              <div className="p-1.5 rounded-lg bg-[#EBF5F0] text-[#26845B]">
-                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <div className="p-1 rounded-lg bg-[#EBF5F0] text-[#26845B] shrink-0">
+                <TrendingUp className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#26845B] font-mono tracking-tight">
+            <div className="text-base sm:text-2xl font-black text-[#26845B] font-mono truncate">
               {formatETB(todayDay.gross)}
             </div>
-            <div className="mt-1 text-[10px] sm:text-[11px] text-[#8B8179] truncate">
-              Rentals: {formatETB(todayDay.rentals)}
+            <div className="mt-0.5 text-[10px] text-[#8B8179] truncate">
+              Skates: {formatETB(todayDay.rentals)}
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] sm:text-[11px] text-[#8B8179]">
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179]">
             <span>Snacks:</span>
-            <span className="font-bold text-[#29221E] font-mono">
-              {formatETB(todayDay.concessions)}
-            </span>
+            <span className="font-bold text-[#29221E] font-mono truncate">{formatETB(todayDay.concessions)}</span>
           </div>
         </div>
 
-        {/* Card 2: Net Operating Income */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col justify-between">
+        {/* Card 2: Net Cash */}
+        <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
           <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1.5 sm:mb-2">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827]">
-                Net Cash Flow
+            <div className="flex items-center justify-between text-[#8B8179] mb-1">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate">
+                Net Cash
               </span>
-              <div className="p-1.5 rounded-lg bg-[#FFF4E5] text-[#D96827]">
-                <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <div className="p-1 rounded-lg bg-[#FFF4E5] text-[#D96827] shrink-0">
+                <Wallet className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#29221E] font-mono tracking-tight">
+            <div className="text-base sm:text-2xl font-black text-[#29221E] font-mono truncate">
               {formatETB(todayDay.net)}
             </div>
-            <div className="mt-1 text-[10px] sm:text-[11px] text-[#8B8179] truncate">
-              Minus OpEx: -{formatETB(todayDay.expenses)}
+            <div className="mt-0.5 text-[10px] text-[#8B8179] truncate">
+              OpEx: -{formatETB(todayDay.expenses)}
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] sm:text-[11px] text-[#8B8179]">
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179]">
             <span>Margin:</span>
             <span className="font-bold text-[#26845B] font-mono">
-              {todayDay.gross > 0
-                ? `${Math.round((todayDay.net / todayDay.gross) * 100)}%`
-                : "100%"}
+              {todayDay.gross > 0 ? `${Math.round((todayDay.net / todayDay.gross) * 100)}%` : "100%"}
             </span>
           </div>
         </div>
 
-        {/* Card 3: Live Rink Occupancy */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col justify-between">
+        {/* Card 3: Floor Occupancy */}
+        <div className="p-3 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
           <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1.5 sm:mb-2">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#29221E]">
-                Floor Occupancy
+            <div className="flex items-center justify-between text-[#8B8179] mb-1">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#29221E] truncate">
+                Occupancy
               </span>
-              <div className="p-1.5 rounded-lg bg-[#F7F6F3] text-[#29221E]">
-                <Footprints className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#D96827]" />
+              <div className="p-1 rounded-lg bg-[#F7F6F3] text-[#29221E] shrink-0">
+                <Footprints className="h-3.5 w-3.5 text-[#D96827]" />
               </div>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl sm:text-2xl lg:text-3xl font-black text-[#29221E] font-mono">
+            <div className="flex items-baseline gap-1 truncate">
+              <span className="text-base sm:text-2xl font-black text-[#29221E] font-mono">
                 {rentedShoes}
               </span>
-              <span className="text-[11px] sm:text-xs text-[#8B8179]">
+              <span className="text-[10px] text-[#8B8179] truncate">
                 / {availableShoes} ready
               </span>
             </div>
-            {/* Occupancy bar */}
-            <div className="mt-2 h-1.5 w-full bg-[#F7F6F3] rounded-full overflow-hidden border border-[#E9D9C5]/60">
+            <div className="mt-1.5 h-1.5 w-full bg-[#F7F6F3] rounded-full overflow-hidden border border-[#E9D9C5]/60">
               <div
                 style={{ width: `${Math.min(100, Math.max(5, occupancyPct))}%` }}
-                className="h-full bg-[#D96827] rounded-full transition-all duration-500"
+                className="h-full bg-[#D96827] rounded-full"
               />
             </div>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] sm:text-[11px] text-[#8B8179]">
-            <span>Fleet Load:</span>
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179]">
+            <span>Load:</span>
             <span className="font-bold text-[#D96827] font-mono">{occupancyPct}%</span>
           </div>
         </div>
 
-        {/* Card 4: Drawer Cash Status */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF4E5]/70 border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col justify-between">
+        {/* Card 4: Drawer Expected */}
+        <div className="p-3 sm:p-4 rounded-2xl bg-[#FFF4E5]/70 border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
           <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1.5 sm:mb-2">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827]">
-                Drawer Expected
+            <div className="flex items-center justify-between text-[#8B8179] mb-1">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate">
+                In Drawer
               </span>
-              <div className="p-1.5 rounded-lg bg-[#D96827] text-white">
-                <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <div className="p-1 rounded-lg bg-[#D96827] text-white shrink-0">
+                <Banknote className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="text-xl sm:text-2xl lg:text-3xl font-black text-[#D96827] font-mono tracking-tight">
+            <div className="text-base sm:text-2xl font-black text-[#D96827] font-mono truncate">
               {formatETB(expectedInDrawer)}
             </div>
-            <div className="mt-1 text-[10px] sm:text-[11px] text-[#8B8179] truncate">
-              Cash intake: {formatETB(channelData.cash)}
+            <div className="mt-0.5 text-[10px] text-[#8B8179] truncate">
+              Cash In: {formatETB(channelData.cash)}
             </div>
           </div>
-          <div className="mt-3 pt-2 border-t border-[#E9D9C5] flex items-center justify-between text-[10px] sm:text-[11px] text-[#8B8179]">
-            <span>Opening Float:</span>
-            <span className="font-bold text-[#29221E] font-mono">
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5] flex items-center justify-between text-[10px] text-[#8B8179]">
+            <span>Float:</span>
+            <span className="font-bold text-[#29221E] font-mono truncate">
               {formatETB(openingFloat)}
             </span>
           </div>
@@ -414,117 +401,116 @@ export default async function DashboardPage() {
       {/* 4. OPERATIONAL MODULES & LIVE ACTIVITY FEED */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Left 2 Cols: Operational Modules Quick Hub */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3 min-w-0">
           <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-bold tracking-tight text-[#29221E] flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[#D96827]" />
-              Operational Modules
+            <h2 className="text-sm sm:text-base font-black tracking-tight text-[#29221E] flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#D96827]" />
+              Quick Actions
             </h2>
-            <span className="text-xs text-[#8B8179]">Quick Counter Access</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
             {/* Module 1: Rental Board */}
             <Link
               href="/rentals"
-              className="group p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
+              className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer min-w-0"
             >
               <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="p-2.5 rounded-xl bg-[#FFF4E5] text-[#D96827] group-hover:scale-105 transition-transform">
-                    <Timer className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Timer className="h-4 w-4" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
-                    {rentedShoes} Active Skaters
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF5F0] text-[#26845B]">
+                    {rentedShoes} Active
                   </span>
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
+                <h3 className="text-sm font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
                   Rental Timer Board
                 </h3>
-                <p className="mt-1 text-xs text-[#8B8179] leading-relaxed">
-                  Start sessions with +5m grace, monitor live countdowns, shoe swaps, extensions, and returns.
+                <p className="mt-0.5 text-xs text-[#8B8179]">
+                  Live countdowns, swaps, and returns.
                 </p>
               </div>
-              <div className="mt-3.5 flex items-center text-xs font-bold text-[#D96827] group-hover:translate-x-1 transition-transform">
-                <span>View Rental Board</span> &rarr;
+              <div className="mt-2.5 flex items-center text-xs font-bold text-[#D96827]">
+                <span>Open Rentals</span> &rarr;
               </div>
             </Link>
 
             {/* Module 2: Concession POS */}
             <Link
               href="/concession"
-              className="group p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
+              className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer min-w-0"
             >
               <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="p-2.5 rounded-xl bg-[#FFF4E5] text-[#D96827] group-hover:scale-105 transition-transform">
-                    <ShoppingBag className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <ShoppingBag className="h-4 w-4" />
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                    POS Register
+                    POS
                   </span>
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
+                <h3 className="text-sm font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
                   Snacks & Drinks POS
                 </h3>
-                <p className="mt-1 text-xs text-[#8B8179] leading-relaxed">
-                  Attach refreshments directly to open skater tabs or process instant walk-in concession sales.
+                <p className="mt-0.5 text-xs text-[#8B8179]">
+                  Direct sales or charge to skater tabs.
                 </p>
               </div>
-              <div className="mt-3.5 flex items-center text-xs font-bold text-[#D96827] group-hover:translate-x-1 transition-transform">
-                <span>Open Concession POS</span> &rarr;
+              <div className="mt-2.5 flex items-center text-xs font-bold text-[#D96827]">
+                <span>Open POS</span> &rarr;
               </div>
             </Link>
 
             {/* Module 3: Shoe Inventory */}
             <Link
               href="/inventory/shoes"
-              className="group p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
+              className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer min-w-0"
             >
               <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="p-2.5 rounded-xl bg-[#FFF4E5] text-[#D96827] group-hover:scale-105 transition-transform">
-                    <Footprints className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Footprints className="h-4 w-4" />
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]">
-                    {availableShoes} Available
+                    {availableShoes} Ready
                   </span>
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
-                  Skate Shoes Inventory
+                <h3 className="text-sm font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
+                  Skate Shoes
                 </h3>
-                <p className="mt-1 text-xs text-[#8B8179] leading-relaxed">
-                  Track individual shoes by asset ID (e.g. SK-40-01), manage Inline Skates vs Quads, and log maintenance.
+                <p className="mt-0.5 text-xs text-[#8B8179]">
+                  Shoe asset IDs, Inlines vs Quads.
                 </p>
               </div>
-              <div className="mt-3.5 flex items-center text-xs font-bold text-[#D96827] group-hover:translate-x-1 transition-transform">
-                <span>Inspect Fleet ({totalShoes})</span> &rarr;
+              <div className="mt-2.5 flex items-center text-xs font-bold text-[#D96827]">
+                <span>Manage Shoes</span> &rarr;
               </div>
             </Link>
 
             {/* Module 4: Expenses */}
             <Link
               href="/finances"
-              className="group p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-md transition-all flex flex-col justify-between cursor-pointer"
+              className="group p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:shadow-xs transition-all flex flex-col justify-between cursor-pointer min-w-0"
             >
               <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="p-2.5 rounded-xl bg-[#FFF4E5] text-[#D96827] group-hover:scale-105 transition-transform">
-                    <Wallet className="h-5 w-5" />
+                <div className="flex items-center justify-between mb-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Wallet className="h-4 w-4" />
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FDF0EF] text-[#D94B45] border border-[#D94B45]/20">
-                    -{formatETB(todayDay.expenses)} Today
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FDF0EF] text-[#D94B45]">
+                    -{formatETB(todayDay.expenses)}
                   </span>
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
-                  Expenses Management
+                <h3 className="text-sm font-bold text-[#29221E] group-hover:text-[#D96827] transition-colors">
+                  Expenses
                 </h3>
-                <p className="mt-1 text-xs text-[#8B8179] leading-relaxed">
-                  Audit daily operating petty expenses (lunch, transport) and track capital expenditures with custom reasons.
+                <p className="mt-0.5 text-xs text-[#8B8179]">
+                  Daily petty cash & operating costs.
                 </p>
               </div>
-              <div className="mt-3.5 flex items-center text-xs font-bold text-[#D96827] group-hover:translate-x-1 transition-transform">
-                <span>Manage Expenses</span> &rarr;
+              <div className="mt-2.5 flex items-center text-xs font-bold text-[#D96827]">
+                <span>View Expenses</span> &rarr;
               </div>
             </Link>
           </div>

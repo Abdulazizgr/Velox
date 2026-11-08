@@ -641,14 +641,11 @@ export default function RentalBoardPage() {
             <div className="flex items-center gap-2">
               <Timer className="h-6 w-6 text-[#D96827]" />
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
-                Live Rental Timer Board
+                Rentals
               </h1>
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                Live Board
-              </span>
             </div>
-            <p className="mt-0.5 text-xs sm:text-sm text-[#8B8179]">
-              Sorted by finish time • +5m grace period • In-flight shoe swaps & extensions
+            <p className="mt-0.5 text-xs text-[#8B8179]">
+              Active skate timers and return settlements
             </p>
           </div>
 

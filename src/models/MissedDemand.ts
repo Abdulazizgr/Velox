@@ -24,3 +24,4 @@ const MissedDemandSchema = new Schema<IMissedDemand>(
 export const MissedDemand: Model<IMissedDemand> =
   mongoose.models.MissedDemand ||
   mongoose.model<IMissedDemand>("MissedDemand", MissedDemandSchema);
+

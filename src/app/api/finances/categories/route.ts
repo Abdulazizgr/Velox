@@ -97,3 +97,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Failed to create expense category" }, { status: 500 });
   }
 }
+
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== "OWNER") {
+      return NextResponse.json({ error: "Unauthorized - Owner only" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    const name = searchParams.get("name");
+
+    await connectDB();
+    if (id) {
+      await ExpenseCategory.findByIdAndDelete(id);
+    } else if (name) {
+      await ExpenseCategory.findOneAndDelete({ name });
+    } else {
+      return NextResponse.json({ error: "ID or Name required" }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, message: "Reason deleted successfully" });
+  } catch (error) {
+    console.error("Delete expense category error:", error);
+    return NextResponse.json({ error: "Failed to delete expense category" }, { status: 500 });
+  }
+}

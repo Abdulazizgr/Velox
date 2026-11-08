@@ -24,16 +24,18 @@ export async function GET(req: NextRequest) {
     // 1. Find or create register record for this date
     let register = await DailyRegister.findOne({ date: dateStr });
     if (!register) {
+      const prevRegister = await DailyRegister.findOne({ date: { $lt: dateStr } }).sort({ date: -1 });
+      const initialFloat = prevRegister?.openingCash ?? 0;
       register = await DailyRegister.create({
         date: dateStr,
-        openingCash: 500, // 500 ETB standard float
+        openingCash: initialFloat,
         cashInTotal: 0,
         telebirrTotal: 0,
         cbeTotal: 0,
         dailyExpensesTotal: 0,
-        expectedClosingCash: 500,
+        expectedClosingCash: initialFloat,
         status: "OPEN",
-        notes: "Auto-opened for today's shift",
+        notes: "Shift opened",
       });
     }
 
@@ -129,3 +131,44 @@ export async function GET(req: NextRequest) {
   }
 }
 
+
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const sessionUser = await getSession();
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { openingCash, notes } = body;
+
+    await connectDB();
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+
+    let register = await DailyRegister.findOne({ date: todayStr });
+    if (!register) {
+      register = await DailyRegister.create({
+        date: todayStr,
+        openingCash: Number(openingCash) || 0,
+        expectedClosingCash: Number(openingCash) || 0,
+        status: "OPEN",
+      });
+    } else {
+      if (openingCash !== undefined && !isNaN(Number(openingCash))) {
+        register.openingCash = Number(openingCash);
+        register.expectedClosingCash =
+          register.openingCash + (register.cashInTotal || 0) - (register.dailyExpensesTotal || 0);
+      }
+      if (notes !== undefined) {
+        register.notes = notes;
+      }
+      await register.save();
+    }
+
+    return NextResponse.json({ success: true, register });
+  } catch (error) {
+    console.error("Update register error:", error);
+    return NextResponse.json({ error: "Failed to update register" }, { status: 500 });
+  }
+}

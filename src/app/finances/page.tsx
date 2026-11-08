@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ChevronDown,
+  Edit3,
 } from "lucide-react";
 
 interface ExpenseItem {
@@ -63,6 +64,7 @@ interface FinanceData {
 type DatePreset = "TODAY" | "YESTERDAY" | "WEEK" | "MONTH" | "ALL" | "CUSTOM";
 
 export default function ExpensesPage() {
+  const [isOwner, setIsOwner] = useState(true);
   const [data, setData] = useState<FinanceData | null>(null);
   const [reasons, setReasons] = useState<ExpenseReasonItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,6 +86,17 @@ export default function ExpensesPage() {
   const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Edit Expense Modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editReason, setEditReason] = useState("LUNCH");
+  const [editPaymentMethod, setEditPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
+  const [editDate, setEditDate] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Add Reason Modal
   const [showReasonModal, setShowReasonModal] = useState(false);
@@ -150,6 +163,79 @@ export default function ExpensesPage() {
       showPopup("Network Error", "Could not connect to server", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.authenticated) {
+          const owner = res.user?.role === "OWNER";
+          setIsOwner(owner);
+          if (!owner) {
+            setFundFilter("DAILY_CASH");
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const openEditModal = (exp: ExpenseItem) => {
+    setEditingExpenseId(exp._id);
+    setEditTitle(exp.title);
+    setEditAmount(exp.amount.toString());
+    setEditReason(exp.category);
+    setEditPaymentMethod(exp.paymentMethod || "CASH");
+    setEditDate(new Date(exp.date).toISOString().slice(0, 10));
+    setEditNotes(exp.notes || "");
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTitle.trim() || !editAmount || Number(editAmount) <= 0) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch("/api/finances/expenses", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingExpenseId,
+          title: editTitle.trim(),
+          amount: Number(editAmount),
+          category: editReason,
+          paymentMethod: editPaymentMethod,
+          date: editDate,
+          notes: editNotes.trim(),
+        }),
+      });
+      if (res.ok) {
+        setShowEditModal(false);
+        showPopup("Expense Updated", "The expense was updated successfully.");
+        fetchExpenses();
+      } else {
+        const err = await res.json();
+        showPopup("Update Failed", err.error || "Failed to update", "error");
+      }
+    } catch {
+      showPopup("Network Error", "Could not update expense", "error");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteReason = async (reasonId: string, reasonName: string) => {
+    try {
+      const res = await fetch(`/api/finances/categories?id=${reasonId}&name=${reasonName}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        showPopup("Reason Removed", `Reason "${reasonName}" was deleted.`);
+        fetchReasons();
+      }
+    } catch {
+      showPopup("Error", "Could not delete reason", "error");
     }
   };
 
@@ -473,7 +559,7 @@ export default function ExpensesPage() {
         </div>
 
         {/* 2. THE 3 REQUESTED CARDS: TOTAL DAILY, CAPITAL, AND BOTH */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className={`grid gap-4 ${isOwner ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1"}`}>
           {/* Card 1: Total Daily Expenses */}
           <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col justify-between">
             <div>
@@ -500,65 +586,69 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          {/* Card 2: Total Capital Expenses */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B8179]">
-                  Capital Expenses (CapEx)
-                </span>
-                <div className="p-1.5 rounded-lg bg-[#F7F6F3] text-[#29221E]">
-                  <Building2 className="h-4 w-4" />
+          {/* Card 2: Total Capital Expenses (OWNER ONLY) */}
+          {isOwner && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B8179]">
+                    Capital Expenses (CapEx)
+                  </span>
+                  <div className="p-1.5 rounded-lg bg-[#F7F6F3] text-[#29221E]">
+                    <Building2 className="h-4 w-4" />
+                  </div>
                 </div>
+                <div className="text-2xl sm:text-3xl font-black text-[#29221E] font-mono tracking-tight">
+                  {formatETB(data?.summary.capitalTotal || 0)}
+                </div>
+                <p className="mt-1 text-[11px] text-[#8B8179]">
+                  Skate shoes, bulk stock restock, rent & equipment
+                </p>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-[#29221E] font-mono tracking-tight">
-                {formatETB(data?.summary.capitalTotal || 0)}
+              <div className="mt-3 pt-2.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[11px] text-[#8B8179]">
+                <span className="flex items-center gap-1.5">
+                  Reserve:{" "}
+                  <strong className="text-[#29221E] font-mono">
+                    {formatETB(data?.capital.remainingBalance || 0)}
+                  </strong>
+                </span>
+                <button
+                  onClick={() => setShowTopupModal(true)}
+                  className="text-[#D96827] font-bold hover:underline cursor-pointer"
+                >
+                  + Top Up
+                </button>
               </div>
-              <p className="mt-1 text-[11px] text-[#8B8179]">
-                Skate shoes, bulk stock restock, rent & equipment
-              </p>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[11px] text-[#8B8179]">
-              <span className="flex items-center gap-1.5">
-                Reserve:{" "}
-                <strong className="text-[#29221E] font-mono">
-                  {formatETB(data?.capital.remainingBalance || 0)}
-                </strong>
-              </span>
-              <button
-                onClick={() => setShowTopupModal(true)}
-                className="text-[#D96827] font-bold hover:underline cursor-pointer"
-              >
-                + Top Up
-              </button>
-            </div>
-          </div>
+          )}
 
-          {/* Card 3: Total Expenses (Both / Combined) */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF4E5]/80 border-2 border-[#D96827] shadow-sm relative overflow-hidden flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#D96827]">
-                  Total Expenses (Both)
-                </span>
-                <div className="p-1.5 rounded-lg bg-[#D96827] text-white">
-                  <Calculator className="h-4 w-4" />
+          {/* Card 3: Total Expenses (Both / Combined) (OWNER ONLY) */}
+          {isOwner && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FFF4E5]/80 border-2 border-[#D96827] shadow-sm relative overflow-hidden flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#D96827]">
+                    Total Expenses (Both)
+                  </span>
+                  <div className="p-1.5 rounded-lg bg-[#D96827] text-white">
+                    <Calculator className="h-4 w-4" />
+                  </div>
                 </div>
+                <div className="text-2xl sm:text-3xl font-black text-[#D96827] font-mono tracking-tight">
+                  {formatETB(data?.summary.totalBoth || 0)}
+                </div>
+                <p className="mt-1 text-[11px] text-[#8B8179]">
+                  Combined Daily Operational + Capital Expenditures
+                </p>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-[#D96827] font-mono tracking-tight">
-                {formatETB(data?.summary.totalBoth || 0)}
+              <div className="mt-3 pt-2.5 border-t border-[#E9D9C5] flex items-center justify-between text-[11px] text-[#8B8179]">
+                <span>Combined Total:</span>
+                <span className="font-bold text-[#D96827] font-mono">
+                  {data?.summary.totalCount || 0} transactions
+                </span>
               </div>
-              <p className="mt-1 text-[11px] text-[#8B8179]">
-                Combined Daily Operational + Capital Expenditures
-              </p>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-[#E9D9C5] flex items-center justify-between text-[11px] text-[#8B8179]">
-              <span>Combined Total:</span>
-              <span className="font-bold text-[#D96827] font-mono">
-                {data?.summary.totalCount || 0} transactions
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* 3. REASON SCROLLER & QUICK CONTROLS */}
@@ -635,40 +725,42 @@ export default function ExpensesPage() {
               )}
             </div>
 
-            {/* Fund Source Filter Pills & Export CSV */}
+            {/* Fund Source Filter Pills & Export CSV (Fund pills owner only) */}
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 bg-[#F7F6F3] p-1 rounded-xl border border-[#E9D9C5] text-xs">
-                <button
-                  onClick={() => setFundFilter("ALL")}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    fundFilter === "ALL"
-                      ? "bg-[#D96827] text-white font-bold shadow-xs"
-                      : "text-[#8B8179] hover:text-[#29221E]"
-                  }`}
-                >
-                  All Funds
-                </button>
-                <button
-                  onClick={() => setFundFilter("DAILY_CASH")}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    fundFilter === "DAILY_CASH"
-                      ? "bg-[#D96827] text-white font-bold shadow-xs"
-                      : "text-[#8B8179] hover:text-[#29221E]"
-                  }`}
-                >
-                  Daily Cash
-                </button>
-                <button
-                  onClick={() => setFundFilter("CAPITAL")}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    fundFilter === "CAPITAL"
-                      ? "bg-[#29221E] text-white font-bold shadow-xs"
-                      : "text-[#8B8179] hover:text-[#29221E]"
-                  }`}
-                >
-                  Capital
-                </button>
-              </div>
+              {isOwner && (
+                <div className="flex items-center gap-1 bg-[#F7F6F3] p-1 rounded-xl border border-[#E9D9C5] text-xs">
+                  <button
+                    onClick={() => setFundFilter("ALL")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      fundFilter === "ALL"
+                        ? "bg-[#D96827] text-white font-bold shadow-xs"
+                        : "text-[#8B8179] hover:text-[#29221E]"
+                    }`}
+                  >
+                    All Funds
+                  </button>
+                  <button
+                    onClick={() => setFundFilter("DAILY_CASH")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      fundFilter === "DAILY_CASH"
+                        ? "bg-[#D96827] text-white font-bold shadow-xs"
+                        : "text-[#8B8179] hover:text-[#29221E]"
+                    }`}
+                  >
+                    Daily Cash
+                  </button>
+                  <button
+                    onClick={() => setFundFilter("CAPITAL")}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      fundFilter === "CAPITAL"
+                        ? "bg-[#29221E] text-white font-bold shadow-xs"
+                        : "text-[#8B8179] hover:text-[#29221E]"
+                    }`}
+                  >
+                    Capital
+                  </button>
+                </div>
+              )}
 
               {filteredExpenses.length > 0 && (
                 <button
@@ -757,13 +849,22 @@ export default function ExpensesPage() {
                         </span>
                       </div>
 
-                      <button
-                        onClick={() => setExpenseToDelete(exp)}
-                        className="p-1 text-[#8B8179] hover:text-[#D94B45] cursor-pointer"
-                        title="Delete expense"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal(exp)}
+                          className="p-1 text-[#8B8179] hover:text-[#D96827] cursor-pointer"
+                          title="Edit expense"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setExpenseToDelete(exp)}
+                          className="p-1 text-[#8B8179] hover:text-[#D94B45] cursor-pointer"
+                          title="Delete expense"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -820,13 +921,22 @@ export default function ExpensesPage() {
                           -{formatETB(exp.amount)}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => setExpenseToDelete(exp)}
-                            className="p-1 text-[#8B8179] hover:text-[#D94B45] transition-colors cursor-pointer"
-                            title="Delete expense"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => openEditModal(exp)}
+                              className="p-1 text-[#8B8179] hover:text-[#D96827] transition-colors cursor-pointer"
+                              title="Edit expense"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setExpenseToDelete(exp)}
+                              className="p-1 text-[#8B8179] hover:text-[#D94B45] transition-colors cursor-pointer"
+                              title="Delete expense"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -863,45 +973,57 @@ export default function ExpensesPage() {
                 {/* 1. FUNDING SOURCE SELECTOR */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
-                    1. Funding Source
+                    Funding Source
                   </label>
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFundSource("DAILY_CASH");
-                        setSelectedReason("LUNCH");
-                      }}
-                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
-                        fundSource === "DAILY_CASH"
-                          ? "bg-[#FFF4E5] border-2 border-[#D96827] text-[#29221E] shadow-xs"
-                          : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
-                      }`}
-                    >
-                      <div className="font-bold text-xs text-[#29221E]">Daily Cash Drawer</div>
-                      <div className="text-[10px] text-[#8B8179] mt-0.5">
-                        Lunch, transport, supplies
-                      </div>
-                    </button>
+                  {isOwner ? (
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFundSource("DAILY_CASH");
+                          setSelectedReason("LUNCH");
+                        }}
+                        className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                          fundSource === "DAILY_CASH"
+                            ? "bg-[#FFF4E5] border-2 border-[#D96827] text-[#29221E] shadow-xs"
+                            : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
+                        }`}
+                      >
+                        <div className="font-bold text-xs text-[#29221E]">Daily Cash Drawer</div>
+                        <div className="text-[10px] text-[#8B8179] mt-0.5">
+                          Lunch, transport, supplies
+                        </div>
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFundSource("CAPITAL");
-                        setSelectedReason("SKATE_SHOES");
-                      }}
-                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
-                        fundSource === "CAPITAL"
-                          ? "bg-[#29221E] text-white shadow-xs"
-                          : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
-                      }`}
-                    >
-                      <div className="font-bold text-xs">General Capital</div>
-                      <div className="text-[10px] mt-0.5 opacity-80">
-                        Skates, restock, rent
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFundSource("CAPITAL");
+                          setSelectedReason("SKATE_SHOES");
+                        }}
+                        className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                          fundSource === "CAPITAL"
+                            ? "bg-[#29221E] text-white shadow-xs"
+                            : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
+                        }`}
+                      >
+                        <div className="font-bold text-xs">General Capital</div>
+                        <div className="text-[10px] mt-0.5 opacity-80">
+                          Skates, restock, rent
+                        </div>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-3 mb-2 rounded-xl bg-[#EBF5F0] border border-[#26845B]/30 flex items-center justify-between">
+                      <div>
+                        <div className="font-bold text-xs text-[#26845B]">Daily Cash Drawer</div>
+                        <div className="text-[10px] text-[#26845B]/80">Operating petty cash & supplies</div>
                       </div>
-                    </button>
-                  </div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white text-[#26845B] border border-[#26845B]/20">
+                        Daily
+                      </span>
+                    </div>
+                  )}
 
                   {/* Quick Fill Chips */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -1137,9 +1259,139 @@ export default function ExpensesPage() {
           </div>
         )}
 
+        {/* MODAL: EDIT EXPENSE */}
+        {showEditModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Edit3 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#29221E]">Edit Expense</h3>
+                    <p className="text-xs text-[#8B8179]">Update expense entry</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="mt-4 space-y-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Reason
+                  </label>
+                  <select
+                    value={editReason}
+                    onChange={(e) => setEditReason(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  >
+                    {reasons.map((r) => (
+                      <option key={r._id || r.name} value={r.name}>
+                        {r.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Expense Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Amount (ETB)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      value={editAmount}
+                      onChange={(e) => setEditAmount(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Channel
+                    </label>
+                    <select
+                      value={editPaymentMethod}
+                      onChange={(e) =>
+                        setEditPaymentMethod(e.target.value as "CASH" | "TELEBIRR" | "CBE")
+                      }
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    >
+                      <option value="CASH">Cash</option>
+                      <option value="TELEBIRR">Telebirr</option>
+                      <option value="CBE">CBE Birr</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#E9D9C5]">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingEdit}
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 cursor-pointer"
+                  >
+                    {savingEdit ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* MODAL 2: CREATE EXPENSE REASON */}
         {showReasonModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
             <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
@@ -1147,8 +1399,8 @@ export default function ExpensesPage() {
                     <Tag className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">New Expense Reason</h3>
-                    <p className="text-xs text-[#8B8179]">Add custom reason for expenses</p>
+                    <h3 className="text-base font-bold text-[#29221E]">Expense Reasons</h3>
+                    <p className="text-xs text-[#8B8179]">Add or manage custom reasons</p>
                   </div>
                 </div>
                 <button
@@ -1159,57 +1411,57 @@ export default function ExpensesPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleCreateReason} className="mt-4 space-y-3.5">
+              <form onSubmit={handleCreateReason} className="mt-4 space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Reason Name
+                    Add New Reason Name
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Electricity, Marketing, First Aid"
-                    value={newReasonName}
-                    onChange={(e) => setNewReasonName(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Funding Source Applicability
-                  </label>
-                  <select
-                    value={newReasonFundSource}
-                    onChange={(e) =>
-                      setNewReasonFundSource(
-                        e.target.value as "DAILY_CASH" | "CAPITAL" | "BOTH"
-                      )
-                    }
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none"
-                  >
-                    <option value="BOTH">Both (Daily Cash & Capital)</option>
-                    <option value="DAILY_CASH">Daily Cash Drawer Only</option>
-                    <option value="CAPITAL">General Capital Only</option>
-                  </select>
-                </div>
-
-                <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#E9D9C5]">
-                  <button
-                    type="button"
-                    onClick={() => setShowReasonModal(false)}
-                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creatingReason}
-                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 cursor-pointer"
-                  >
-                    {creatingReason ? "Creating..." : "Save Reason"}
-                  </button>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Electricity, First Aid"
+                      value={newReasonName}
+                      onChange={(e) => setNewReasonName(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={creatingReason}
+                      className="px-4 py-2 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs shrink-0 cursor-pointer"
+                    >
+                      {creatingReason ? "..." : "+ Add"}
+                    </button>
+                  </div>
                 </div>
               </form>
+
+              {/* List of Custom Reasons with Delete */}
+              <div className="mt-4 pt-3 border-t border-[#E9D9C5]">
+                <span className="text-[11px] font-bold text-[#8B8179] uppercase tracking-wider block mb-2">
+                  Active Reasons
+                </span>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin">
+                  {reasons.map((r) => (
+                    <div
+                      key={r._id || r.name}
+                      className="flex items-center justify-between p-2 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs"
+                    >
+                      <span className="font-semibold text-[#29221E]">{r.displayName}</span>
+                      {r._id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReason(r._id!, r.name)}
+                          className="p-1 text-[#8B8179] hover:text-[#D94B45] cursor-pointer"
+                          title="Delete reason"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}

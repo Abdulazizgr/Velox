@@ -16,6 +16,8 @@ import {
   ChevronUp,
   X,
   Sparkles,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 interface ShoeItem {
@@ -47,6 +49,19 @@ export default function ShoesInventoryPage() {
   const [newType, setNewType] = useState<SkateType>("INLINE");
   const [newNotes, setNewNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Edit shoe modal
+  const [editingShoe, setEditingShoe] = useState<ShoeItem | null>(null);
+  const [editShoeId, setEditShoeId] = useState("");
+  const [editSize, setEditSize] = useState("40");
+  const [editType, setEditType] = useState<SkateType>("INLINE");
+  const [editStatus, setEditStatus] = useState<ShoeStatus>("AVAILABLE");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Delete shoe confirmation
+  const [shoeToDelete, setShoeToDelete] = useState<ShoeItem | null>(null);
+  const [deletingShoe, setDeletingShoe] = useState(false);
 
   const fetchShoes = async () => {
     setLoading(true);
@@ -142,6 +157,92 @@ export default function ShoesInventoryPage() {
     }
   };
 
+  const openEditModal = (shoe: ShoeItem) => {
+    setEditingShoe(shoe);
+    setEditShoeId(shoe.shoeId);
+    setEditSize(shoe.size.toString());
+    setEditType(shoe.type || "INLINE");
+    setEditStatus(shoe.status);
+    setEditNotes(shoe.notes || "");
+  };
+
+  const handleEditShoe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingShoe || !editShoeId.trim()) return;
+    setEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/shoes/${editingShoe._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shoeId: editShoeId.trim().toUpperCase(),
+          size: Number(editSize),
+          type: editType,
+          status: editStatus,
+          notes: editNotes.trim(),
+        }),
+      });
+      if (res.ok) {
+        setEditingShoe(null);
+        showAlert({
+          title: "Shoe Updated",
+          message: `Shoe ${editShoeId.toUpperCase()} updated.`,
+          type: "success",
+        });
+        fetchShoes();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: "Update Failed",
+          message: err.error || "Failed to update shoe",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Connection Error",
+        message: "Failed to connect to server",
+        type: "error",
+      });
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteShoe = async () => {
+    if (!shoeToDelete) return;
+    setDeletingShoe(true);
+    try {
+      const res = await fetch(`/api/shoes/${shoeToDelete._id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setShoeToDelete(null);
+        showAlert({
+          title: "Shoe Removed",
+          message: `Shoe ${shoeToDelete.shoeId} deleted from inventory.`,
+          type: "success",
+        });
+        fetchShoes();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: "Delete Failed",
+          message: err.error || "Failed to delete shoe",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Error",
+        message: "Failed to delete shoe",
+        type: "error",
+      });
+    } finally {
+      setDeletingShoe(false);
+    }
+  };
+
   // Filtered shoes
   const filteredShoes = useMemo(() => {
     return shoes.filter((shoe) => {
@@ -225,27 +326,27 @@ export default function ShoesInventoryPage() {
         </div>
 
         {/* 1. Status Highlights Cards (Zero-Overflow on Mobile) */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-4 w-full min-w-0">
           {/* Available Card */}
           <button
             type="button"
             onClick={() => setSelectedStatus(selectedStatus === "AVAILABLE" ? "ALL" : "AVAILABLE")}
-            className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all text-left flex items-center justify-between shadow-2xs cursor-pointer overflow-hidden ${
+            className={`p-2 sm:p-4 rounded-xl sm:rounded-2xl border transition-all text-left flex items-center justify-between shadow-2xs cursor-pointer overflow-hidden min-w-0 ${
               selectedStatus === "AVAILABLE"
                 ? "bg-[#EBF5F0] border-[#26845B] ring-2 ring-inset ring-[#26845B]"
                 : "bg-[#EBF5F0]/80 border-[#26845B]/30 hover:bg-[#EBF5F0] hover:border-[#26845B]/60"
             }`}
           >
             <div className="min-w-0 pr-1">
-              <span className="text-[10px] sm:text-xs text-[#26845B] uppercase font-bold tracking-tight sm:tracking-wider truncate block">
+              <span className="text-[9px] min-[360px]:text-[10px] sm:text-xs text-[#26845B] uppercase font-bold tracking-tight truncate block">
                 Available
               </span>
-              <p className="text-xl sm:text-3xl font-black text-[#26845B] leading-tight">
+              <p className="text-lg sm:text-3xl font-black text-[#26845B] leading-tight">
                 {availableCount}
               </p>
             </div>
-            <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/80 border border-[#26845B]/20 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-[#26845B]" />
+            <div className="h-6 w-6 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/80 border border-[#26845B]/20 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-[#26845B]" />
             </div>
           </button>
 
@@ -253,23 +354,23 @@ export default function ShoesInventoryPage() {
           <button
             type="button"
             onClick={() => setSelectedStatus(selectedStatus === "RENTED" ? "ALL" : "RENTED")}
-            className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all text-left flex items-center justify-between shadow-2xs cursor-pointer overflow-hidden ${
+            className={`p-2 sm:p-4 rounded-xl sm:rounded-2xl border transition-all text-left flex items-center justify-between shadow-2xs cursor-pointer overflow-hidden min-w-0 ${
               selectedStatus === "RENTED"
                 ? "bg-[#FFF4E5] border-[#D96827] ring-2 ring-inset ring-[#D96827]"
                 : "bg-[#FFF4E5]/80 border-[#D96827]/30 hover:bg-[#FFF4E5] hover:border-[#D96827]/60"
             }`}
           >
             <div className="min-w-0 pr-1">
-              <span className="text-[10px] sm:text-xs text-[#D96827] uppercase font-bold tracking-tight sm:tracking-wider truncate block">
+              <span className="text-[9px] min-[360px]:text-[10px] sm:text-xs text-[#D96827] uppercase font-bold tracking-tight truncate block">
                 <span className="sm:hidden">Rented</span>
                 <span className="hidden sm:inline">Rented (Active)</span>
               </span>
-              <p className="text-xl sm:text-3xl font-black text-[#D96827] leading-tight">
+              <p className="text-lg sm:text-3xl font-black text-[#D96827] leading-tight">
                 {rentedCount}
               </p>
             </div>
-            <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/80 border border-[#D96827]/20 flex items-center justify-center shrink-0">
-              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-[#D96827]" />
+            <div className="h-6 w-6 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/80 border border-[#D96827]/20 flex items-center justify-center shrink-0">
+              <Clock className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-[#D96827]" />
             </div>
           </button>
 
@@ -279,23 +380,23 @@ export default function ShoesInventoryPage() {
             onClick={() =>
               setSelectedStatus(selectedStatus === "MAINTENANCE" ? "ALL" : "MAINTENANCE")
             }
-            className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all text-left flex items-center justify-between shadow-2xs cursor-pointer overflow-hidden ${
+            className={`p-2 sm:p-4 rounded-xl sm:rounded-2xl border transition-all text-left flex items-center justify-between shadow-2xs cursor-pointer overflow-hidden min-w-0 ${
               selectedStatus === "MAINTENANCE"
                 ? "bg-[#FDF0EF] border-[#D94B45] ring-2 ring-inset ring-[#D94B45]"
                 : "bg-[#FDF0EF]/80 border-[#D94B45]/30 hover:bg-[#FDF0EF] hover:border-[#D94B45]/60"
             }`}
           >
             <div className="min-w-0 pr-1">
-              <span className="text-[10px] sm:text-xs text-[#D94B45] uppercase font-bold tracking-tight sm:tracking-wider truncate block">
+              <span className="text-[9px] min-[360px]:text-[10px] sm:text-xs text-[#D94B45] uppercase font-bold tracking-tight truncate block">
                 <span className="sm:hidden">Maint</span>
                 <span className="hidden sm:inline">Maintenance</span>
               </span>
-              <p className="text-xl sm:text-3xl font-black text-[#D94B45] leading-tight">
+              <p className="text-lg sm:text-3xl font-black text-[#D94B45] leading-tight">
                 {maintenanceCount}
               </p>
             </div>
-            <div className="h-7 w-7 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/80 border border-[#D94B45]/20 flex items-center justify-center shrink-0">
-              <Wrench className="h-4 w-4 sm:h-5 sm:w-5 text-[#D94B45]" />
+            <div className="h-6 w-6 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-white/80 border border-[#D94B45]/20 flex items-center justify-center shrink-0">
+              <Wrench className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-[#D94B45]" />
             </div>
           </button>
         </div>
@@ -547,8 +648,8 @@ export default function ShoesInventoryPage() {
                     )}
                   </div>
 
-                  {/* Quick Status Dropdown Changer */}
-                  <div className="mt-3 pt-2 border-t border-[#E9D9C5]/60">
+                  {/* Quick Status Dropdown Changer & Actions */}
+                  <div className="mt-3 pt-2 border-t border-[#E9D9C5]/60 space-y-1.5">
                     <select
                       value={shoe.status}
                       onChange={(e) =>
@@ -561,6 +662,25 @@ export default function ShoesInventoryPage() {
                       <option value="MAINTENANCE">🔧 Maintenance</option>
                       <option value="RETIRED">⛔ Retired</option>
                     </select>
+
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(shoe)}
+                        className="p-1 text-[#8B8179] hover:text-[#D96827] rounded-md hover:bg-[#FFF4E5] transition-colors cursor-pointer"
+                        title="Edit shoe"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShoeToDelete(shoe)}
+                        className="p-1 text-[#8B8179] hover:text-[#D94B45] rounded-md hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                        title="Delete shoe"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -695,6 +815,186 @@ export default function ShoesInventoryPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* 5. Edit Shoe Asset Modal */}
+        {editingShoe && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl text-[#29221E] space-y-4">
+              <div className="flex items-start justify-between pb-3 border-b border-[#E9D9C5]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Pencil className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#29221E]">Edit Skate Shoe</h3>
+                    <p className="text-xs text-[#8B8179]">Update asset details</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingShoe(null)}
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditShoe} className="space-y-3.5">
+                {/* Skate Type */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Skate Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditType("INLINE")}
+                      className={`p-2.5 rounded-xl border text-center font-bold text-xs cursor-pointer transition-all ${
+                        editType === "INLINE"
+                          ? "bg-[#29221E] text-white border-[#29221E] shadow-2xs"
+                          : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
+                      }`}
+                    >
+                      Inline Skates
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditType("QUAD")}
+                      className={`p-2.5 rounded-xl border text-center font-bold text-xs cursor-pointer transition-all ${
+                        editType === "QUAD"
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-2xs"
+                          : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
+                      }`}
+                    >
+                      Quads
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Shoe ID Tag
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editShoeId}
+                      onChange={(e) => setEditShoeId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] uppercase focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Shoe Size
+                    </label>
+                    <select
+                      value={editSize}
+                      onChange={(e) => setEditSize(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    >
+                      {Array.from({ length: 18 }, (_, i) => 30 + i).map((sz) => (
+                        <option key={sz} value={sz}>
+                          Size #{sz}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as ShoeStatus)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  >
+                    <option value="AVAILABLE">Available</option>
+                    <option value="RENTED">Rented</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="RETIRED">Retired</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Notes (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    placeholder="e.g. Brand, condition..."
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div className="pt-3 border-t border-[#E9D9C5] flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingShoe(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSubmitting}
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+                  >
+                    {editSubmitting ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 6. Delete Shoe Modal */}
+        {shoeToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-[#FDF0EF] text-[#D94B45]">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#29221E]">Delete Skate Shoe?</h3>
+                  <p className="text-xs text-[#8B8179]">This permanently deletes this shoe asset.</p>
+                </div>
+              </div>
+
+              <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
+                <div className="font-bold text-[#29221E]">
+                  Shoe Tag: {shoeToDelete.shoeId}
+                </div>
+                <div className="text-[11px] text-[#8B8179]">
+                  Size #{shoeToDelete.size} • {shoeToDelete.type === "QUAD" ? "Quads" : "Inline Skates"}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                <button
+                  type="button"
+                  onClick={() => setShoeToDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingShoe}
+                  onClick={handleDeleteShoe}
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  {deletingShoe ? "Deleting..." : "Confirm Delete"}
+                </button>
+              </div>
             </div>
           </div>
         )}

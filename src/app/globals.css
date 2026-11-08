@@ -57,3 +57,45 @@ body {
     display: block !important;
   }
 }
+
+/* Skate loading animation */
+@keyframes skateGlide {
+  0%, 100% {
+    transform: translateX(-12px) rotate(-4deg);
+  }
+  50% {
+    transform: translateX(12px) rotate(4deg);
+  }
+}
+
+@keyframes skateTrack {
+  0%, 100% {
+    transform: scaleX(0.75);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scaleX(1.15);
+    opacity: 0.85;
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-skate-glide {
+  animation: skateGlide 1.4s ease-in-out infinite;
+}
+
+.animate-skate-track {
+  animation: skateTrack 1.4s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 2s linear infinite;
+}

@@ -17,7 +17,6 @@ import {
   Menu,
   X,
   ChevronRight,
-  MoreHorizontal,
   FileText,
 } from "lucide-react";
 import { PWAInlineButton } from "@/components/PWAInstallBanner";
@@ -38,6 +37,8 @@ export function AppShell({ user, children }: AppShellProps) {
     return <>{children}</>;
   }
 
+  const isOwner = user?.role === "OWNER";
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -48,27 +49,42 @@ export function AppShell({ user, children }: AppShellProps) {
     }
   };
 
-  const navLinks = [
-    { href: "/", label: "Dashboard", icon: Sparkles },
-    { href: "/rentals", label: "Rental Board", icon: Timer, badge: "Live" },
-    { href: "/concession", label: "Snacks & Drinks", icon: ShoppingBag, badge: "POS" },
-    { href: "/inventory/shoes", label: "Skate Shoes", icon: Footprints },
-    { href: "/inventory/stock", label: "Stock Control", icon: Package },
-    { href: "/finances", label: "Expenses", icon: Wallet },
-    { href: "/reports", label: "Daily Reports", icon: FileText, badge: "EOD" },
-  ];
+  // Nav links: Dashboard, Reports, and Staff are hidden for staff
+  const navLinks = isOwner
+    ? [
+        { href: "/", label: "Dashboard", icon: Sparkles },
+        { href: "/rentals", label: "Rental Board", icon: Timer },
+        { href: "/concession", label: "Snacks & Drinks", icon: ShoppingBag },
+        { href: "/inventory/shoes", label: "Skate Shoes", icon: Footprints },
+        { href: "/inventory/stock", label: "Stock Control", icon: Package },
+        { href: "/finances", label: "Expenses", icon: Wallet },
+        { href: "/reports", label: "Daily Reports", icon: FileText },
+        { href: "/staff", label: "Staff", icon: Users },
+      ]
+    : [
+        { href: "/rentals", label: "Rental Board", icon: Timer },
+        { href: "/concession", label: "Snacks & Drinks", icon: ShoppingBag },
+        { href: "/inventory/shoes", label: "Skate Shoes", icon: Footprints },
+        { href: "/inventory/stock", label: "Stock Control", icon: Package },
+        { href: "/finances", label: "Expenses", icon: Wallet },
+      ];
 
-  if (user?.role === "OWNER") {
-    navLinks.push({ href: "/staff", label: "Staff Management", icon: Users, badge: "Owner" });
-  }
-
-  // Primary 4 quick links for mobile bottom bar
-  const bottomBarLinks = [
-    { href: "/", label: "Home", icon: Sparkles },
-    { href: "/rentals", label: "Rentals", icon: Timer },
-    { href: "/concession", label: "POS", icon: ShoppingBag },
-    { href: "/inventory/shoes", label: "Shoes", icon: Footprints },
-  ];
+  // Mobile bottom quick links: "More" is replaced with "Expenses"
+  const bottomBarLinks = isOwner
+    ? [
+        { href: "/", label: "Home", icon: Sparkles },
+        { href: "/rentals", label: "Rentals", icon: Timer },
+        { href: "/concession", label: "POS", icon: ShoppingBag },
+        { href: "/inventory/shoes", label: "Shoes", icon: Footprints },
+        { href: "/finances", label: "Expenses", icon: Wallet },
+      ]
+    : [
+        { href: "/rentals", label: "Rentals", icon: Timer },
+        { href: "/concession", label: "POS", icon: ShoppingBag },
+        { href: "/inventory/shoes", label: "Shoes", icon: Footprints },
+        { href: "/inventory/stock", label: "Stock", icon: Package },
+        { href: "/finances", label: "Expenses", icon: Wallet },
+      ];
 
   return (
     <div className="min-h-screen bg-[#F7F6F3] text-[#29221E] flex flex-col md:flex-row">
@@ -78,7 +94,7 @@ export function AppShell({ user, children }: AppShellProps) {
         <div className="h-16 flex items-center gap-3 px-5 border-b border-[#362D28]">
           <div className="relative h-10 w-10 rounded-xl overflow-hidden border border-[#D96827]/40 shadow-md shrink-0 bg-black">
             <Image
-              src="/logo.jpg"
+              src="/icon-192.png"
               alt="Velox Skate"
               fill
               sizes="40px"
@@ -102,7 +118,7 @@ export function AppShell({ user, children }: AppShellProps) {
           </div>
           <span
             className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider border shrink-0 ${
-              user.role === "OWNER"
+              isOwner
                 ? "bg-[#D96827]/20 text-[#D96827] border-[#D96827]/40"
                 : "bg-[#FFF4E5]/10 text-[#E9D9C5] border-[#E9D9C5]/30"
             }`}
@@ -130,25 +146,12 @@ export function AppShell({ user, children }: AppShellProps) {
                   <Icon className={`h-4 w-4 ${isActive ? "text-white" : "text-[#8B8179]"}`} />
                   <span>{link.label}</span>
                 </div>
-                {link.badge && (
-                  <span
-                    className={`text-[9px] px-1.5 py-0.2 rounded font-semibold ${
-                      isActive
-                        ? "bg-white/20 text-white"
-                        : link.badge === "Owner"
-                        ? "bg-[#D96827]/20 text-[#D96827] border border-[#D96827]/40"
-                        : "bg-[#362D28] text-[#8B8179] border border-[#433832]"
-                    }`}
-                  >
-                    {link.badge}
-                  </span>
-                )}
               </Link>
             );
           })}
         </nav>
 
-        {/* PWA Install Button & Sign Out at bottom of sidebar */}
+        {/* PWA Install Button & Sign Out */}
         <div className="p-3 border-t border-[#362D28] space-y-2">
           <PWAInlineButton />
           <button
@@ -163,7 +166,6 @@ export function AppShell({ user, children }: AppShellProps) {
 
       {/* 2. MOBILE TOP HEADER (Hidden on desktop) */}
       <header className="md:hidden sticky top-0 z-40 bg-[#29221E] text-white border-b border-[#433832] px-4 h-14 flex items-center justify-between shadow-md">
-        {/* App Drawer on the left */}
         <button
           onClick={() => setMobileMenuOpen(true)}
           className="p-2 -ml-2 rounded-xl text-[#E9D9C5] hover:text-white hover:bg-[#362D28] transition-colors cursor-pointer"
@@ -173,12 +175,11 @@ export function AppShell({ user, children }: AppShellProps) {
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Logo & Brand on the right */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={isOwner ? "/" : "/rentals"} className="flex items-center gap-2">
           <span className="text-sm font-bold tracking-tight text-white">VELOX</span>
           <div className="relative h-8 w-8 rounded-lg overflow-hidden border border-[#D96827]/40 shadow-sm shrink-0 bg-black">
             <Image
-              src="/logo.jpg"
+              src="/icon-192.png"
               alt="Velox Skate"
               fill
               sizes="32px"
@@ -193,8 +194,8 @@ export function AppShell({ user, children }: AppShellProps) {
         {children}
       </div>
 
-      {/* 4. MOBILE BOTTOM QUICK NAVIGATION BAR (Fixed at bottom on mobile) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#29221E]/95 backdrop-blur-xl border-t border-[#433832] px-2 py-1.5 flex items-center justify-around shadow-2xl">
+      {/* 4. MOBILE BOTTOM QUICK NAVIGATION BAR (5 slots, NO MORE, DIRECT EXPENSES) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#29221E]/95 backdrop-blur-xl border-t border-[#433832] px-1 py-1.5 flex items-center justify-around shadow-2xl">
         {bottomBarLinks.map((link) => {
           const Icon = link.icon;
           const isActive = pathname === link.href;
@@ -202,47 +203,34 @@ export function AppShell({ user, children }: AppShellProps) {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
                 isActive
                   ? "text-[#D96827] font-bold scale-105"
                   : "text-[#8B8179] hover:text-[#E9D9C5]"
               }`}
             >
               <Icon className={`h-5 w-5 ${isActive ? "text-[#D96827]" : "text-[#8B8179]"}`} />
-              <span className="text-[10px] mt-0.5 tracking-tight">{link.label}</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-medium">{link.label}</span>
             </Link>
           );
         })}
-
-        {/* 5th slot: More Button */}
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all cursor-pointer ${
-            mobileMenuOpen ? "text-[#D96827]" : "text-[#8B8179] hover:text-[#E9D9C5]"
-          }`}
-        >
-          <MoreHorizontal className="h-5 w-5" />
-          <span className="text-[10px] mt-0.5 tracking-tight">More</span>
-        </button>
       </nav>
 
-      {/* 5. MOBILE "MORE" SLIDE-OVER DRAWER */}
+      {/* 5. MOBILE SLIDE-OVER DRAWER (For full navigation & actions) */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
 
-          {/* Drawer content */}
           <div className="relative mr-auto w-72 max-w-[85vw] bg-[#29221E] text-white border-r border-[#433832] h-full p-5 flex flex-col justify-between shadow-2xl z-10 animate-in slide-in-from-left duration-200">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-[#362D28]">
                 <div className="flex items-center gap-3">
                   <div className="relative h-9 w-9 rounded-xl overflow-hidden border border-[#D96827]/40 shadow-sm shrink-0 bg-black">
                     <Image
-                      src="/logo.jpg"
+                      src="/icon-192.png"
                       alt="Velox Skate"
                       fill
                       sizes="36px"
@@ -289,7 +277,7 @@ export function AppShell({ user, children }: AppShellProps) {
               </div>
             </div>
 
-            {/* Install App & Logout at bottom of drawer */}
+            {/* Install App & Logout */}
             <div className="pt-4 border-t border-[#362D28] space-y-2">
               <PWAInlineButton />
               <button

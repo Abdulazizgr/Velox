@@ -82,6 +82,45 @@ export default function ConcessionPage() {
   // Completed Receipt Modal State
   const [completedSale, setCompletedSale] = useState<SaleRecordItem | null>(null);
 
+  // Void/Delete Sale Confirmation
+  const [saleToDelete, setSaleToDelete] = useState<SaleRecordItem | null>(null);
+  const [deletingSale, setDeletingSale] = useState(false);
+
+  const handleDeleteSale = async () => {
+    if (!saleToDelete) return;
+    setDeletingSale(true);
+    try {
+      const res = await fetch(`/api/concession/sales?id=${saleToDelete._id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setSaleToDelete(null);
+        showAlert({
+          title: "Order Voided",
+          message: "The sale was voided and product quantities were restored to inventory.",
+          type: "success",
+        });
+        fetchHistory();
+        fetchData();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: "Cannot Void Order",
+          message: err.error || "Failed to void sale",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Connection Error",
+        message: "Failed to connect to server.",
+        type: "error",
+      });
+    } finally {
+      setDeletingSale(false);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -816,13 +855,23 @@ export default function ConcessionPage() {
                         </div>
                       </div>
 
-                      <div className="text-xs text-[#8B8179] bg-[#F7F6F3] p-2 rounded-xl border border-[#E9D9C5]/60">
-                        {sale.items.map((i, idx) => (
-                          <span key={idx} className="mr-2 inline-block">
-                            <strong>{i.quantity}x</strong> {i.productName}
-                            {idx < sale.items.length - 1 ? "," : ""}
-                          </span>
-                        ))}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-[#8B8179] bg-[#F7F6F3] p-2 rounded-xl border border-[#E9D9C5]/60 flex-1">
+                          {sale.items.map((i, idx) => (
+                            <span key={idx} className="mr-2 inline-block">
+                              <strong>{i.quantity}x</strong> {i.productName}
+                              {idx < sale.items.length - 1 ? "," : ""}
+                            </span>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSaleToDelete(sale)}
+                          className="p-2 text-[#8B8179] hover:text-[#D94B45] rounded-xl hover:bg-[#FDF0EF] transition-colors cursor-pointer shrink-0"
+                          title="Void order and restore stock"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -838,6 +887,7 @@ export default function ConcessionPage() {
                         <th className="px-5 py-3">Items Sold</th>
                         <th className="px-5 py-3">Total Amount</th>
                         <th className="px-5 py-3">Payment</th>
+                        <th className="px-4 py-3 text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E9D9C5]">
@@ -880,6 +930,16 @@ export default function ConcessionPage() {
                                 OPEN TAB
                               </span>
                             )}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setSaleToDelete(sale)}
+                              className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                              title="Void order and restore stock"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -943,6 +1003,50 @@ export default function ConcessionPage() {
                   className="w-full py-2.5 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm"
                 >
                   Done / Next Order
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 4. VOID / DELETE SALE CONFIRMATION MODAL */}
+        {saleToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-[#FDF0EF] text-[#D94B45]">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#29221E]">Void this Order?</h3>
+                  <p className="text-xs text-[#8B8179]">Product stock will be returned to inventory.</p>
+                </div>
+              </div>
+
+              <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
+                <div className="font-bold text-[#29221E]">
+                  Total: {formatETB(saleToDelete.totalAmount)}
+                </div>
+                <div className="text-[11px] text-[#8B8179]">
+                  {saleToDelete.items.map((i) => `${i.quantity}x ${i.productName}`).join(", ")}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                <button
+                  type="button"
+                  onClick={() => setSaleToDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingSale}
+                  onClick={handleDeleteSale}
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  {deletingSale ? "Voiding..." : "Confirm Void"}
                 </button>
               </div>
             </div>

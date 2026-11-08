@@ -12,6 +12,9 @@ import {
   AlertCircle,
   KeyRound,
   RefreshCw,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 
 interface StaffItem {
@@ -35,6 +38,29 @@ export default function StaffManagementPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("STAFF");
+
+  // Edit staff state
+  const [editingStaff, setEditingStaff] = useState<StaffItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRole, setEditRole] = useState<UserRole>("STAFF");
+  const [editNewPassword, setEditNewPassword] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Delete staff state
+  const [staffToDelete, setStaffToDelete] = useState<StaffItem | null>(null);
+  const [deletingStaff, setDeletingStaff] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (!res.authenticated || res.user?.role !== "OWNER") {
+          window.location.href = "/rentals";
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchStaff = async () => {
     setLoading(true);
@@ -106,6 +132,66 @@ export default function StaffManagementPage() {
     } catch (e) {
       console.error(e);
       alert("Error toggling staff account");
+    }
+  };
+
+  const openEditStaff = (member: StaffItem) => {
+    setEditingStaff(member);
+    setEditName(member.name);
+    setEditPhone(member.phone);
+    setEditRole(member.role);
+    setEditNewPassword("");
+  };
+
+  const handleEditStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff || !editName.trim() || !editPhone.trim()) return;
+    setEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/staff/${editingStaff._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          phone: editPhone.trim(),
+          role: editRole,
+          newPassword: editNewPassword.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to update staff member");
+        return;
+      }
+      setEditingStaff(null);
+      setSuccess(`Updated "${editName}" successfully!`);
+      fetchStaff();
+    } catch {
+      alert("Error updating staff member");
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    setDeletingStaff(true);
+    try {
+      const res = await fetch(`/api/staff/${staffToDelete._id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to delete staff member");
+        return;
+      }
+      setStaffToDelete(null);
+      setSuccess(`Removed "${staffToDelete.name}" from system.`);
+      fetchStaff();
+    } catch {
+      alert("Error deleting staff member");
+    } finally {
+      setDeletingStaff(false);
     }
   };
 
@@ -321,16 +407,32 @@ export default function StaffManagementPage() {
                           📞 {member.phone}
                         </div>
 
-                        <button
-                          onClick={() => handleToggleActive(member._id, member.isActive)}
-                          className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer ${
-                            member.isActive
-                              ? "border-[#D94B45]/30 text-[#D94B45] hover:bg-[#D94B45]/10"
-                              : "border-[#26845B]/30 text-[#26845B] hover:bg-[#26845B]/10"
-                          }`}
-                        >
-                          {member.isActive ? "Deactivate" : "Activate"}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleToggleActive(member._id, member.isActive)}
+                            className={`text-xs px-2.5 py-1 rounded-xl border font-bold transition-colors cursor-pointer ${
+                              member.isActive
+                                ? "border-[#D94B45]/30 text-[#D94B45] hover:bg-[#D94B45]/10"
+                                : "border-[#26845B]/30 text-[#26845B] hover:bg-[#26845B]/10"
+                            }`}
+                          >
+                            {member.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                          <button
+                            onClick={() => openEditStaff(member)}
+                            className="p-1.5 text-[#8B8179] hover:text-[#D96827] rounded-lg hover:bg-[#FFF4E5] transition-colors cursor-pointer"
+                            title="Edit staff member"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setStaffToDelete(member)}
+                            className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                            title="Delete staff member"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -392,16 +494,32 @@ export default function StaffManagementPage() {
                             )}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button
-                              onClick={() => handleToggleActive(member._id, member.isActive)}
-                              className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer ${
-                                member.isActive
-                                  ? "border-[#D94B45]/30 text-[#D94B45] hover:bg-[#D94B45]/10"
-                                  : "border-[#26845B]/30 text-[#26845B] hover:bg-[#26845B]/10"
-                              }`}
-                            >
-                              {member.isActive ? "Deactivate" : "Activate"}
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleToggleActive(member._id, member.isActive)}
+                                className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer ${
+                                  member.isActive
+                                    ? "border-[#D94B45]/30 text-[#D94B45] hover:bg-[#D94B45]/10"
+                                    : "border-[#26845B]/30 text-[#26845B] hover:bg-[#26845B]/10"
+                                }`}
+                              >
+                                {member.isActive ? "Deactivate" : "Activate"}
+                              </button>
+                              <button
+                                onClick={() => openEditStaff(member)}
+                                className="p-1.5 text-[#8B8179] hover:text-[#D96827] rounded-lg hover:bg-[#FFF4E5] transition-colors cursor-pointer"
+                                title="Edit staff member"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setStaffToDelete(member)}
+                                className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                                title="Delete staff member"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -413,6 +531,162 @@ export default function StaffManagementPage() {
             </div>
           </div>
         </div>
+
+        {/* Edit Staff Modal */}
+        {editingStaff && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Pencil className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#29221E]">Edit Staff Member</h3>
+                    <p className="text-xs text-[#8B8179]">Update account credentials</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingStaff(null)}
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditStaff} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs sm:text-sm text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Phone Number (Login)
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Role
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditRole("STAFF")}
+                      className={`p-2.5 rounded-xl border text-center font-bold text-xs cursor-pointer transition-all ${
+                        editRole === "STAFF"
+                          ? "bg-[#29221E] text-white border-[#29221E]"
+                          : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5]"
+                      }`}
+                    >
+                      Staff Member
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditRole("OWNER")}
+                      className={`p-2.5 rounded-xl border text-center font-bold text-xs cursor-pointer transition-all ${
+                        editRole === "OWNER"
+                          ? "bg-[#D96827] text-white border-[#D96827]"
+                          : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5]"
+                      }`}
+                    >
+                      Owner
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    New Password (Leave blank to keep unchanged)
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter new password if changing..."
+                    value={editNewPassword}
+                    onChange={(e) => setEditNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#E9D9C5]">
+                  <button
+                    type="button"
+                    onClick={() => setEditingStaff(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSubmitting}
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+                  >
+                    {editSubmitting ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Staff Confirmation Modal */}
+        {staffToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-[#FDF0EF] text-[#D94B45]">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#29221E]">Remove Staff Member?</h3>
+                  <p className="text-xs text-[#8B8179]">This permanently removes account access.</p>
+                </div>
+              </div>
+
+              <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
+                <div className="font-bold text-[#29221E]">{staffToDelete.name}</div>
+                <div className="text-[11px] text-[#8B8179] font-mono">
+                  📞 {staffToDelete.phone} • {staffToDelete.role}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                <button
+                  type="button"
+                  onClick={() => setStaffToDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingStaff}
+                  onClick={handleDeleteStaff}
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  {deletingStaff ? "Deleting..." : "Confirm Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

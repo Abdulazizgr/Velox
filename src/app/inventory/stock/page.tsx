@@ -17,6 +17,8 @@ import {
   Tag,
   ArrowRight,
   X,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 interface ProductItem {
@@ -76,6 +78,20 @@ export default function StockInventoryPage() {
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [submittingCat, setSubmittingCat] = useState(false);
+
+  // 5. Edit Product Modal State
+  const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("SNACK");
+  const [editCostPrice, setEditCostPrice] = useState("");
+  const [editSellingPrice, setEditSellingPrice] = useState("");
+  const [editCurrentStock, setEditCurrentStock] = useState("");
+  const [editMinAlert, setEditMinAlert] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // 6. Delete Product Confirmation State
+  const [productToDelete, setProductToDelete] = useState<ProductItem | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
 
   // Data fetching
   const fetchProducts = async () => {
@@ -241,6 +257,124 @@ export default function StockInventoryPage() {
       });
     } finally {
       setSubmittingCat(false);
+    }
+  };
+
+  const openEditProductModal = (p: ProductItem) => {
+    setEditingProduct(p);
+    setEditName(p.name);
+    setEditCategory(p.category);
+    setEditCostPrice(p.costPrice.toString());
+    setEditSellingPrice(p.sellingPrice.toString());
+    setEditCurrentStock(p.currentStock.toString());
+    setEditMinAlert(p.minStockAlert.toString());
+  };
+
+  const handleEditProductSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct || !editName.trim()) return;
+    setEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/products/${editingProduct._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          category: editCategory,
+          costPrice: Number(editCostPrice) || 0,
+          sellingPrice: Number(editSellingPrice) || 0,
+          currentStock: Number(editCurrentStock) || 0,
+          minStockAlert: Number(editMinAlert) || 5,
+        }),
+      });
+      if (res.ok) {
+        setEditingProduct(null);
+        showAlert({
+          title: "Product Updated",
+          message: `${editName.trim()} updated successfully.`,
+          type: "success",
+        });
+        fetchProducts();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: "Update Failed",
+          message: err.error || "Failed to update product.",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Connection Error",
+        message: "Failed to connect to server.",
+        type: "error",
+      });
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!productToDelete) return;
+    setDeletingProduct(true);
+    try {
+      const res = await fetch(`/api/products/${productToDelete._id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setProductToDelete(null);
+        showAlert({
+          title: "Product Deleted",
+          message: `${productToDelete.name} was removed from the catalog.`,
+          type: "success",
+        });
+        fetchProducts();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: "Delete Failed",
+          message: err.error || "Failed to delete product.",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Error",
+        message: "Failed to delete product.",
+        type: "error",
+      });
+    } finally {
+      setDeletingProduct(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catId: string, catName: string) => {
+    try {
+      const res = await fetch(`/api/categories?id=${catId}&name=${catName}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        showAlert({
+          title: "Category Removed",
+          message: `Category "${catName}" was removed.`,
+          type: "success",
+        });
+        if (categoryFilter === catName) setCategoryFilter("ALL");
+        fetchCategories();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: "Cannot Delete Category",
+          message: err.error || "Failed to delete category.",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Error",
+        message: "Could not reach server to delete category.",
+        type: "error",
+      });
     }
   };
 
@@ -509,19 +643,37 @@ export default function StockInventoryPage() {
 
               {allCategoryList.map((cat) => {
                 const count = products.filter((p) => p.category === cat.name).length;
+                const dbCat = categories.find((c) => c.name === cat.name && c._id);
                 return (
-                  <button
+                  <div
                     key={cat.name}
-                    type="button"
-                    onClick={() => setCategoryFilter(cat.name)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
+                    className={`inline-flex items-center rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
                       categoryFilter === cat.name
                         ? "bg-[#D96827] text-white font-bold shadow-2xs"
-                        : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+                        : "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
                     }`}
                   >
-                    {cat.displayName} ({count})
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setCategoryFilter(cat.name)}
+                      className="px-3 py-1.5 cursor-pointer hover:opacity-90"
+                    >
+                      {cat.displayName} ({count})
+                    </button>
+                    {dbCat && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCategory(dbCat._id!, dbCat.name);
+                        }}
+                        className="pr-2 pl-0.5 text-current opacity-60 hover:opacity-100 hover:text-[#D94B45] cursor-pointer"
+                        title="Delete category"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
 
@@ -669,8 +821,8 @@ export default function StockInventoryPage() {
                       </span>
                     </div>
 
-                    {/* Action Buttons on Mobile Card: + Add Stock & Adjust */}
-                    <div className="flex items-center gap-2 pt-1 border-t border-[#E9D9C5]/50">
+                    {/* Action Buttons on Mobile Card: + Add Stock, Adjust, Edit, Delete */}
+                    <div className="flex items-center gap-1.5 pt-1 border-t border-[#E9D9C5]/50">
                       <button
                         type="button"
                         onClick={() => {
@@ -678,10 +830,10 @@ export default function StockInventoryPage() {
                           setRestockQty("12");
                           setRestockCostPrice(p.costPrice.toString());
                         }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#EBF5F0] text-[#26845B] hover:bg-[#D5EFE3] font-bold text-xs border border-[#26845B]/30 cursor-pointer transition-colors shadow-2xs"
+                        className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-[#EBF5F0] text-[#26845B] hover:bg-[#D5EFE3] font-bold text-xs border border-[#26845B]/30 cursor-pointer transition-colors shadow-2xs"
                       >
                         <PlusCircle className="h-3.5 w-3.5" />
-                        <span>+ Add Stock</span>
+                        <span>+ Stock</span>
                       </button>
 
                       <button
@@ -693,10 +845,28 @@ export default function StockInventoryPage() {
                           setAdjustDeductCount("1");
                           setAdjustReason("Physical Inventory Count");
                         }}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#F7F6F3] text-[#29221E] hover:bg-[#E9D9C5]/50 font-semibold text-xs border border-[#E9D9C5] cursor-pointer transition-colors shadow-2xs"
+                        className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-[#F7F6F3] text-[#29221E] hover:bg-[#E9D9C5]/50 font-semibold text-xs border border-[#E9D9C5] cursor-pointer transition-colors shadow-2xs"
                       >
                         <SlidersHorizontal className="h-3.5 w-3.5 text-[#8B8179]" />
                         <span>Adjust</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => openEditProductModal(p)}
+                        className="p-2 rounded-xl text-[#8B8179] hover:text-[#D96827] bg-[#F7F6F3] border border-[#E9D9C5] hover:bg-[#FFF4E5] transition-colors cursor-pointer"
+                        title="Edit product"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setProductToDelete(p)}
+                        className="p-2 rounded-xl text-[#8B8179] hover:text-[#D94B45] bg-[#F7F6F3] border border-[#E9D9C5] hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                        title="Delete product"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -785,10 +955,28 @@ export default function StockInventoryPage() {
                                 setAdjustReason("Physical Inventory Count");
                               }}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F7F6F3] text-[#29221E] hover:bg-[#E9D9C5]/50 font-semibold text-xs border border-[#E9D9C5] cursor-pointer transition-colors shadow-2xs"
-                              title="Stock adjustment (spoilage, breakage, count correction)"
+                              title="Stock adjustment"
                             >
                               <SlidersHorizontal className="h-3.5 w-3.5 text-[#8B8179]" />
                               <span>Adjust</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => openEditProductModal(p)}
+                              className="p-1.5 text-[#8B8179] hover:text-[#D96827] rounded-lg hover:bg-[#FFF4E5] transition-colors cursor-pointer"
+                              title="Edit product"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setProductToDelete(p)}
+                              className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                              title="Delete product"
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -1258,6 +1446,181 @@ export default function StockInventoryPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* 5. Edit Product Modal */}
+        {editingProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Pencil className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#29221E]">Edit Product</h3>
+                    <p className="text-xs text-[#8B8179]">Update product catalog details</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingProduct(null)}
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditProductSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Product Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs sm:text-sm text-[#29221E] font-medium focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] font-medium focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  >
+                    {allCategoryList.map((cat) => (
+                      <option key={cat.name} value={cat.name}>
+                        {cat.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Cost Price (ETB)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={editCostPrice}
+                      onChange={(e) => setEditCostPrice(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Selling Price (ETB)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={editSellingPrice}
+                      onChange={(e) => setEditSellingPrice(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#D96827] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Current Stock (Units)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={editCurrentStock}
+                      onChange={(e) => setEditCurrentStock(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      Low Stock Alert
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={editMinAlert}
+                      onChange={(e) => setEditMinAlert(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#E9D9C5]">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSubmitting}
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
+                  >
+                    {editSubmitting ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 6. Delete Product Confirmation Modal */}
+        {productToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-xl bg-[#FDF0EF] text-[#D94B45]">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#29221E]">Delete Product?</h3>
+                  <p className="text-xs text-[#8B8179]">This permanently removes it from the catalog.</p>
+                </div>
+              </div>
+
+              <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
+                <div className="font-bold text-[#29221E]">{productToDelete.name}</div>
+                <div className="text-[11px] text-[#8B8179]">
+                  Stock: {productToDelete.currentStock} units • Selling: {formatETB(productToDelete.sellingPrice)}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                <button
+                  type="button"
+                  onClick={() => setProductToDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingProduct}
+                  onClick={handleDeleteProduct}
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  {deletingProduct ? "Deleting..." : "Confirm Delete"}
+                </button>
+              </div>
             </div>
           </div>
         )}

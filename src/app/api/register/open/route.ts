@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { openingCash = 500 } = body;
+    const { openingCash } = body;
 
     await connectDB();
     const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -21,13 +21,15 @@ export async function POST(req: NextRequest) {
     if (!register) {
       register = await DailyRegister.create({
         date: todayStr,
-        openingCash: Number(openingCash) || 500,
+        openingCash: openingCash !== undefined && !isNaN(Number(openingCash)) ? Number(openingCash) : 0,
         status: "OPEN",
         notes: "Shift opened",
       });
     } else {
       register.status = "OPEN";
-      register.openingCash = Number(openingCash) || register.openingCash;
+      if (openingCash !== undefined && !isNaN(Number(openingCash))) {
+        register.openingCash = Number(openingCash);
+      }
       register.actualClosingCash = undefined;
       register.discrepancy = 0;
       register.closedAt = undefined;

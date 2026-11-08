@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { actualClosingCash, notes = "" } = body;
+    const { actualClosingCash, openingCash, notes = "" } = body;
 
     const countedCash = Number(actualClosingCash);
     if (countedCash < 0 || isNaN(countedCash)) {
@@ -36,6 +36,14 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Update opening float if staff/owner wrote a custom float upon closing
+    if (openingCash !== undefined && !isNaN(Number(openingCash))) {
+      register.openingCash = Number(openingCash);
+    }
+
+    // Recalculate expected closing cash based on float + cash in - daily expenses
+    register.expectedClosingCash = register.openingCash + register.cashInTotal - register.dailyExpensesTotal;
 
     const discrepancy = countedCash - register.expectedClosingCash;
 
