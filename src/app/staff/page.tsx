@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UserRole } from "@/models/User";
+import { useLanguage } from "@/lib/i18n";
 import {
   Users,
   UserPlus,
@@ -27,6 +28,7 @@ interface StaffItem {
 }
 
 export default function StaffManagementPage() {
+  const { t, lang } = useLanguage();
   const [staffList, setStaffList] = useState<StaffItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -203,23 +205,23 @@ export default function StaffManagementPage() {
           <div>
             <div className="flex items-center gap-2">
               <Users className="h-6 w-6 text-[#D96827]" />
-              <h1 className="text-2xl font-bold tracking-tight text-[#29221E]">Staff Management</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-[#29221E]">{t("staff.title", "Staff Management")}</h1>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                Owner Only
+                {t("staff.ownerOnly", "Owner Only")}
               </span>
             </div>
             <p className="mt-1 text-sm text-[#8B8179]">
-              Register new counter staff, assign login credentials with phone numbers, and manage terminal access.
+              {t("staff.subtitle", "Register new counter staff, assign login credentials with phone numbers, and manage terminal access.")}
             </p>
           </div>
 
           <button
             onClick={fetchStaff}
             disabled={loading}
-            className="self-start sm:self-auto flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#29221E] hover:text-[#D96827] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#FFF4E5] transition-colors shadow-xs"
+            className="self-start sm:self-auto flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#29221E] hover:text-[#D96827] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#FFF4E5] transition-colors shadow-xs cursor-pointer"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("common.refresh", "Refresh")}
           </button>
         </div>
 
@@ -228,7 +230,7 @@ export default function StaffManagementPage() {
           <div className="mt-6 flex items-start gap-3 rounded-xl bg-[#D94B45]/10 border border-[#D94B45]/20 p-4 text-sm text-[#D94B45]">
             <AlertCircle className="h-5 w-5 text-[#D94B45] shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">Action Failed</p>
+              <p className="font-semibold">{t("common.error", "Action Failed")}</p>
               <p className="text-xs text-[#D94B45]/90 mt-0.5">{error}</p>
             </div>
           </div>
@@ -238,7 +240,7 @@ export default function StaffManagementPage() {
           <div className="mt-6 flex items-start gap-3 rounded-xl bg-[#26845B]/10 border border-[#26845B]/20 p-4 text-sm text-[#26845B]">
             <CheckCircle2 className="h-5 w-5 text-[#26845B] shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">Success</p>
+              <p className="font-semibold">{t("common.success", "Success")}</p>
               <p className="text-xs text-[#26845B]/90 mt-0.5">{success}</p>
             </div>
           </div>
@@ -250,16 +252,16 @@ export default function StaffManagementPage() {
             <div className="bg-white border border-[#E9D9C5] rounded-2xl p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4 text-base font-bold text-[#29221E]">
                 <UserPlus className="h-5 w-5 text-[#D96827]" />
-                <span>Register New Staff</span>
+                <span>{t("staff.registerStaff", "Register New Staff")}</span>
               </div>
               <p className="text-xs text-[#8B8179] mb-6">
-                The owner sets up the employee account. The staff member uses this phone number and password to log in at the counter.
+                {t("staff.registerDesc", "The owner sets up the employee account. The staff member uses this phone number and password to log in at the counter.")}
               </p>
 
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Full Name
+                    {t("staff.fullName", "Full Name")}
                   </label>
                   <input
                     type="text"
@@ -273,7 +275,7 @@ export default function StaffManagementPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Phone Number (Login ID)
+                    {t("staff.phoneLogin", "Phone Number (Login ID)")}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8B8179]">
@@ -292,7 +294,7 @@ export default function StaffManagementPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Initial Password
+                    {t("staff.password", "Initial Password")}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#8B8179]">
@@ -311,7 +313,7 @@ export default function StaffManagementPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Role & Permissions
+                    {t("staff.roleAndPerms", "Role & Permissions")}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -324,7 +326,7 @@ export default function StaffManagementPage() {
                       }`}
                     >
                       <Shield className="h-4 w-4" />
-                      Staff Operator
+                      {t("staff.roleStaff", "Staff Operator")}
                     </button>
                     <button
                       type="button"
@@ -336,7 +338,7 @@ export default function StaffManagementPage() {
                       }`}
                     >
                       <Shield className="h-4 w-4" />
-                      Co-Owner
+                      {t("staff.roleOwner", "Co-Owner")}
                     </button>
                   </div>
                 </div>
@@ -346,7 +348,7 @@ export default function StaffManagementPage() {
                   disabled={actionLoading}
                   className="w-full mt-2 py-3 px-4 bg-[#D96827] hover:bg-[#c25a1e] text-white rounded-xl text-sm font-bold transition-all disabled:opacity-50 cursor-pointer shadow-sm"
                 >
-                  {actionLoading ? "Registering..." : "Register Staff Member"}
+                  {actionLoading ? t("staff.registering", "Registering...") : t("staff.createAccount", "Register Staff Member")}
                 </button>
               </form>
             </div>
@@ -357,20 +359,20 @@ export default function StaffManagementPage() {
             <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-[#E9D9C5] bg-[#F7F6F3]/50 flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-bold text-[#29221E]">Registered Team Members</h2>
-                  <p className="text-xs text-[#8B8179]">Total: {staffList.length} accounts</p>
+                  <h2 className="text-base font-bold text-[#29221E]">{t("staff.registeredMembers", "Registered Team Members")}</h2>
+                  <p className="text-xs text-[#8B8179]">{t("common.total", "Total")}: {staffList.length} {t("staff.totalAccounts", "accounts")}</p>
                 </div>
               </div>
 
               {loading ? (
                 <div className="p-12 text-center text-[#8B8179]">
                   <div className="h-8 w-8 border-2 border-[#D96827] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-sm">Loading staff members...</p>
+                  <p className="text-sm">{t("common.loading", "Loading staff members...")}</p>
                 </div>
               ) : staffList.length === 0 ? (
                 <div className="p-12 text-center text-[#8B8179]">
                   <Users className="h-10 w-10 mx-auto mb-2 opacity-40 text-[#8B8179]" />
-                  <p className="text-sm">No staff members found.</p>
+                  <p className="text-sm">{t("staff.noStaffFound", "No staff members found.")}</p>
                 </div>
               ) : (
               <div>
@@ -386,7 +388,7 @@ export default function StaffManagementPage() {
                           <div>
                             <div className="font-bold text-[#29221E] text-sm">{member.name}</div>
                             <div className="text-[11px] text-[#8B8179]">
-                              Joined {new Date(member.createdAt).toLocaleDateString()}
+                              {t("staff.joined", "Joined")} {new Date(member.createdAt).toLocaleDateString(lang === "am" ? "am-ET" : "en-US")}
                             </div>
                           </div>
                         </div>
@@ -398,7 +400,7 @@ export default function StaffManagementPage() {
                               : "bg-[#F7F6F3] text-[#29221E] border-[#E9D9C5]"
                           }`}
                         >
-                          {member.role}
+                          {member.role === "OWNER" ? t("staff.roleOwner", "Co-Owner") : t("staff.roleStaff", "Staff Operator")}
                         </span>
                       </div>
 
@@ -416,19 +418,19 @@ export default function StaffManagementPage() {
                                 : "border-[#26845B]/30 text-[#26845B] hover:bg-[#26845B]/10"
                             }`}
                           >
-                            {member.isActive ? "Deactivate" : "Activate"}
+                            {member.isActive ? t("staff.deactivate", "Deactivate") : t("staff.activate", "Activate")}
                           </button>
                           <button
                             onClick={() => openEditStaff(member)}
                             className="p-1.5 text-[#8B8179] hover:text-[#D96827] rounded-lg hover:bg-[#FFF4E5] transition-colors cursor-pointer"
-                            title="Edit staff member"
+                            title={t("common.edit", "Edit staff member")}
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => setStaffToDelete(member)}
                             className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
-                            title="Delete staff member"
+                            title={t("common.delete", "Delete staff member")}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -443,11 +445,11 @@ export default function StaffManagementPage() {
                   <table className="w-full text-left text-sm">
                     <thead className="bg-[#F7F6F3] text-xs uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                       <tr>
-                        <th className="px-6 py-3 font-semibold">Member</th>
-                        <th className="px-6 py-3 font-semibold">Phone (Login)</th>
-                        <th className="px-6 py-3 font-semibold">Role</th>
-                        <th className="px-6 py-3 font-semibold">Status</th>
-                        <th className="px-6 py-3 font-semibold text-right">Actions</th>
+                        <th className="px-6 py-3 font-semibold">{t("staff.memberHeader", "Member")}</th>
+                        <th className="px-6 py-3 font-semibold">{t("staff.phoneHeader", "Phone (Login)")}</th>
+                        <th className="px-6 py-3 font-semibold">{t("staff.roleHeader", "Role")}</th>
+                        <th className="px-6 py-3 font-semibold">{t("common.status", "Status")}</th>
+                        <th className="px-6 py-3 font-semibold text-right">{t("common.actions", "Actions")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E9D9C5]">
@@ -461,7 +463,7 @@ export default function StaffManagementPage() {
                               <div>
                                 <div className="font-bold text-[#29221E]">{member.name}</div>
                                 <div className="text-[11px] text-[#8B8179]">
-                                  Joined {new Date(member.createdAt).toLocaleDateString()}
+                                  {t("staff.joined", "Joined")} {new Date(member.createdAt).toLocaleDateString(lang === "am" ? "am-ET" : "en-US")}
                                 </div>
                               </div>
                             </div>
@@ -477,19 +479,19 @@ export default function StaffManagementPage() {
                                   : "bg-[#F7F6F3] text-[#29221E] border-[#E9D9C5]"
                               }`}
                             >
-                              {member.role}
+                              {member.role === "OWNER" ? t("staff.roleOwner", "Co-Owner") : t("staff.roleStaff", "Staff Operator")}
                             </span>
                           </td>
                           <td className="px-6 py-4">
                             {member.isActive ? (
                               <span className="inline-flex items-center gap-1.5 text-xs text-[#26845B] font-bold">
                                 <CheckCircle2 className="h-3.5 w-3.5" />
-                                Active
+                                {t("staff.activeMember", "Active")}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 text-xs text-[#D94B45] font-bold">
                                 <XCircle className="h-3.5 w-3.5" />
-                                Deactivated
+                                {t("staff.deactivatedMember", "Deactivated")}
                               </span>
                             )}
                           </td>
@@ -503,19 +505,19 @@ export default function StaffManagementPage() {
                                     : "border-[#26845B]/30 text-[#26845B] hover:bg-[#26845B]/10"
                                 }`}
                               >
-                                {member.isActive ? "Deactivate" : "Activate"}
+                                {member.isActive ? t("staff.deactivate", "Deactivate") : t("staff.activate", "Activate")}
                               </button>
                               <button
                                 onClick={() => openEditStaff(member)}
                                 className="p-1.5 text-[#8B8179] hover:text-[#D96827] rounded-lg hover:bg-[#FFF4E5] transition-colors cursor-pointer"
-                                title="Edit staff member"
+                                title={t("common.edit", "Edit staff member")}
                               >
                                 <Pencil className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => setStaffToDelete(member)}
                                 className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
-                                title="Delete staff member"
+                                title={t("common.delete", "Delete staff member")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -542,8 +544,8 @@ export default function StaffManagementPage() {
                     <Pencil className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">Edit Staff Member</h3>
-                    <p className="text-xs text-[#8B8179]">Update account credentials</p>
+                    <h3 className="text-base font-bold text-[#29221E]">{t("staff.editStaffModalTitle", "Edit Staff Member")}</h3>
+                    <p className="text-xs text-[#8B8179]">{t("staff.editStaffModalSub", "Update account credentials")}</p>
                   </div>
                 </div>
                 <button
@@ -558,7 +560,7 @@ export default function StaffManagementPage() {
               <form onSubmit={handleEditStaff} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Full Name
+                    {t("staff.fullName", "Full Name")}
                   </label>
                   <input
                     type="text"
@@ -571,7 +573,7 @@ export default function StaffManagementPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Phone Number (Login)
+                    {t("staff.phoneHeader", "Phone Number (Login)")}
                   </label>
                   <input
                     type="tel"
@@ -584,7 +586,7 @@ export default function StaffManagementPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Role
+                    {t("staff.roleHeader", "Role")}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -596,7 +598,7 @@ export default function StaffManagementPage() {
                           : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5]"
                       }`}
                     >
-                      Staff Member
+                      {t("staff.roleStaff", "Staff Operator")}
                     </button>
                     <button
                       type="button"
@@ -607,14 +609,14 @@ export default function StaffManagementPage() {
                           : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5]"
                       }`}
                     >
-                      Owner
+                      {t("staff.roleOwner", "Co-Owner")}
                     </button>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    New Password (Leave blank to keep unchanged)
+                    {t("staff.newPassword", "New Password (Leave blank to keep unchanged)")}
                   </label>
                   <input
                     type="password"
@@ -631,14 +633,14 @@ export default function StaffManagementPage() {
                     onClick={() => setEditingStaff(null)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={editSubmitting}
                     className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                   >
-                    {editSubmitting ? "Saving..." : "Save Changes"}
+                    {editSubmitting ? t("reports.saving", "Saving...") : t("common.saveChanges", "Save Changes")}
                   </button>
                 </div>
               </form>
@@ -655,15 +657,15 @@ export default function StaffManagementPage() {
                   <Trash2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#29221E]">Remove Staff Member?</h3>
-                  <p className="text-xs text-[#8B8179]">This permanently removes account access.</p>
+                  <h3 className="text-base font-bold text-[#29221E]">{t("staff.deleteStaffModalTitle", "Remove Staff Member?")}</h3>
+                  <p className="text-xs text-[#8B8179]">{t("staff.deleteStaffModalSub", "This permanently removes account access.")}</p>
                 </div>
               </div>
 
               <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
                 <div className="font-bold text-[#29221E]">{staffToDelete.name}</div>
                 <div className="text-[11px] text-[#8B8179] font-mono">
-                  📞 {staffToDelete.phone} • {staffToDelete.role}
+                  📞 {staffToDelete.phone} • {staffToDelete.role === "OWNER" ? t("staff.roleOwner", "Co-Owner") : t("staff.roleStaff", "Staff Operator")}
                 </div>
               </div>
 
@@ -673,7 +675,7 @@ export default function StaffManagementPage() {
                   onClick={() => setStaffToDelete(null)}
                   className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="button"
@@ -681,7 +683,7 @@ export default function StaffManagementPage() {
                   onClick={handleDeleteStaff}
                   className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
-                  {deletingStaff ? "Deleting..." : "Confirm Delete"}
+                  {deletingStaff ? t("common.deleting", "Deleting...") : t("common.confirmDelete", "Confirm Delete")}
                 </button>
               </div>
             </div>

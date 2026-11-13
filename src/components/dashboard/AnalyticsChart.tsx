@@ -11,6 +11,7 @@ import {
   Smartphone,
   Landmark,
 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 export interface DayData {
   dateStr: string;
@@ -50,6 +51,7 @@ export function AnalyticsChart({
   hourlyData,
   todayGross,
 }: AnalyticsChartProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"REVENUE" | "CHANNELS" | "PEAK_HOURS">("REVENUE");
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(sevenDaysData.length - 1);
 
@@ -77,10 +79,10 @@ export function AnalyticsChart({
           </div>
           <div>
             <h2 className="text-sm sm:text-base font-black text-[#29221E] tracking-tight">
-              Analytics
+              {t("dashboard.analyticsTitle", "Analytics")}
             </h2>
             <p className="text-[11px] text-[#8B8179]">
-              Live performance & revenue breakdown
+              {t("dashboard.analyticsSub", "Live performance & revenue breakdown")}
             </p>
           </div>
         </div>
@@ -97,7 +99,7 @@ export function AnalyticsChart({
               }`}
             >
               <TrendingUp className="h-3.5 w-3.5" />
-              <span>7-Day Revenue</span>
+              <span>{t("dashboard.sevenDayRevenue", "7-Day Revenue")}</span>
             </button>
 
             <button
@@ -109,7 +111,7 @@ export function AnalyticsChart({
               }`}
             >
               <PieChart className="h-3.5 w-3.5" />
-              <span>Channels</span>
+              <span>{t("dashboard.channels", "Channels")}</span>
             </button>
 
             <button
@@ -121,7 +123,7 @@ export function AnalyticsChart({
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
-              <span>Peak Hours</span>
+              <span>{t("dashboard.peakHours", "Peak Hours")}</span>
             </button>
           </div>
         </div>
@@ -134,7 +136,7 @@ export function AnalyticsChart({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div className="p-2.5 sm:p-3 rounded-2xl bg-[#F7F6F3] border border-[#E9D9C5] min-w-0">
               <span className="text-[10px] text-[#8B8179] font-bold uppercase block truncate">
-                7-Day Total
+                {t("dashboard.sevenDayTotal", "7-Day Total")}
               </span>
               <div className="text-sm sm:text-base font-black text-[#29221E] font-mono truncate">
                 {formatETB(totalWeeklyGross)}
@@ -143,7 +145,7 @@ export function AnalyticsChart({
 
             <div className="p-2.5 sm:p-3 rounded-2xl bg-[#F7F6F3] border border-[#E9D9C5] min-w-0">
               <span className="text-[10px] text-[#8B8179] font-bold uppercase block truncate">
-                Daily Average
+                {t("dashboard.dailyAverage", "Daily Average")}
               </span>
               <div className="text-sm sm:text-base font-black text-[#29221E] font-mono truncate">
                 {formatETB(weeklyAvg)}
@@ -152,7 +154,7 @@ export function AnalyticsChart({
 
             <div className="p-2.5 sm:p-3 rounded-2xl bg-[#FFF4E5] border border-[#E9D9C5] min-w-0">
               <span className="text-[10px] text-[#D96827] font-bold uppercase block truncate">
-                Today&apos;s Revenue
+                {t("dashboard.todaysRevenue", "Today's Revenue")}
               </span>
               <div className="text-sm sm:text-base font-black text-[#D96827] font-mono truncate">
                 {formatETB(todayGross)}
@@ -161,7 +163,7 @@ export function AnalyticsChart({
 
             <div className="p-2.5 sm:p-3 rounded-2xl bg-[#F7F6F3] border border-[#E9D9C5] min-w-0">
               <span className="text-[10px] text-[#8B8179] font-bold uppercase block truncate">
-                Snack Ratio
+                {t("dashboard.snackRatio", "Snack Ratio")}
               </span>
               <div className="text-sm sm:text-base font-black text-[#26845B] font-mono truncate">
                 {totalWeeklyGross > 0
@@ -203,7 +205,7 @@ export function AnalyticsChart({
                       </span>
                       {d.isToday && (
                         <span className="px-1.5 py-0.2 rounded-full bg-[#D96827] text-white text-[9px] font-bold shrink-0">
-                          Today
+                          {t("dashboard.today", "Today")}
                         </span>
                       )}
                     </div>
@@ -232,17 +234,17 @@ export function AnalyticsChart({
                     <div className="flex items-center gap-2">
                       <span className="flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-[#D96827]" />
-                        <span>Skates: {formatETB(d.rentals)}</span>
+                        <span>{t("dashboard.skatesShare", "Skates")}: {formatETB(d.rentals)}</span>
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-[#26845B]" />
-                        <span>Snacks: {formatETB(d.concessions)}</span>
+                        <span>{t("dashboard.cafeShare", "Snacks")}: {formatETB(d.concessions)}</span>
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span>OpEx: -{formatETB(d.expenses)}</span>
-                      <span className="font-bold text-[#26845B]">Net: {formatETB(d.net)}</span>
+                      <span>{t("dashboard.expensesLabel", "Expenses")}: -{formatETB(d.expenses)}</span>
+                      <span className="font-bold text-[#26845B]">{t("dashboard.netCashFlow", "Net")}: {formatETB(d.net)}</span>
                     </div>
                   </div>
                 </div>
@@ -257,7 +259,7 @@ export function AnalyticsChart({
         <div className="space-y-3 min-w-0">
           <div className="p-3 sm:p-4 rounded-2xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-2.5 min-w-0">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-[#8B8179] uppercase">Today&apos;s Channels:</span>
+              <span className="font-bold text-[#8B8179] uppercase">{t("dashboard.channels", "Channels")}:</span>
               <span className="font-mono font-bold text-[#29221E]">{formatETB(channelData.total)}</span>
             </div>
 
@@ -271,15 +273,15 @@ export function AnalyticsChart({
             <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] text-[#8B8179] font-mono">
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-[#26845B]" />
-                Cash ({cashPct}%)
+                {t("common.cash", "Cash")} ({cashPct}%)
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-[#D96827]" />
-                Telebirr ({telebirrPct}%)
+                {t("common.telebirr", "Telebirr")} ({telebirrPct}%)
               </span>
               <span className="flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-[#29221E]" />
-                CBE ({cbePct}%)
+                {t("common.cbe", "CBE")} ({cbePct}%)
               </span>
             </div>
           </div>
@@ -288,7 +290,7 @@ export function AnalyticsChart({
             <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-1">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-[#8B8179] flex items-center gap-1">
-                  <Banknote className="h-3.5 w-3.5 text-[#26845B]" /> Cash
+                  <Banknote className="h-3.5 w-3.5 text-[#26845B]" /> {t("common.cash", "Cash")}
                 </span>
                 <span className="font-mono font-bold text-[#26845B]">{cashPct}%</span>
               </div>
@@ -300,7 +302,7 @@ export function AnalyticsChart({
             <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-1">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-[#D96827] flex items-center gap-1">
-                  <Smartphone className="h-3.5 w-3.5" /> Telebirr
+                  <Smartphone className="h-3.5 w-3.5" /> {t("common.telebirr", "Telebirr")}
                 </span>
                 <span className="font-mono font-bold text-[#D96827]">{telebirrPct}%</span>
               </div>
@@ -312,7 +314,7 @@ export function AnalyticsChart({
             <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-1">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-[#29221E] flex items-center gap-1">
-                  <Landmark className="h-3.5 w-3.5 text-[#D96827]" /> CBE
+                  <Landmark className="h-3.5 w-3.5 text-[#D96827]" /> {t("common.cbe", "CBE")}
                 </span>
                 <span className="font-mono font-bold text-[#29221E]">{cbePct}%</span>
               </div>
@@ -341,10 +343,10 @@ export function AnalyticsChart({
                   <div className="flex items-center gap-2">
                     {isPeak && (
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                        PEAK
+                        {t("dashboard.peak", "PEAK")}
                       </span>
                     )}
-                    <span className="font-mono font-bold text-[#29221E]">{h.skaters} skaters</span>
+                    <span className="font-mono font-bold text-[#29221E]">{h.skaters} {t("dashboard.skaters", "skaters")}</span>
                   </div>
                 </div>
 

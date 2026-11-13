@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { formatETB, exportToCSV } from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
+import { useLanguage } from "@/lib/i18n";
 import {
   Package,
   Plus,
@@ -39,6 +40,7 @@ interface CategoryItem {
 
 export default function StockInventoryPage() {
   const { showAlert } = useAlertModal();
+  const { t, lang } = useLanguage();
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,9 +132,9 @@ export default function StockInventoryPage() {
   const allCategoryList = useMemo(() => {
     const map = new Map<string, string>();
     // Pre-populate standard defaults
-    map.set("BEVERAGE", "Drinks & Water");
-    map.set("SNACK", "Snacks & Food");
-    map.set("OTHER", "Other Items");
+    map.set("BEVERAGE", lang === "am" ? "መጠጥ እና ውሃ" : "Drinks & Water");
+    map.set("SNACK", lang === "am" ? "መክሰስ እና ምግብ" : "Snacks & Food");
+    map.set("OTHER", lang === "am" ? "ሌሎች እቃዎች" : "Other Items");
 
     // Add API categories
     categories.forEach((c) => {
@@ -150,7 +152,7 @@ export default function StockInventoryPage() {
       name,
       displayName,
     }));
-  }, [categories, products]);
+  }, [categories, products, lang]);
 
   // Handle New Product Creation
   const handleAddProduct = async (e: React.FormEvent) => {
@@ -544,11 +546,11 @@ export default function StockInventoryPage() {
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 sm:h-6 sm:w-6 text-[#D96827]" />
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
-                Snacks & Beverages Stock Control
+                {t("stock.title", "Stock & Products")}
               </h1>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#8B8179]">
-              Concession inventory catalog, stock replenishment, and inventory adjustments.
+              {t("stock.subtitle", "Manage cafe snacks, drinks, and inventory counts")}
             </p>
           </div>
 
@@ -559,14 +561,14 @@ export default function StockInventoryPage() {
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors shadow-2xs cursor-pointer"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+              {t("common.refresh", "Refresh")}
             </button>
             <button
               onClick={() => setShowCreateCategoryModal(true)}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#FFF4E5] transition-colors shadow-2xs cursor-pointer"
             >
               <FolderPlus className="h-3.5 w-3.5 text-[#D96827]" />
-              + Category
+              {t("stock.newCategoryButton", "+ Category")}
             </button>
             <button
               onClick={() => {
@@ -581,7 +583,7 @@ export default function StockInventoryPage() {
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#D96827] hover:bg-[#C2571A] rounded-xl transition-all shadow-md shadow-[#D96827]/20 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              + Add New Product
+              {t("stock.addProduct", "+ New Product")}
             </button>
           </div>
         </div>
@@ -597,7 +599,7 @@ export default function StockInventoryPage() {
                 : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
             }`}
           >
-            <span>All Catalog</span>
+            <span>{t("stock.allCatalog", "All Items")}</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 font-mono">
               {products.length}
             </span>
@@ -615,7 +617,7 @@ export default function StockInventoryPage() {
             }`}
           >
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            <span>Low Stock</span>
+            <span>{t("stock.lowStockAlert", "Low Stock")}</span>
             {lowStockCount > 0 && (
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white text-[#D94B45] font-black font-mono">
                 {lowStockCount}
@@ -638,7 +640,7 @@ export default function StockInventoryPage() {
                     : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
                 }`}
               >
-                All Categories ({products.length})
+                {t("concession.allCategories", "All Items")} ({products.length})
               </button>
 
               {allCategoryList.map((cat) => {
@@ -668,7 +670,7 @@ export default function StockInventoryPage() {
                           handleDeleteCategory(dbCat._id!, dbCat.name);
                         }}
                         className="pr-2 pl-0.5 text-current opacity-60 hover:opacity-100 hover:text-[#D94B45] cursor-pointer"
-                        title="Delete category"
+                        title={t("common.delete", "Delete")}
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -682,10 +684,10 @@ export default function StockInventoryPage() {
                 type="button"
                 onClick={() => setShowCreateCategoryModal(true)}
                 className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#D96827] bg-[#FFF4E5] hover:bg-[#FFE8CC] border border-[#D96827]/40 cursor-pointer transition-colors whitespace-nowrap shrink-0 flex items-center gap-1"
-                title="Create a new custom category"
+                title={t("stock.newCategoryModalTitle", "Create Category")}
               >
                 <Plus className="h-3 w-3" />
-                <span>New Category</span>
+                <span>{t("stock.newCategoryButton", "+ Category")}</span>
               </button>
             </div>
 
@@ -695,7 +697,7 @@ export default function StockInventoryPage() {
                 <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#8B8179]" />
                 <input
                   type="text"
-                  placeholder="Search product..."
+                  placeholder={t("stock.searchProduct", "Search product name or category...")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
@@ -737,10 +739,10 @@ export default function StockInventoryPage() {
                     )
                   }
                   className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] hover:bg-[#FFF4E5] transition-colors shadow-2xs cursor-pointer flex items-center gap-1"
-                  title="Export to CSV"
+                  title={t("common.downloadCsv", "Export CSV")}
                 >
                   <Download className="h-3.5 w-3.5 text-[#D96827]" />
-                  <span className="hidden sm:inline">Export</span>
+                  <span className="hidden sm:inline">{t("common.export", "Export")}</span>
                 </button>
               )}
             </div>
@@ -751,11 +753,11 @@ export default function StockInventoryPage() {
         {filteredProducts.length === 0 ? (
           <div className="bg-white border border-[#E9D9C5] rounded-2xl p-8 text-center space-y-2 shadow-2xs">
             <Package className="h-8 w-8 text-[#8B8179] mx-auto opacity-40" />
-            <h4 className="text-sm font-bold text-[#29221E]">No Products Match Current Criteria</h4>
+            <h4 className="text-sm font-bold text-[#29221E]">{t("stock.noProducts", "No products match current criteria")}</h4>
             <p className="text-xs text-[#8B8179]">
               {viewTab === "LOW_STOCK"
-                ? "Great news! There are no products currently at or below their low-stock replenishment alert level."
-                : "Try clearing your category or search query."}
+                ? (lang === "am" ? "ምንም ያለቀ ወይም አነስተኛ እቃ የለም!" : "No products currently at or below their low-stock replenishment alert level.")
+                : (lang === "am" ? "ምድቡን ወይም የፍለጋ ቃሉን ይቀይሩ።" : "Try clearing your category or search query.")}
             </p>
             {viewTab === "LOW_STOCK" && (
               <button
@@ -763,7 +765,7 @@ export default function StockInventoryPage() {
                 onClick={() => setViewTab("ALL")}
                 className="mt-2 px-4 py-2 bg-[#D96827] text-white rounded-xl text-xs font-bold cursor-pointer"
               >
-                View All Products
+                {t("stock.allCatalog", "All Items")}
               </button>
             )}
           </div>
@@ -786,11 +788,11 @@ export default function StockInventoryPage() {
                       <div>
                         {isLow ? (
                           <span className="inline-flex items-center gap-1 text-[11px] text-[#D94B45] font-bold bg-[#FDF0EF] px-2 py-0.5 rounded-lg border border-[#D94B45]/30">
-                            <AlertTriangle className="h-3 w-3" /> Low Stock
+                            <AlertTriangle className="h-3 w-3" /> {t("stock.lowStockAlert", "Low Stock")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-[11px] text-[#26845B] font-semibold bg-[#EBF5F0] px-2 py-0.5 rounded-lg border border-[#26845B]/30">
-                            <CheckCircle2 className="h-3 w-3" /> In Stock
+                            <CheckCircle2 className="h-3 w-3" /> {t("stock.inStock", "In Stock")}
                           </span>
                         )}
                       </div>
@@ -798,25 +800,25 @@ export default function StockInventoryPage() {
 
                     <div className="grid grid-cols-3 gap-2 text-xs bg-[#F7F6F3] p-2 rounded-xl border border-[#E9D9C5]/60 font-mono">
                       <div>
-                        <span className="text-[10px] text-[#8B8179] block font-sans">Selling:</span>
+                        <span className="text-[10px] text-[#8B8179] block font-sans">{t("stock.sellingPrice", "Selling")}:</span>
                         <strong className="text-[#D96827]">{formatETB(p.sellingPrice)}</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#8B8179] block font-sans">Cost:</span>
+                        <span className="text-[10px] text-[#8B8179] block font-sans">{t("stock.costPrice", "Cost")}:</span>
                         <span className="text-[#8B8179]">{formatETB(p.costPrice)}</span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#8B8179] block font-sans">Margin:</span>
+                        <span className="text-[10px] text-[#8B8179] block font-sans">{t("reports.margin", "Margin")}:</span>
                         <span className="text-[#26845B] font-bold">+{formatETB(profit)}</span>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between text-xs pt-0.5 font-mono">
-                      <span className="text-[#8B8179] font-sans">Available Units:</span>
+                      <span className="text-[#8B8179] font-sans">{t("stock.currentStock", "Available Units")}:</span>
                       <span className={`font-bold ${isLow ? "text-[#D94B45]" : "text-[#29221E]"}`}>
-                        {p.currentStock} units{" "}
+                        {p.currentStock} {t("common.units", "units")}{" "}
                         <span className="text-[10px] text-[#8B8179] font-normal">
-                          (alert at {p.minStockAlert})
+                          ({t("stock.minAlert", "Alert at")} {p.minStockAlert})
                         </span>
                       </span>
                     </div>
@@ -833,7 +835,7 @@ export default function StockInventoryPage() {
                         className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-[#EBF5F0] text-[#26845B] hover:bg-[#D5EFE3] font-bold text-xs border border-[#26845B]/30 cursor-pointer transition-colors shadow-2xs"
                       >
                         <PlusCircle className="h-3.5 w-3.5" />
-                        <span>+ Stock</span>
+                        <span>{t("stock.addStockButton", "+ Stock")}</span>
                       </button>
 
                       <button
@@ -848,14 +850,14 @@ export default function StockInventoryPage() {
                         className="flex-1 flex items-center justify-center gap-1 py-2 px-2.5 rounded-xl bg-[#F7F6F3] text-[#29221E] hover:bg-[#E9D9C5]/50 font-semibold text-xs border border-[#E9D9C5] cursor-pointer transition-colors shadow-2xs"
                       >
                         <SlidersHorizontal className="h-3.5 w-3.5 text-[#8B8179]" />
-                        <span>Adjust</span>
+                        <span>{t("stock.adjustButton", "Adjust")}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => openEditProductModal(p)}
                         className="p-2 rounded-xl text-[#8B8179] hover:text-[#D96827] bg-[#F7F6F3] border border-[#E9D9C5] hover:bg-[#FFF4E5] transition-colors cursor-pointer"
-                        title="Edit product"
+                        title={t("common.edit", "Edit")}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -864,7 +866,7 @@ export default function StockInventoryPage() {
                         type="button"
                         onClick={() => setProductToDelete(p)}
                         className="p-2 rounded-xl text-[#8B8179] hover:text-[#D94B45] bg-[#F7F6F3] border border-[#E9D9C5] hover:bg-[#FDF0EF] transition-colors cursor-pointer"
-                        title="Delete product"
+                        title={t("common.delete", "Delete")}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -879,14 +881,14 @@ export default function StockInventoryPage() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-[#F7F6F3] text-xs uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                   <tr>
-                    <th className="px-5 py-3">Product Name</th>
-                    <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Cost Price</th>
-                    <th className="px-4 py-3">Selling Price</th>
-                    <th className="px-4 py-3">Profit Margin</th>
-                    <th className="px-4 py-3">Current Stock</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
+                    <th className="px-5 py-3">{t("stock.productName", "Product Name")}</th>
+                    <th className="px-4 py-3">{t("stock.categoryLabel", "Category")}</th>
+                    <th className="px-4 py-3">{t("stock.costPrice", "Cost Price")}</th>
+                    <th className="px-4 py-3">{t("stock.sellingPrice", "Selling Price")}</th>
+                    <th className="px-4 py-3">{t("reports.margin", "Profit Margin")}</th>
+                    <th className="px-4 py-3">{t("stock.stockCount", "Current Stock")}</th>
+                    <th className="px-4 py-3">{t("common.status", "Status")}</th>
+                    <th className="px-5 py-3 text-right">{t("common.actions", "Actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E9D9C5]">
@@ -912,20 +914,20 @@ export default function StockInventoryPage() {
                         </td>
                         <td className="px-4 py-3.5 font-mono font-bold">
                           <span className={isLow ? "text-[#D94B45] font-black" : "text-[#29221E]"}>
-                            {p.currentStock} units
+                            {p.currentStock} {t("common.units", "units")}
                           </span>
                           <span className="text-[10px] text-[#8B8179] block font-sans">
-                            Alert min: {p.minStockAlert}
+                            {t("stock.minAlert", "Alert min")}: {p.minStockAlert}
                           </span>
                         </td>
                         <td className="px-4 py-3.5">
                           {isLow ? (
                             <span className="inline-flex items-center gap-1 text-xs text-[#D94B45] font-bold">
-                              <AlertTriangle className="h-3.5 w-3.5" /> Low Stock
+                              <AlertTriangle className="h-3.5 w-3.5" /> {t("stock.lowStockAlert", "Low Stock")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs text-[#26845B] font-semibold">
-                              <CheckCircle2 className="h-3.5 w-3.5" /> In Stock
+                              <CheckCircle2 className="h-3.5 w-3.5" /> {t("stock.inStock", "In Stock")}
                             </span>
                           )}
                         </td>
@@ -939,10 +941,10 @@ export default function StockInventoryPage() {
                                 setRestockCostPrice(p.costPrice.toString());
                               }}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#EBF5F0] text-[#26845B] hover:bg-[#D5EFE3] font-bold text-xs border border-[#26845B]/30 cursor-pointer transition-colors shadow-2xs"
-                              title="Add more stock units for this product"
+                              title={t("stock.addStockButton", "+ Add Stock")}
                             >
                               <PlusCircle className="h-3.5 w-3.5" />
-                              <span>+ Add Stock</span>
+                              <span>{t("stock.addStockButton", "+ Add Stock")}</span>
                             </button>
 
                             <button
@@ -955,17 +957,17 @@ export default function StockInventoryPage() {
                                 setAdjustReason("Physical Inventory Count");
                               }}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F7F6F3] text-[#29221E] hover:bg-[#E9D9C5]/50 font-semibold text-xs border border-[#E9D9C5] cursor-pointer transition-colors shadow-2xs"
-                              title="Stock adjustment"
+                              title={t("stock.adjustButton", "Adjust")}
                             >
                               <SlidersHorizontal className="h-3.5 w-3.5 text-[#8B8179]" />
-                              <span>Adjust</span>
+                              <span>{t("stock.adjustButton", "Adjust")}</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => openEditProductModal(p)}
                               className="p-1.5 text-[#8B8179] hover:text-[#D96827] rounded-lg hover:bg-[#FFF4E5] transition-colors cursor-pointer"
-                              title="Edit product"
+                              title={t("common.edit", "Edit")}
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -974,7 +976,7 @@ export default function StockInventoryPage() {
                               type="button"
                               onClick={() => setProductToDelete(p)}
                               className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
-                              title="Delete product"
+                              title={t("common.delete", "Delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -995,9 +997,9 @@ export default function StockInventoryPage() {
             <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl text-[#29221E] relative my-auto">
               <div className="flex items-start justify-between pb-3 border-b border-[#E9D9C5]">
                 <div>
-                  <h3 className="text-lg font-bold text-[#29221E]">Register New Product</h3>
+                  <h3 className="text-lg font-bold text-[#29221E]">{t("stock.addProduct", "Register New Product")}</h3>
                   <p className="text-xs text-[#8B8179]">
-                    Register a brand new item into the concession catalog.
+                    {t("stock.newCategoryModalSub", "Register a new item into the concession catalog.")}
                   </p>
                 </div>
                 <button
@@ -1012,12 +1014,12 @@ export default function StockInventoryPage() {
               <form onSubmit={handleAddProduct} className="space-y-3.5 mt-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Product Name
+                    {t("stock.productName", "Product Name")}
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Sprite 500ml, Popcorn Large"
+                    placeholder={lang === "am" ? "ምሳሌ፡ ስፕራይት 500ሚሊ፣ ፖፕኮርን..." : "e.g. Sprite 500ml, Popcorn Large"}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
@@ -1027,13 +1029,13 @@ export default function StockInventoryPage() {
                 {/* Category Selection with Inline Create */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-[#29221E]">Category</label>
+                    <label className="block text-xs font-semibold text-[#29221E]">{t("stock.categoryLabel", "Category")}</label>
                     <button
                       type="button"
                       onClick={() => setIsCreatingInlineCat(!isCreatingInlineCat)}
                       className="text-[11px] text-[#D96827] hover:underline font-bold cursor-pointer"
                     >
-                      {isCreatingInlineCat ? "Choose existing" : "+ New Category"}
+                      {isCreatingInlineCat ? t("common.cancel", "Choose existing") : t("stock.newCategoryButton", "+ New Category")}
                     </button>
                   </div>
 
@@ -1041,7 +1043,7 @@ export default function StockInventoryPage() {
                     <input
                       type="text"
                       required
-                      placeholder="Type new category name (e.g. Ice Cream, Candy)..."
+                      placeholder={lang === "am" ? "አዲስ ምድብ ስም ያስገቡ..." : "Type new category name..."}
                       value={customNewCategory}
                       onChange={(e) => setCustomNewCategory(e.target.value)}
                       className="w-full px-3 py-2 bg-[#FFF4E5]/40 border border-[#D96827] rounded-xl text-[#29221E] text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
@@ -1064,7 +1066,7 @@ export default function StockInventoryPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Cost Price (ETB)
+                      {t("stock.costPrice", "Cost Price")} ({t("common.etb", "ETB")})
                     </label>
                     <input
                       type="number"
@@ -1077,7 +1079,7 @@ export default function StockInventoryPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Selling Price (ETB)
+                      {t("stock.sellingPrice", "Selling Price")} ({t("common.etb", "ETB")})
                     </label>
                     <input
                       type="number"
@@ -1093,7 +1095,7 @@ export default function StockInventoryPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Initial Stock (Units)
+                      {t("stock.currentStock", "Initial Stock")} ({t("common.units", "Units")})
                     </label>
                     <input
                       type="number"
@@ -1106,7 +1108,7 @@ export default function StockInventoryPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Min. Alert Level
+                      {t("stock.minAlert", "Min. Alert Level")}
                     </label>
                     <input
                       type="number"
@@ -1125,14 +1127,14 @@ export default function StockInventoryPage() {
                     onClick={() => setShowAddModal(false)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] rounded-xl cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={submittingProduct}
                     className="px-4 py-2 text-xs font-bold bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl transition-colors cursor-pointer shadow-md shadow-[#D96827]/25"
                   >
-                    {submittingProduct ? "Saving..." : "Register Product"}
+                    {submittingProduct ? t("common.loading", "Saving...") : t("stock.saveProduct", "Register Product")}
                   </button>
                 </div>
               </form>
@@ -1148,7 +1150,7 @@ export default function StockInventoryPage() {
                 <div>
                   <div className="flex items-center gap-1.5 text-xs text-[#26845B] font-bold">
                     <PlusCircle className="h-4 w-4" />
-                    <span>Restock Product</span>
+                    <span>{t("stock.restockModalTitle", "Add Stock Units")}</span>
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-[#29221E] mt-0.5">
                     {restockProduct.name}
@@ -1166,16 +1168,16 @@ export default function StockInventoryPage() {
               <form onSubmit={handleRestockSubmit} className="space-y-3.5 mt-3">
                 {/* Current Stock Badge */}
                 <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] flex items-center justify-between text-xs">
-                  <span className="text-[#8B8179]">Current Inventory:</span>
+                  <span className="text-[#8B8179]">{t("stock.currentStock", "Current Inventory")}:</span>
                   <strong className="text-sm font-mono text-[#29221E]">
-                    {restockProduct.currentStock} units
+                    {restockProduct.currentStock} {t("common.units", "units")}
                   </strong>
                 </div>
 
                 {/* Additional Units to Add */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Units to Add (+Qty)
+                    {t("stock.restockQuantity", "Quantity Added")} (+Qty)
                   </label>
                   <input
                     type="number"
@@ -1202,23 +1204,23 @@ export default function StockInventoryPage() {
 
                 {/* Preview Calculation */}
                 <div className="p-2.5 rounded-xl bg-[#EBF5F0] border border-[#26845B]/30 text-xs flex items-center justify-between font-mono">
-                  <span className="text-[#26845B] font-semibold">New Total Stock:</span>
+                  <span className="text-[#26845B] font-semibold">{t("stock.currentStock", "New Total Stock")}:</span>
                   <strong className="text-[#26845B] text-sm">
-                    {restockProduct.currentStock + (Number(restockQty) || 0)} units
+                    {restockProduct.currentStock + (Number(restockQty) || 0)} {t("common.units", "units")}
                   </strong>
                 </div>
 
                 {/* Optional updated Cost Price */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Supplier Cost Price per Unit (Optional)
+                    {t("stock.costPrice", "Cost Price")} ({t("common.optional", "Optional")})
                   </label>
                   <input
                     type="number"
                     min={0}
                     value={restockCostPrice}
                     onChange={(e) => setRestockCostPrice(e.target.value)}
-                    placeholder={`Current: ${restockProduct.costPrice} ETB`}
+                    placeholder={`${t("stock.costPrice", "Cost")}: ${restockProduct.costPrice} ETB`}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                   />
                 </div>
@@ -1229,14 +1231,14 @@ export default function StockInventoryPage() {
                     onClick={() => setRestockProduct(null)}
                     className="px-3.5 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] rounded-xl cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={restockSubmitting}
                     className="px-4 py-2 text-xs font-bold bg-[#26845B] hover:bg-[#1E6B49] text-white rounded-xl transition-colors cursor-pointer shadow-sm"
                   >
-                    {restockSubmitting ? "Adding..." : "Confirm Stock Addition"}
+                    {restockSubmitting ? t("common.loading", "Adding...") : t("common.confirm", "Confirm Stock Addition")}
                   </button>
                 </div>
               </form>
@@ -1252,7 +1254,7 @@ export default function StockInventoryPage() {
                 <div>
                   <div className="flex items-center gap-1.5 text-xs text-[#8B8179] font-bold">
                     <SlidersHorizontal className="h-4 w-4 text-[#D96827]" />
-                    <span>Inventory Adjustment</span>
+                    <span>{t("stock.adjustModalTitle", "Adjust Stock Count")}</span>
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-[#29221E] mt-0.5">
                     {adjustProduct.name}
@@ -1270,16 +1272,16 @@ export default function StockInventoryPage() {
               <form onSubmit={handleAdjustSubmit} className="space-y-3.5 mt-3">
                 {/* Current Stock */}
                 <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] flex items-center justify-between text-xs">
-                  <span className="text-[#8B8179]">Current Stock on Record:</span>
+                  <span className="text-[#8B8179]">{t("stock.currentStock", "Current Stock")}:</span>
                   <strong className="text-sm font-mono text-[#29221E]">
-                    {adjustProduct.currentStock} units
+                    {adjustProduct.currentStock} {t("common.units", "units")}
                   </strong>
                 </div>
 
                 {/* Adjustment Mode Selector */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Adjustment Method
+                    {t("common.reason", "Adjustment Method")}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -1291,7 +1293,7 @@ export default function StockInventoryPage() {
                           : "bg-white text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
                       }`}
                     >
-                      Set Actual Count
+                      {t("stock.setCountMode", "Set Exact Count")}
                     </button>
                     <button
                       type="button"
@@ -1302,7 +1304,7 @@ export default function StockInventoryPage() {
                           : "bg-white text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
                       }`}
                     >
-                      Deduct Damaged / Lost
+                      {t("stock.deductMode", "Deduct Damaged / Expired")}
                     </button>
                   </div>
                 </div>
@@ -1310,7 +1312,7 @@ export default function StockInventoryPage() {
                 {adjustMode === "SET_COUNT" ? (
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      New Physical Count (Units)
+                      {t("stock.stockCount", "New Physical Count")} ({t("common.units", "Units")})
                     </label>
                     <input
                       type="number"
@@ -1324,7 +1326,7 @@ export default function StockInventoryPage() {
                 ) : (
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Units to Deduct (-Qty)
+                      {t("stock.restockQuantity", "Units to Deduct")} (-Qty)
                     </label>
                     <input
                       type="number"
@@ -1341,29 +1343,29 @@ export default function StockInventoryPage() {
                 {/* Reason Selection */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Audit Reason
+                    {t("stock.adjustReasonLabel", "Audit Reason")}
                   </label>
                   <select
                     value={adjustReason}
                     onChange={(e) => setAdjustReason(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 cursor-pointer"
                   >
-                    <option value="Physical Inventory Count">Physical Inventory Count</option>
-                    <option value="Broken / Damaged Product">Broken / Damaged Bottle or Pack</option>
-                    <option value="Expired / Spoilage">Expired / Spoilage</option>
-                    <option value="Internal / Staff Consumption">Internal / Staff Consumption</option>
-                    <option value="Entry Correction / Refund">Entry Correction / Mistake</option>
-                    <option value="Loss / Unexplained Discrepancy">Other Discrepancy</option>
+                    <option value="Physical Inventory Count">{lang === "am" ? "የእቃ ቆጠራ ማስተካከያ" : "Physical Inventory Count"}</option>
+                    <option value="Broken / Damaged Product">{lang === "am" ? "የተሰበረ ወይም የተበላሸ እቃ" : "Broken / Damaged Bottle or Pack"}</option>
+                    <option value="Expired / Spoilage">{lang === "am" ? "ጊዜው ያለፈበት እቃ" : "Expired / Spoilage"}</option>
+                    <option value="Internal / Staff Consumption">{lang === "am" ? "የሰራተኞች መጠቀሚያ" : "Internal / Staff Consumption"}</option>
+                    <option value="Entry Correction / Refund">{lang === "am" ? "የተሳሳተ ምዝገባ ማስተካከያ" : "Entry Correction / Mistake"}</option>
+                    <option value="Loss / Unexplained Discrepancy">{lang === "am" ? "ያልታወቀ ጉድለት" : "Other Discrepancy"}</option>
                   </select>
                 </div>
 
                 {/* Resulting Count Preview */}
                 <div className="p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-xs flex items-center justify-between font-mono">
-                  <span className="text-[#8B8179]">Resulting Stock:</span>
+                  <span className="text-[#8B8179]">{t("stock.currentStock", "Resulting Stock")}:</span>
                   <strong className="text-[#D96827] text-sm">
                     {adjustMode === "SET_COUNT"
-                      ? `${Number(adjustTargetCount) || 0} units`
-                      : `${Math.max(0, adjustProduct.currentStock - (Number(adjustDeductCount) || 0))} units`}
+                      ? `${Number(adjustTargetCount) || 0} ${t("common.units", "units")}`
+                      : `${Math.max(0, adjustProduct.currentStock - (Number(adjustDeductCount) || 0))} ${t("common.units", "units")}`}
                   </strong>
                 </div>
 
@@ -1373,14 +1375,14 @@ export default function StockInventoryPage() {
                     onClick={() => setAdjustProduct(null)}
                     className="px-3.5 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] rounded-xl cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={adjustSubmitting}
                     className="px-4 py-2 text-xs font-bold bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl transition-colors cursor-pointer shadow-sm"
                   >
-                    {adjustSubmitting ? "Applying..." : "Apply Adjustment"}
+                    {adjustSubmitting ? t("common.loading", "Applying...") : t("stock.adjustButton", "Apply Adjustment")}
                   </button>
                 </div>
               </form>
@@ -1396,10 +1398,10 @@ export default function StockInventoryPage() {
                 <div>
                   <div className="flex items-center gap-1.5 text-xs text-[#D96827] font-bold">
                     <FolderPlus className="h-4 w-4" />
-                    <span>Inventory Categories</span>
+                    <span>{t("stock.newCategoryButton", "Inventory Categories")}</span>
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-[#29221E] mt-0.5">
-                    Create New Category
+                    {t("stock.newCategoryModalTitle", "Create New Category")}
                   </h3>
                 </div>
                 <button
@@ -1414,18 +1416,18 @@ export default function StockInventoryPage() {
               <form onSubmit={handleCreateCategory} className="space-y-3.5 mt-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Category Name
+                    {t("stock.categoryLabel", "Category Name")}
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Ice Cream, Fresh Juices, Pastries..."
+                    placeholder={lang === "am" ? "ምሳሌ፡ ኬክ፣ ትኩስ ጭማቂዎች..." : "e.g. Ice Cream, Fresh Juices, Pastries..."}
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                   />
                   <span className="text-[10px] text-[#8B8179] mt-1 block">
-                    This category will immediately become available in POS, stock lists, and product forms.
+                    {t("stock.newCategoryModalSub", "This category will immediately become available in POS, stock lists, and product forms.")}
                   </span>
                 </div>
 
@@ -1435,14 +1437,14 @@ export default function StockInventoryPage() {
                     onClick={() => setShowCreateCategoryModal(false)}
                     className="px-3.5 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] rounded-xl cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={submittingCat}
                     className="px-4 py-2 text-xs font-bold bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl transition-colors cursor-pointer shadow-sm"
                   >
-                    {submittingCat ? "Creating..." : "Save Category"}
+                    {submittingCat ? t("common.loading", "Creating...") : t("common.save", "Save Category")}
                   </button>
                 </div>
               </form>
@@ -1460,8 +1462,8 @@ export default function StockInventoryPage() {
                     <Pencil className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">Edit Product</h3>
-                    <p className="text-xs text-[#8B8179]">Update product catalog details</p>
+                    <h3 className="text-base font-bold text-[#29221E]">{t("stock.editProductModalTitle", "Edit Product")}</h3>
+                    <p className="text-xs text-[#8B8179]">{t("stock.editProductModalSub", "Update product catalog details")}</p>
                   </div>
                 </div>
                 <button
@@ -1476,7 +1478,7 @@ export default function StockInventoryPage() {
               <form onSubmit={handleEditProductSubmit} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Product Name
+                    {t("stock.productName", "Product Name")}
                   </label>
                   <input
                     type="text"
@@ -1489,7 +1491,7 @@ export default function StockInventoryPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Category
+                    {t("stock.categoryLabel", "Category")}
                   </label>
                   <select
                     value={editCategory}
@@ -1507,7 +1509,7 @@ export default function StockInventoryPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Cost Price (ETB)
+                      {t("stock.costPrice", "Cost Price")} ({t("common.etb", "ETB")})
                     </label>
                     <input
                       type="number"
@@ -1520,7 +1522,7 @@ export default function StockInventoryPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Selling Price (ETB)
+                      {t("stock.sellingPrice", "Selling Price")} ({t("common.etb", "ETB")})
                     </label>
                     <input
                       type="number"
@@ -1536,7 +1538,7 @@ export default function StockInventoryPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Current Stock (Units)
+                      {t("stock.currentStock", "Current Stock")} ({t("common.units", "Units")})
                     </label>
                     <input
                       type="number"
@@ -1549,7 +1551,7 @@ export default function StockInventoryPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Low Stock Alert
+                      {t("stock.minAlert", "Low Stock Alert")}
                     </label>
                     <input
                       type="number"
@@ -1568,14 +1570,14 @@ export default function StockInventoryPage() {
                     onClick={() => setEditingProduct(null)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={editSubmitting}
                     className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                   >
-                    {editSubmitting ? "Saving..." : "Save Changes"}
+                    {editSubmitting ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}
                   </button>
                 </div>
               </form>
@@ -1592,15 +1594,15 @@ export default function StockInventoryPage() {
                   <Trash2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#29221E]">Delete Product?</h3>
-                  <p className="text-xs text-[#8B8179]">This permanently removes it from the catalog.</p>
+                  <h3 className="text-base font-bold text-[#29221E]">{t("stock.deleteProductModalTitle", "Delete Product?")}</h3>
+                  <p className="text-xs text-[#8B8179]">{t("stock.deleteProductModalSub", "This permanently removes it from the catalog.")}</p>
                 </div>
               </div>
 
               <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
                 <div className="font-bold text-[#29221E]">{productToDelete.name}</div>
                 <div className="text-[11px] text-[#8B8179]">
-                  Stock: {productToDelete.currentStock} units • Selling: {formatETB(productToDelete.sellingPrice)}
+                  {t("stock.currentStock", "Stock")}: {productToDelete.currentStock} {t("common.units", "units")} • {t("stock.sellingPrice", "Selling")}: {formatETB(productToDelete.sellingPrice)}
                 </div>
               </div>
 
@@ -1610,7 +1612,7 @@ export default function StockInventoryPage() {
                   onClick={() => setProductToDelete(null)}
                   className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="button"
@@ -1618,7 +1620,7 @@ export default function StockInventoryPage() {
                   onClick={handleDeleteProduct}
                   className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
-                  {deletingProduct ? "Deleting..." : "Confirm Delete"}
+                  {deletingProduct ? t("common.loading", "Deleting...") : t("common.confirm", "Confirm Delete")}
                 </button>
               </div>
             </div>

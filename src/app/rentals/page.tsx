@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { formatETB, format12HourTime, triggerVibration } from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
+import { useLanguage } from "@/lib/i18n";
 import {
   Timer,
   Plus,
@@ -67,6 +68,7 @@ interface ShoeOption {
 
 export default function RentalBoardPage() {
   const { showAlert, showConfirm } = useAlertModal();
+  const { t, lang } = useLanguage();
   const [sessions, setSessions] = useState<RentalSessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
@@ -641,11 +643,11 @@ export default function RentalBoardPage() {
             <div className="flex items-center gap-2">
               <Timer className="h-6 w-6 text-[#D96827]" />
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
-                Rentals
+                {t("rentals.title", "Rentals")}
               </h1>
             </div>
             <p className="mt-0.5 text-xs text-[#8B8179]">
-              Active skate timers and return settlements
+              {t("rentals.subtitle", "Active skate timers and return settlements")}
             </p>
           </div>
 
@@ -657,7 +659,7 @@ export default function RentalBoardPage() {
                 setSoundEnabled(nextState);
                 if (nextState) playAudioCue("chime");
               }}
-              title={soundEnabled ? "Mute audio cues" : "Unmute audio cues"}
+              title={soundEnabled ? t("rentals.soundOn", "Sound ON") : t("rentals.muted", "Muted")}
               className={`p-2.5 rounded-xl border text-xs transition-colors cursor-pointer flex items-center gap-1.5 ${
                 soundEnabled
                   ? "bg-[#FFF4E5] border-[#E9D9C5] text-[#D96827] hover:bg-[#FCEAD2]"
@@ -666,7 +668,7 @@ export default function RentalBoardPage() {
             >
               {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               <span className="text-[11px] hidden sm:inline font-semibold">
-                {soundEnabled ? "Sound ON" : "Muted"}
+                {soundEnabled ? t("rentals.soundOn", "Sound ON") : t("rentals.muted", "Muted")}
               </span>
             </button>
 
@@ -679,7 +681,7 @@ export default function RentalBoardPage() {
               className="p-2.5 sm:px-3.5 sm:py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden sm:inline">{t("common.refresh", "Refresh")}</span>
             </button>
 
             <button
@@ -687,7 +689,7 @@ export default function RentalBoardPage() {
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D96827] hover:bg-[#C2571A] rounded-xl transition-all shadow-md shadow-[#D96827]/20 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>Issue Skates</span>
+              <span>{t("rentals.issueSkates", "+ Issue Skates")}</span>
             </button>
           </div>
         </div>
@@ -704,7 +706,7 @@ export default function RentalBoardPage() {
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] sm:text-xs uppercase font-bold text-[#A85822]">
-                Active
+                {t("rentals.activeTab", "Active")}
               </span>
               <span className="p-1 rounded-lg bg-[#FFE7D1] text-[#D96827]">
                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -714,7 +716,7 @@ export default function RentalBoardPage() {
               <span className="text-2xl sm:text-3xl font-black text-[#29221E]">{activeCount}</span>
               {dueSoonCount > 0 && (
                 <span className="text-[11px] text-[#D96827] font-bold">
-                  ({dueSoonCount} due)
+                  ({dueSoonCount} {t("rentals.dueIn", "due")})
                 </span>
               )}
             </div>
@@ -730,7 +732,7 @@ export default function RentalBoardPage() {
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] sm:text-xs uppercase font-bold text-[#C43833]">
-                Overdue
+                {t("rentals.overdueTab", "Overdue")}
               </span>
               <span className="p-1 rounded-lg bg-[#FDE2E0] text-[#D94B45]">
                 <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -754,7 +756,7 @@ export default function RentalBoardPage() {
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-[11px] sm:text-xs uppercase font-bold text-[#23603D]">
-                Returned
+                {t("rentals.returnedTab", "Returned")}
               </span>
               <span className="p-1 rounded-lg bg-[#DEECE3] text-[#2D7A4D]">
                 <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -772,7 +774,7 @@ export default function RentalBoardPage() {
             <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-[#8B8179]" />
             <input
               type="text"
-              placeholder="Search Shoe ID (e.g. SK-40-01) or skater name..."
+              placeholder={t("rentals.searchPlaceholder", "Search shoe tag, name...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs sm:text-sm text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] font-mono"
@@ -782,15 +784,15 @@ export default function RentalBoardPage() {
           <div className="flex items-center justify-between sm:justify-end gap-2 text-xs">
             <div className="flex items-center gap-1.5 text-[#8B8179]">
               <ArrowUpDown className="h-3.5 w-3.5 text-[#D96827]" />
-              <span className="font-semibold text-[#29221E]">Sort:</span>
+              <span className="font-semibold text-[#29221E]">{t("common.filter", "Filter")}:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as "EARLIEST_END" | "SHOE_ID" | "SIZE")}
                 className="bg-[#F7F6F3] border border-[#E9D9C5] rounded-xl px-2.5 py-1.5 text-[#29221E] font-medium text-xs focus:outline-none cursor-pointer"
               >
-                <option value="EARLIEST_END">Earliest Finish Time (Default)</option>
-                <option value="SHOE_ID">Shoe ID</option>
-                <option value="SIZE">Shoe Size</option>
+                <option value="EARLIEST_END">{t("rentals.sortByEarly", "Ending Soonest")}</option>
+                <option value="SHOE_ID">{t("rentals.sortByShoeId", "Shoe Tag")}</option>
+                <option value="SIZE">{t("rentals.sortBySize", "Shoe Size")}</option>
               </select>
             </div>
           </div>
@@ -800,13 +802,12 @@ export default function RentalBoardPage() {
         {filteredSessions.length === 0 ? (
           <div className="p-12 sm:p-16 text-center rounded-2xl bg-white border border-[#E9D9C5] text-[#8B8179] shadow-sm">
             <Timer className="h-12 w-12 mx-auto mb-3 opacity-30 text-[#D96827]" />
-            <p className="text-base font-bold text-[#29221E]">No sessions match this view</p>
-            <p className="text-xs text-[#8B8179] mt-1 max-w-sm mx-auto">
+            <p className="text-base font-bold text-[#29221E]">
               {statusTab === "ACTIVE"
-                ? "No skaters currently active. Tap 'Issue Skates' to allocate shoes."
+                ? t("rentals.noActiveSessions", "No active skaters currently on the floor")
                 : statusTab === "OVERDUE"
-                ? "All skaters are currently on time! No overdue sessions."
-                : "No completed sessions recorded yet."}
+                ? t("rentals.noOverdueSessions", "Great! No skaters are currently overdue")
+                : t("rentals.noReturnedSessions", "No completed rental sessions yet today")}
             </p>
           </div>
         ) : (
@@ -850,7 +851,7 @@ export default function RentalBoardPage() {
                             {session.shoeId}
                           </span>
                           <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                            Size #{session.shoeSize}
+                            {t("common.size", "Size")} #{session.shoeSize}
                           </span>
                           <span
                             className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
@@ -859,7 +860,7 @@ export default function RentalBoardPage() {
                                 : "bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD]"
                             }`}
                           >
-                            {(session.skateType || "INLINE") === "QUAD" ? "Quads" : "Inline"}
+                            {(session.skateType || "INLINE") === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")}
                           </span>
                         </div>
                         <div className="text-xs text-[#8B8179] mt-1 flex items-center gap-1.5 truncate">
@@ -877,19 +878,19 @@ export default function RentalBoardPage() {
                       <div className="shrink-0">
                         {!isActive ? (
                           <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]">
-                            Returned
+                            {t("rentals.returnedTab", "Returned")}
                           </span>
                         ) : timer.isOverdue ? (
                           <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-[#D94B45] text-white animate-pulse">
-                            OVERDUE +{timer.minutes}m
+                            {t("rentals.overdueTab", "OVERDUE")} +{timer.minutes}m
                           </span>
                         ) : timer.isDueSoon ? (
                           <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/40">
-                            Due Soon ({timer.minutes}m)
+                            {t("rentals.dueIn", "Due")} ({timer.minutes}m)
                           </span>
                         ) : (
                           <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/40">
-                            Active
+                            {t("rentals.activeTab", "Active")}
                           </span>
                         )}
                       </div>
@@ -899,7 +900,7 @@ export default function RentalBoardPage() {
                     {isActive ? (
                       <div className="py-3 my-2 text-center rounded-xl bg-[#F7F6F3] border border-[#E9D9C5]">
                         <div className="text-[10px] text-[#8B8179] uppercase tracking-widest font-semibold mb-0.5">
-                          {timer.isOverdue ? "Overdue Exceeded" : "Time Remaining"}
+                          {timer.isOverdue ? t("rentals.overdueBy", "Overdue by") : t("rentals.left", "Time Remaining")}
                         </div>
                         <div
                           className={`font-mono text-4xl sm:text-5xl font-black tracking-tight ${
@@ -929,27 +930,24 @@ export default function RentalBoardPage() {
 
                         <div className="text-[11px] text-[#8B8179] mt-2 flex items-center justify-center gap-2 font-mono">
                           <span>
-                            Started: {format12HourTime(session.startedAt)}
+                            {t("common.time", "Time")}: {format12HourTime(session.startedAt)}
                           </span>
                           <span>•</span>
                           <span className="text-[#29221E] font-bold">
-                            Due: {format12HourTime(session.expectedEndTime)}
+                            {t("rentals.dueIn", "Due")}: {format12HourTime(session.expectedEndTime)}
                           </span>
                         </div>
                       </div>
                     ) : (
                       <div className="py-2.5 my-2 text-center rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs text-[#8B8179]">
-                        Returned at{" "}
-                        {session.actualReturnTime
-                          ? format12HourTime(session.actualReturnTime)
-                          : "Closed"}
+                        {t("rentals.returnedTab", "Returned")} {session.actualReturnTime ? format12HourTime(session.actualReturnTime) : ""}
                       </div>
                     )}
 
                     {/* Financial summary & Snack Tabs */}
                     <div className="mt-2.5 pt-2.5 border-t border-[#E9D9C5] flex items-center justify-between text-xs">
                       <div>
-                        <span className="text-[#8B8179]">Skate Fee: </span>
+                        <span className="text-[#8B8179]">{t("rentals.rentalCharge", "Rental Fee")}: </span>
                         <strong className="text-[#29221E] font-mono">
                           {formatETB(session.totalRentalFee)}
                         </strong>
@@ -963,11 +961,11 @@ export default function RentalBoardPage() {
                       <div>
                         {session.paymentStatus === "PAID" ? (
                           <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
-                            PAID ({session.paymentMethod || "CASH"})
+                            {t("rentals.paidBadge", "PAID")} ({session.paymentMethod || "CASH"})
                           </span>
                         ) : (
                           <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                            UNPAID (TAB)
+                            {t("rentals.unpaidBadge", "UNPAID")}
                           </span>
                         )}
                       </div>
@@ -976,7 +974,7 @@ export default function RentalBoardPage() {
                     {/* Attached Snack Concession Tab if any */}
                     {session.tabTotal && session.tabTotal > 0 ? (
                       <div className="mt-2 text-[11px] text-[#29221E] bg-[#FFF4E5] p-2 rounded-xl border border-[#E9D9C5] flex items-center justify-between">
-                        <span>🍿 Attached Concession ({session.tabItemsCount || 0} items)</span>
+                        <span>🍿 {t("rentals.tabBadge", "Snacks Tab")} ({session.tabItemsCount || 0} {t("common.units", "items")})</span>
                         <strong className="font-mono font-bold text-[#D96827]">+{formatETB(session.tabTotal)}</strong>
                       </div>
                     ) : null}
@@ -984,8 +982,7 @@ export default function RentalBoardPage() {
                     {/* Swap notice */}
                     {session.shoeSwaps && session.shoeSwaps.length > 0 && (
                       <div className="mt-2 text-[10px] text-[#8B8179] bg-[#F7F6F3] p-1.5 rounded-lg border border-[#E9D9C5] truncate">
-                        🔄 Swapped from {session.shoeSwaps[0].oldShoeId} to{" "}
-                        {session.shoeSwaps[0].newShoeId}
+                        🔄 {t("rentals.swapped", "Swapped")} {session.shoeSwaps[0].oldShoeId} &rarr; {session.shoeSwaps[0].newShoeId}
                       </div>
                     )}
                   </div>
@@ -999,28 +996,28 @@ export default function RentalBoardPage() {
                           setSwapNewShoeId("");
                         }}
                         className="py-2 px-1 rounded-xl bg-[#F7F6F3] hover:bg-[#E9D9C5]/40 border border-[#E9D9C5] text-[11px] sm:text-xs font-semibold text-[#29221E] transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                        title="Swap shoe for comfortable fit"
+                        title={t("rentals.swapShoe", "Change Shoe")}
                       >
                         <Repeat className="h-3.5 w-3.5 text-[#D96827]" />
-                        <span>Swap</span>
+                        <span>{t("rentals.swapShoe", "Swap")}</span>
                       </button>
 
                       <button
                         onClick={() => handleExtend(session, 30)}
                         className="py-2 px-1 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#D96827] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
-                        title="Add +30 minutes"
+                        title={t("rentals.extend30", "+30 Min")}
                       >
                         <Plus className="h-3 w-3 text-[#D96827]" />
-                        <span>+30m</span>
+                        <span>{t("rentals.extend30", "+30m")}</span>
                       </button>
 
                       <button
                         onClick={() => handleExtend(session, 60)}
                         className="py-2 px-1 rounded-xl bg-[#FFF0E6] hover:bg-[#FCD8C2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#C2571A] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
-                        title="Add +1 hour (60 minutes)"
+                        title={t("rentals.extend60", "+1 Hour")}
                       >
                         <Plus className="h-3 w-3 text-[#C2571A]" />
-                        <span>+1h</span>
+                        <span>{t("rentals.extend60", "+1h")}</span>
                       </button>
 
                       <button
@@ -1029,10 +1026,10 @@ export default function RentalBoardPage() {
                           setReturnPaymentMethod(session.paymentMethod || "CASH");
                         }}
                         className="py-2 px-1 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-[11px] sm:text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-sm"
-                        title="Return shoe & checkout"
+                        title={t("rentals.returnSettle", "Return & Settle")}
                       >
                         <Check className="h-3.5 w-3.5" />
-                        <span>Return</span>
+                        <span>{t("rentals.returnSettle", "Return")}</span>
                       </button>
                     </div>
                   )}
@@ -1053,10 +1050,10 @@ export default function RentalBoardPage() {
                   </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-[#29221E]">
-                      Start Skate Rental Session
+                      {t("rentals.startRentalModalTitle", "Start Skate Rental")}
                     </h3>
                     <p className="text-xs text-[#8B8179]">
-                      Allocate shoe asset, apply rates, and launch countdown timer.
+                      {t("rentals.startRentalModalSub", "Choose shoes, duration, and customer details")}
                     </p>
                   </div>
                 </div>
@@ -1072,7 +1069,7 @@ export default function RentalBoardPage() {
                 {/* Step 1: Select Shoe Size */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    1. Select Shoe Size
+                    {t("rentals.selectSize", "1. Select Shoe Size")}
                   </label>
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
                     {distinctSizes.map((size) => {
@@ -1095,7 +1092,7 @@ export default function RentalBoardPage() {
                         >
                           <span className="text-sm">#{size}</span>
                           <span className="text-[10px] font-normal opacity-80">
-                            {avail > 0 ? `${avail} left` : "0 left"}
+                            {avail > 0 ? `${avail} ${t("rentals.left", "left")}` : `0 ${t("rentals.left", "left")}`}
                           </span>
                         </button>
                       );
@@ -1107,18 +1104,8 @@ export default function RentalBoardPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider">
-                      2. Skate Type (Size #{selectedSize})
+                      {t("rentals.selectType", "2. Skate Type")} (#{selectedSize})
                     </label>
-                    {availableTypesForSelectedSize.onlyInline && (
-                      <span className="text-[10px] font-semibold text-[#8B8179] bg-[#F7F6F3] px-2 py-0.5 rounded-full border border-[#E9D9C5]">
-                        Only Inline available in #{selectedSize}
-                      </span>
-                    )}
-                    {availableTypesForSelectedSize.onlyQuad && (
-                      <span className="text-[10px] font-semibold text-[#6D28D9] bg-[#EDE9FE] px-2 py-0.5 rounded-full border border-[#DDD6FE]">
-                        Only Quads available in #{selectedSize}
-                      </span>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -1138,15 +1125,15 @@ export default function RentalBoardPage() {
                       <div className="flex items-center gap-2">
                         <Footprints className="h-4 w-4 shrink-0" />
                         <div>
-                          <div className="text-xs font-bold leading-tight">Inline Skates</div>
+                          <div className="text-xs font-bold leading-tight">{t("common.inlineSkates", "Inline Skates")}</div>
                           <div
                             className={`text-[10px] mt-0.5 ${
                               selectedType === "INLINE" ? "text-white/80" : "text-[#8B8179]"
                             }`}
                           >
                             {availableTypesForSelectedSize.hasInline
-                              ? `${availableTypesForSelectedSize.inlineAvail} available`
-                              : "Not stocked"}
+                              ? `${availableTypesForSelectedSize.inlineAvail} ${t("common.available", "available")}`
+                              : "0"}
                           </div>
                         </div>
                       </div>
@@ -1171,15 +1158,15 @@ export default function RentalBoardPage() {
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 shrink-0" />
                         <div>
-                          <div className="text-xs font-bold leading-tight">Quads</div>
+                          <div className="text-xs font-bold leading-tight">{t("common.quads", "Quads")}</div>
                           <div
                             className={`text-[10px] mt-0.5 ${
                               selectedType === "QUAD" ? "text-white/80" : "text-[#8B8179]"
                             }`}
                           >
                             {availableTypesForSelectedSize.hasQuad
-                              ? `${availableTypesForSelectedSize.quadAvail} available`
-                              : "Not stocked"}
+                              ? `${availableTypesForSelectedSize.quadAvail} ${t("common.available", "available")}`
+                              : "0"}
                           </div>
                         </div>
                       </div>
@@ -1193,7 +1180,7 @@ export default function RentalBoardPage() {
                 {/* Step 3: Specific Shoe ID Asset */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    3. Choose Shoe Asset (Unique ID)
+                    {t("rentals.chooseAsset", "3. Choose Shoe Tag")}
                   </label>
                   {shoesForSelectedSizeAndType.length === 0 ? (
                     <div className="space-y-2.5">
@@ -1201,10 +1188,10 @@ export default function RentalBoardPage() {
                         <AlertTriangle className="h-4 w-4 shrink-0 text-[#D94B45] mt-0.5" />
                         <div>
                           <strong className="block font-bold">
-                            No {selectedType === "QUAD" ? "Quads" : "Inline Skates"} of Size #{selectedSize} are currently available.
+                            {t("rentals.outOfStockAlert", "No skates of this size are currently available")}
                           </strong>
                           <span className="text-[11px] text-[#D94B45]/90">
-                            Customer will need to wait for one to be returned.
+                            {t("rentals.noShoesAvailable", "Customer will need to wait for one to be returned.")}
                           </span>
                         </div>
                       </div>
@@ -1219,8 +1206,8 @@ export default function RentalBoardPage() {
                         <AlertTriangle className="h-3.5 w-3.5 text-[#D94B45]" />
                         <span>
                           {loggedDemandSize === selectedSize
-                            ? `✓ Logged! Customer Request Recorded for Size #${selectedSize}`
-                            : `+ Log 1 Customer Turned Away (Size #${selectedSize} Out of Stock)`}
+                            ? t("rentals.loggedSuccess", "✓ Logged! Customer Request Recorded")
+                            : t("rentals.logTurnaway", "+ Log 1 Turned Away Customer (Out of Stock)")}
                         </span>
                       </button>
 
@@ -1232,9 +1219,9 @@ export default function RentalBoardPage() {
                           className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
                         >
                           <span className="font-semibold text-left">
-                            💡 Quads are available for Size #{selectedSize} ({availableTypesForSelectedSize.quadAvail} left)
+                            💡 {t("rentals.quadsAvailable", "Quads are available for Size")} #{selectedSize} ({availableTypesForSelectedSize.quadAvail} {t("rentals.left", "left")})
                           </span>
-                          <span className="text-[11px] font-bold underline shrink-0">Switch to Quads &rarr;</span>
+                          <span className="text-[11px] font-bold underline shrink-0">{t("rentals.switchToQuads", "Switch to Quads")} &rarr;</span>
                         </button>
                       )}
 
@@ -1245,9 +1232,9 @@ export default function RentalBoardPage() {
                           className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
                         >
                           <span className="font-semibold text-left">
-                            💡 Inline Skates are available for Size #{selectedSize} ({availableTypesForSelectedSize.inlineAvail} left)
+                            💡 {t("rentals.inlineAvailable", "Inline skates are available for Size")} #{selectedSize} ({availableTypesForSelectedSize.inlineAvail} {t("rentals.left", "left")})
                           </span>
-                          <span className="text-[11px] font-bold underline shrink-0">Switch to Inline &rarr;</span>
+                          <span className="text-[11px] font-bold underline shrink-0">{t("rentals.switchToInline", "Switch to Inline")} &rarr;</span>
                         </button>
                       )}
 
@@ -1256,9 +1243,9 @@ export default function RentalBoardPage() {
                           <div className="flex items-center justify-between text-xs pb-1 border-b border-[#E9D9C5]/60">
                             <span className="font-bold text-[#29221E] flex items-center gap-1.5">
                               <Clock className="h-3.5 w-3.5 text-[#D96827]" />
-                              Top {activeSessionsForSelectedSizeAndType.length} Returning Soonest (Size #{selectedSize} {selectedType === "QUAD" ? "Quads" : "Inline"}):
+                              {t("rentals.returningSoonest", "Returning Soonest")} (#{selectedSize}):
                             </span>
-                            <span className="text-[10px] text-[#8B8179] font-medium">Est. Wait</span>
+                            <span className="text-[10px] text-[#8B8179] font-medium">{t("rentals.estWait", "Est. Wait")}</span>
                           </div>
 
                           <div className="space-y-1.5">
@@ -1289,15 +1276,15 @@ export default function RentalBoardPage() {
                                     {timer.isOverdue ? (
                                       <span className="text-[#D94B45] font-bold font-mono text-[11px] flex items-center gap-1">
                                         <span className="h-2 w-2 rounded-full bg-[#D94B45] animate-ping" />
-                                        Overdue (+{timer.timeFormatted})
+                                        {t("rentals.overdueTab", "Overdue")} (+{timer.timeFormatted})
                                       </span>
                                     ) : (
                                       <div className="text-right">
                                         <span className="font-mono font-bold text-[#D96827] text-xs">
-                                          ~{timer.timeFormatted} left
+                                          ~{timer.timeFormatted} {t("rentals.left", "left")}
                                         </span>
                                         <span className="block text-[10px] text-[#8B8179]">
-                                          (due {dueTime})
+                                          ({t("rentals.dueIn", "due")} {dueTime})
                                         </span>
                                       </div>
                                     )}
@@ -1307,11 +1294,7 @@ export default function RentalBoardPage() {
                             })}
                           </div>
                         </div>
-                      ) : (
-                        <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-[11px] text-[#8B8179] text-center">
-                          No active sessions currently on track for Size #{selectedSize} {selectedType === "QUAD" ? "Quads" : "Inline"}.
-                        </div>
-                      )}
+                      ) : null}
                     </div>
                   ) : (
                     <select
@@ -1321,7 +1304,7 @@ export default function RentalBoardPage() {
                     >
                       {shoesForSelectedSizeAndType.map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"})
+                          {s.shoeId} ({t("common.size", "Size")} #{s.size} • {s.type === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")})
                         </option>
                       ))}
                     </select>
@@ -1331,7 +1314,7 @@ export default function RentalBoardPage() {
                 {/* Step 4: Duration & Pricing */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    4. Rental Duration & Timing
+                    {t("rentals.durationTiming", "4. Rental Duration")}
                   </label>
                   <div className="grid grid-cols-2 gap-2.5">
                     <button
@@ -1343,12 +1326,12 @@ export default function RentalBoardPage() {
                           : "bg-white border-[#E9D9C5] text-[#8B8179] hover:border-[#D96827]/40"
                       }`}
                     >
-                      <div className="font-bold text-sm text-[#29221E]">30 Minutes</div>
-                      <div className="text-[11px] text-[#D96827] font-bold mt-0.5">
-                        {isWeekend ? "200 ETB (Weekend)" : "150 ETB (Weekday)"}
+                      <div className="font-bold text-sm text-[#29221E]">{t("rentals.min30", "30 Minutes")}</div>
+                      <div className="text-[11px] text-[#D96827] font-bold mt-0.5 font-mono">
+                        {isWeekend ? `200 ${t("common.etb", "ETB")}` : `150 ${t("common.etb", "ETB")}`}
                       </div>
-                      <div className="text-[10px] text-[#8B8179] mt-1">
-                        +5m buffer = <strong>35m timer</strong>
+                      <div className="text-[10px] text-[#8B8179] mt-1 font-mono">
+                        +5m buffer = 35m
                       </div>
                     </button>
 
@@ -1361,22 +1344,22 @@ export default function RentalBoardPage() {
                           : "bg-white border-[#E9D9C5] text-[#8B8179] hover:border-[#D96827]/40"
                       }`}
                     >
-                      <div className="font-bold text-sm text-[#29221E]">60 Minutes (1 Hour)</div>
-                      <div className="text-[11px] text-[#D96827] font-bold mt-0.5">
-                        {isWeekend ? "300 ETB (Weekend)" : "250 ETB (Weekday)"}
+                      <div className="font-bold text-sm text-[#29221E]">{t("rentals.min60", "60 Minutes (1 Hour)")}</div>
+                      <div className="text-[11px] text-[#D96827] font-bold mt-0.5 font-mono">
+                        {isWeekend ? `300 ${t("common.etb", "ETB")}` : `250 ${t("common.etb", "ETB")}`}
                       </div>
-                      <div className="text-[10px] text-[#8B8179] mt-1">
-                        +5m buffer = <strong>65m timer</strong>
+                      <div className="text-[10px] text-[#8B8179] mt-1 font-mono">
+                        +5m buffer = 65m
                       </div>
                     </button>
                   </div>
                 </div>
 
-                {/* Step 4: Customer Details */}
+                {/* Step 5: Customer Details */}
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Customer Name
+                      {t("rentals.customerName", "Customer Name")}
                     </label>
                     <input
                       type="text"
@@ -1388,7 +1371,7 @@ export default function RentalBoardPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Phone Number
+                      {t("rentals.customerPhone", "Phone (Optional)")}
                     </label>
                     <input
                       type="text"
@@ -1400,10 +1383,10 @@ export default function RentalBoardPage() {
                   </div>
                 </div>
 
-                {/* Step 5: Payment Timing */}
+                {/* Step 6: Payment Timing */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    5. Payment Timing
+                    {t("rentals.paymentSettlement", "6. Payment")}
                   </label>
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <button
@@ -1415,7 +1398,7 @@ export default function RentalBoardPage() {
                           : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                       }`}
                     >
-                      Pay After Skating (Open Tab)
+                      {t("rentals.payOnReturn", "Pay on Return")}
                     </button>
                     <button
                       type="button"
@@ -1426,7 +1409,7 @@ export default function RentalBoardPage() {
                           : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                       }`}
                     >
-                      Pay Upfront Now ({formatETB(calculatedPrice)})
+                      {t("rentals.payNow", "Pay Now")} ({formatETB(calculatedPrice)})
                     </button>
                   </div>
 
@@ -1443,7 +1426,7 @@ export default function RentalBoardPage() {
                               : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
                           }`}
                         >
-                          {method}
+                          {method === "CASH" ? t("common.cash", "Cash") : method === "TELEBIRR" ? t("common.telebirr", "Telebirr") : t("common.cbe", "CBE")}
                         </button>
                       ))}
                     </div>
@@ -1457,8 +1440,8 @@ export default function RentalBoardPage() {
                     className="w-full py-3 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-[#D96827]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {submitting
-                      ? "Launching..."
-                      : `Start Rental (${duration + 5} min countdown)`}
+                      ? t("common.loading", "Loading...")
+                      : `${t("rentals.startSessionButton", "Start Rental")} (${duration + 5}m)`}
                   </button>
                 </div>
               </form>
@@ -1473,7 +1456,9 @@ export default function RentalBoardPage() {
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
                   <Repeat className="h-5 w-5 text-[#D96827]" />
-                  <h3 className="text-base sm:text-lg font-bold text-[#29221E]">Swap Skate Shoe</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-[#29221E]">
+                    {t("rentals.swapModalTitle", "Change Skater's Shoe")}
+                  </h3>
                 </div>
                 <button
                   onClick={() => setSwapSession(null)}
@@ -1485,14 +1470,13 @@ export default function RentalBoardPage() {
 
               <form onSubmit={handleSwapSubmit} className="mt-4 space-y-4">
                 <p className="text-xs text-[#8B8179] leading-relaxed">
-                  Currently assigned to shoe{" "}
-                  <strong className="text-[#29221E] font-mono">{swapSession.shoeId}</strong> (Size #
-                  {swapSession.shoeSize}). The timer will continue without interruption.
+                  {t("rentals.swapModalSub", "Select replacement shoe for active skater")} (
+                  <strong className="text-[#29221E] font-mono">{swapSession.shoeId}</strong>, #{swapSession.shoeSize}).
                 </p>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    Select New Available Shoe Asset
+                    {t("rentals.selectNewShoe", "Select Replacement Shoe")}
                   </label>
                   <select
                     value={swapNewShoeId}
@@ -1500,12 +1484,12 @@ export default function RentalBoardPage() {
                     required
                     className="w-full px-3 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
                   >
-                    <option value="">-- Choose replacement shoe --</option>
+                    <option value="">-- {t("rentals.selectNewShoe", "Choose replacement shoe")} --</option>
                     {availableShoes
                       .filter((s) => s.status === "AVAILABLE" && s.shoeId !== swapSession.shoeId)
                       .map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (Size #{s.size} • {s.type === "QUAD" ? "Quads" : "Inline"})
+                          {s.shoeId} ({t("common.size", "Size")} #{s.size} • {s.type === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")})
                         </option>
                       ))}
                   </select>
@@ -1513,7 +1497,7 @@ export default function RentalBoardPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    Reason
+                    {t("rentals.swapReason", "Reason for Change")}
                   </label>
                   <input
                     type="text"
@@ -1529,14 +1513,14 @@ export default function RentalBoardPage() {
                     onClick={() => setSwapSession(null)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={swapLoading || !swapNewShoeId}
                     className="px-4 py-2 bg-[#D96827] hover:bg-[#C2571A] text-white font-semibold text-xs rounded-xl shadow-sm disabled:opacity-50 cursor-pointer"
                   >
-                    {swapLoading ? "Swapping..." : "Confirm Shoe Swap"}
+                    {swapLoading ? t("common.loading", "Loading...") : t("rentals.confirmSwap", "Confirm Shoe Change")}
                   </button>
                 </div>
               </form>
@@ -1552,7 +1536,7 @@ export default function RentalBoardPage() {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-[#26845B]" />
                   <h3 className="text-base sm:text-lg font-bold text-[#29221E]">
-                    Return Shoe & Settle Bill
+                    {t("rentals.returnModalTitle", "Return Skates & Settle")}
                   </h3>
                 </div>
                 <button
@@ -1566,33 +1550,33 @@ export default function RentalBoardPage() {
               <form onSubmit={handleReturnSubmit} className="mt-4 space-y-4">
                 <div className="p-4 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-2.5">
                   <div className="flex justify-between text-xs text-[#8B8179]">
-                    <span>Shoe Asset:</span>
+                    <span>{t("shoes.title", "Shoe")}:</span>
                     <strong className="text-[#29221E] font-mono">
-                      {returnSession.shoeId} (Size #{returnSession.shoeSize})
+                      {returnSession.shoeId} ({t("common.size", "Size")} #{returnSession.shoeSize})
                     </strong>
                   </div>
                   <div className="flex justify-between text-xs text-[#8B8179]">
-                    <span>Customer:</span>
+                    <span>{t("common.name", "Customer")}:</span>
                     <span className="text-[#29221E] font-medium">{returnSession.customerName}</span>
                   </div>
                   <div className="flex justify-between text-xs text-[#8B8179]">
-                    <span>Skate Duration:</span>
-                    <span className="text-[#29221E]">
-                      {returnSession.totalMinutes - returnSession.gracePeriodMinutes} mins
+                    <span>{t("common.time", "Duration")}:</span>
+                    <span className="text-[#29221E] font-mono">
+                      {returnSession.totalMinutes - returnSession.gracePeriodMinutes}m
                     </span>
                   </div>
 
                   {/* Cost breakdown */}
                   <div className="pt-2 border-t border-[#E9D9C5] space-y-1.5 text-xs">
                     <div className="flex justify-between items-center text-[#8B8179]">
-                      <span>Skate Rental Fee:</span>
+                      <span>{t("rentals.rentalCharge", "Rental Fee")}:</span>
                       <div className="flex items-center gap-1.5 font-mono">
                         <span className={returnSession.paymentStatus === "PAID" ? "line-through text-[#8B8179]" : "font-bold text-[#29221E]"}>
                           {formatETB(returnSession.totalRentalFee)}
                         </span>
                         {returnSession.paymentStatus === "PAID" && (
                           <span className="text-[10px] font-bold text-[#26845B] bg-[#EBF5F0] px-1.5 py-0.5 rounded border border-[#26845B]/30">
-                            ✓ PAID ({returnSession.paymentMethod || "PAID"})
+                            ✓ {t("rentals.paidBadge", "PAID")}
                           </span>
                         )}
                       </div>
@@ -1600,7 +1584,7 @@ export default function RentalBoardPage() {
 
                     {returnSession.tabTotal && returnSession.tabTotal > 0 ? (
                       <div className="flex justify-between items-center text-[#D96827] font-semibold">
-                        <span>Attached Concession Snacks:</span>
+                        <span>{t("rentals.snacksBill", "Snacks / Cafe Bill")}:</span>
                         <span className="font-mono font-bold">+{formatETB(returnSession.tabTotal)}</span>
                       </div>
                     ) : null}
@@ -1618,23 +1602,13 @@ export default function RentalBoardPage() {
                         <div className="flex justify-between items-baseline">
                           <div>
                             <span className="text-sm font-bold text-[#29221E] block">
-                              {totalDueNow > 0 ? "Amount Due Now:" : "Settlement Status:"}
+                              {totalDueNow > 0 ? t("rentals.totalDue", "Total To Collect") + ":" : t("common.status", "Status") + ":"}
                             </span>
-                            {isSkatePaid && snackDue > 0 && (
-                              <span className="text-[10px] text-[#8B8179]">
-                                (Skate already pre-paid, collecting snacks only)
-                              </span>
-                            )}
                           </div>
                           <span className={`text-xl font-black font-mono ${totalDueNow > 0 ? "text-[#D96827]" : "text-[#26845B]"}`}>
                             {formatETB(totalDueNow)}
                           </span>
                         </div>
-                        {totalDueNow === 0 && (
-                          <div className="mt-1 text-[11px] text-[#26845B] font-semibold text-right">
-                            ✓ All fees cleared. Ready for return.
-                          </div>
-                        )}
                       </div>
                     );
                   })()}
@@ -1652,7 +1626,7 @@ export default function RentalBoardPage() {
                   return (
                     <div>
                       <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
-                        Select Settlement Payment Method ({formatETB(totalDueNow)})
+                        {t("expenses.channel", "Payment Method")} ({formatETB(totalDueNow)})
                       </label>
                       <div className="grid grid-cols-3 gap-2">
                         {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
@@ -1666,7 +1640,7 @@ export default function RentalBoardPage() {
                                 : "bg-white border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
                             }`}
                           >
-                            {method}
+                            {method === "CASH" ? t("common.cash", "Cash") : method === "TELEBIRR" ? t("common.telebirr", "Telebirr") : t("common.cbe", "CBE")}
                           </button>
                         ))}
                       </div>
@@ -1680,14 +1654,14 @@ export default function RentalBoardPage() {
                     onClick={() => setReturnSession(null)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={returnLoading}
                     className="px-5 py-2.5 bg-[#26845B] hover:bg-[#1f6d4a] text-white font-bold text-xs rounded-xl shadow-md shadow-[#26845B]/20 cursor-pointer"
                   >
-                    {returnLoading ? "Processing..." : "Confirm Return & Mark Available"}
+                    {returnLoading ? t("common.loading", "Loading...") : t("rentals.completeReturn", "Confirm Return & Payment")}
                   </button>
                 </div>
               </form>

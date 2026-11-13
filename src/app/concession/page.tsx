@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { formatETB, format12HourTime } from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
+import { useLanguage } from "@/lib/i18n";
 import { ProductCategory } from "@/models/Product";
 import {
   ShoppingBag,
@@ -61,6 +62,7 @@ interface SaleRecordItem {
 
 export default function ConcessionPage() {
   const { showAlert } = useAlertModal();
+  const { t, lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<"POS" | "HISTORY">("POS");
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [activeSkaters, setActiveSkaters] = useState<ActiveSkater[]>([]);
@@ -338,14 +340,14 @@ export default function ConcessionPage() {
             <div className="flex items-center gap-2">
               <ShoppingBag className="h-6 w-6 text-[#D96827]" />
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
-                Snacks & Drinks POS
+                {t("concession.title", "Shop & Snacks")}
               </h1>
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                Counter POS
+                {t("nav.pos", "Shop")}
               </span>
             </div>
             <p className="mt-0.5 text-xs sm:text-sm text-[#8B8179]">
-              Charge snacks to active skater tabs or conduct instant walk-in sales. Stock decreases in real-time.
+              {t("concession.subtitle", "Quick counter sales and skater tab charges")}
             </p>
           </div>
 
@@ -361,7 +363,7 @@ export default function ConcessionPage() {
                 }`}
               >
                 <ShoppingBag className="h-3.5 w-3.5" />
-                <span>POS Register</span>
+                <span>{t("concession.newOrderTab", "New Sale")}</span>
               </button>
 
               <button
@@ -373,7 +375,7 @@ export default function ConcessionPage() {
                 }`}
               >
                 <History className="h-3.5 w-3.5" />
-                <span>Sales Log</span>
+                <span>{t("concession.salesHistoryTab", "Sales History")}</span>
               </button>
             </div>
 
@@ -386,7 +388,7 @@ export default function ConcessionPage() {
               className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`h-4 w-4 ${loading || historyLoading ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden sm:inline">{t("common.refresh", "Refresh")}</span>
             </button>
           </div>
         </div>
@@ -410,11 +412,11 @@ export default function ConcessionPage() {
                       }`}
                     >
                       {cat === "ALL"
-                        ? "All Items"
+                        ? t("concession.allCategories", "All Items")
                         : cat === "BEVERAGE"
-                        ? "Drinks & Water"
+                        ? (lang === "am" ? "መጠጥ እና ውሃ" : "Drinks & Water")
                         : cat === "SNACK"
-                        ? "Snacks & Food"
+                        ? (lang === "am" ? "መክሰስ እና ምግብ" : "Snacks & Food")
                         : cat.replace(/_/g, " ")}
                     </button>
                   ))}
@@ -424,7 +426,7 @@ export default function ConcessionPage() {
                   <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#8B8179]" />
                   <input
                     type="text"
-                    placeholder="Search product..."
+                    placeholder={t("concession.searchProduct", "Search snacks, drinks...")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
@@ -502,7 +504,7 @@ export default function ConcessionPage() {
                               : "text-[#8B8179]"
                           }`}
                         >
-                          {isOutOfStock ? "Out of stock" : `${product.currentStock} left`}
+                          {isOutOfStock ? t("concession.outOfStock", "Out of stock") : `${product.currentStock} ${t("concession.leftInStock", "left")}`}
                         </span>
                       </div>
                     </div>
@@ -518,14 +520,14 @@ export default function ConcessionPage() {
                   <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5] mb-3">
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="h-5 w-5 text-[#D96827]" />
-                      <h2 className="text-sm sm:text-base font-bold text-[#29221E]">Current Order</h2>
+                      <h2 className="text-sm sm:text-base font-bold text-[#29221E]">{t("concession.cartTitle", "Current Order")}</h2>
                     </div>
                     {cart.length > 0 && (
                       <button
                         onClick={clearCart}
                         className="text-xs font-semibold text-[#8B8179] hover:text-[#D94B45] transition-colors cursor-pointer"
                       >
-                        Clear
+                        {t("concession.clearCart", "Clear Order")}
                       </button>
                     )}
                   </div>
@@ -533,7 +535,7 @@ export default function ConcessionPage() {
                   {/* Billing Mode Toggle: Skater vs Counter */}
                   <div className="mb-3">
                     <label className="block text-[11px] font-semibold text-[#8B8179] uppercase tracking-wider mb-1.5">
-                      Destination / Customer
+                      {t("concession.destination", "Charge To:")}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -549,7 +551,7 @@ export default function ConcessionPage() {
                         }`}
                       >
                         <User className="h-3.5 w-3.5" />
-                        <span>Counter Sale</span>
+                        <span>{t("concession.walkInCustomer", "Walk-in Counter")}</span>
                       </button>
 
                       <button
@@ -562,7 +564,7 @@ export default function ConcessionPage() {
                         }`}
                       >
                         <Footprints className="h-3.5 w-3.5" />
-                        <span>Skater&apos;s Order</span>
+                        <span>{t("concession.skaterTab", "Skater Shoe Tab")}</span>
                       </button>
                     </div>
                   </div>
@@ -571,11 +573,11 @@ export default function ConcessionPage() {
                   {saleType === "TAB" && (
                     <div className="mb-3 p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-xs">
                       <label className="block text-[10px] font-bold text-[#D96827] uppercase mb-1">
-                        Select Skater (Active Shoe ID)
+                        {t("concession.selectActiveSkater", "Select Active Skater")}
                       </label>
                       {activeSkaters.length === 0 ? (
                         <p className="text-[#8B8179] text-xs">
-                          No skaters currently active. Switch to Counter Sale to sell.
+                          {t("rentals.noActiveSessions", "No skaters currently active.")}
                         </p>
                       ) : (
                         <select
@@ -588,10 +590,10 @@ export default function ConcessionPage() {
                               s.customerName &&
                               !s.customerName.toLowerCase().includes("walk-in") &&
                               s.customerName.trim().length > 0;
-                            const typeLabel = s.skateType === "QUAD" ? "Quads" : "Inline";
+                            const typeLabel = s.skateType === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline");
                             const label = hasRealName
-                              ? `Shoe ${s.shoeId} (Size #${s.shoeSize} • ${typeLabel}) — ${s.customerName}`
-                              : `Shoe ${s.shoeId} (Size #${s.shoeSize} • ${typeLabel})`;
+                              ? `${s.shoeId} (${t("common.size", "Size")} #${s.shoeSize} • ${typeLabel}) — ${s.customerName}`
+                              : `${s.shoeId} (${t("common.size", "Size")} #${s.shoeSize} • ${typeLabel})`;
 
                             return (
                               <option key={s._id} value={s._id}>
@@ -608,7 +610,7 @@ export default function ConcessionPage() {
                   {saleType === "TAB" && (
                     <div className="mb-3">
                       <label className="block text-[10px] font-semibold text-[#8B8179] uppercase mb-1">
-                        Payment Timing
+                        {t("concession.paymentTiming", "Payment Timing:")}
                       </label>
                       <div className="grid grid-cols-2 gap-2">
                         <button
@@ -621,7 +623,7 @@ export default function ConcessionPage() {
                           }`}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>Pay Now</span>
+                          <span>{t("concession.payNow", "Pay Now")}</span>
                         </button>
                         <button
                           type="button"
@@ -633,14 +635,9 @@ export default function ConcessionPage() {
                           }`}
                         >
                           <Clock className="h-3.5 w-3.5" />
-                          <span>Add to Tab</span>
+                          <span>{t("concession.payLater", "Pay Later (Add to Tab)")}</span>
                         </button>
                       </div>
-                      {paymentTiming === "PAY_LATER" && (
-                        <p className="text-[10px] text-[#8B8179] mt-1.5 italic">
-                          *Will be added to skater&apos;s tab and collected upon returning shoes.
-                        </p>
-                      )}
                     </div>
                   )}
 
@@ -648,7 +645,7 @@ export default function ConcessionPage() {
                   <div className="max-h-56 overflow-y-auto divide-y divide-[#E9D9C5] my-2 pr-1">
                     {cart.length === 0 ? (
                       <div className="py-8 text-center text-[#8B8179] text-xs">
-                        Order is empty. Tap items to add.
+                        {t("concession.cartEmpty", "Your order is empty. Click items to add.")}
                       </div>
                     ) : (
                       cart.map((item) => (
@@ -661,7 +658,7 @@ export default function ConcessionPage() {
                               {item.product.name}
                             </div>
                             <div className="text-[11px] text-[#8B8179] font-mono">
-                              {formatETB(item.product.sellingPrice)} each
+                              {formatETB(item.product.sellingPrice)}
                             </div>
                           </div>
 
@@ -704,7 +701,7 @@ export default function ConcessionPage() {
                 {/* Cart Footer */}
                 <div className="pt-3 border-t border-[#E9D9C5] mt-2 space-y-3">
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs uppercase font-bold text-[#8B8179]">Total Due</span>
+                    <span className="text-xs uppercase font-bold text-[#8B8179]">{t("common.total", "Total")}</span>
                     <span className="text-xl sm:text-2xl font-black text-[#D96827] font-mono">
                       {formatETB(totalAmount)}
                     </span>
@@ -714,7 +711,7 @@ export default function ConcessionPage() {
                   {(saleType === "WALK_IN" || paymentTiming === "PAY_NOW") && cart.length > 0 && (
                     <div>
                       <label className="block text-[10px] font-semibold text-[#8B8179] uppercase mb-1">
-                        Settlement Method
+                        {t("expenses.channel", "Payment Method")}
                       </label>
                       <div className="grid grid-cols-3 gap-1.5">
                         {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
@@ -728,7 +725,7 @@ export default function ConcessionPage() {
                                 : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
                             }`}
                           >
-                            {method}
+                            {method === "CASH" ? t("common.cash", "Cash") : method === "TELEBIRR" ? t("common.telebirr", "Telebirr") : t("common.cbe", "CBE")}
                           </button>
                         ))}
                       </div>
@@ -743,10 +740,8 @@ export default function ConcessionPage() {
                     className="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#D96827]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[#D96827] hover:bg-[#C2571A] text-white"
                   >
                     {submitting
-                      ? "Recording..."
-                      : saleType === "TAB" && paymentTiming === "PAY_LATER"
-                      ? `Add to Skater's Tab (${formatETB(totalAmount)})`
-                      : `Settle & Pay Now (${formatETB(totalAmount)})`}
+                      ? t("common.loading", "Recording...")
+                      : `${t("concession.checkoutButton", "Charge & Complete")} (${formatETB(totalAmount)})`}
                   </button>
                 </div>
               </div>
@@ -757,8 +752,8 @@ export default function ConcessionPage() {
           <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
             <div className="p-4 border-b border-[#E9D9C5] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-[#29221E]">Concession Transaction Log</h3>
-                <p className="text-xs text-[#8B8179]">All recent snack and drink orders</p>
+                <h3 className="text-sm font-bold text-[#29221E]">{t("concession.salesHistoryTab", "Sales History")}</h3>
+                <p className="text-xs text-[#8B8179]">{t("concession.subtitle", "All recent snack and drink orders")}</p>
               </div>
 
               {/* Status Filter Tabs: All, Paid, Open Tabs */}
@@ -772,7 +767,7 @@ export default function ConcessionPage() {
                       : "text-[#8B8179] hover:text-[#29221E]"
                   }`}
                 >
-                  All ({salesHistory.length})
+                  {t("common.all", "All")} ({salesHistory.length})
                 </button>
                 <button
                   type="button"
@@ -783,7 +778,7 @@ export default function ConcessionPage() {
                       : "text-[#8B8179] hover:text-[#26845B]"
                   }`}
                 >
-                  Paid ({paidSalesCount})
+                  {t("concession.paid", "PAID")} ({paidSalesCount})
                 </button>
                 <button
                   type="button"
@@ -794,7 +789,7 @@ export default function ConcessionPage() {
                       : "text-[#8B8179] hover:text-[#D96827]"
                   }`}
                 >
-                  Open Tabs ({openTabsCount})
+                  {t("concession.openTab", "OPEN TAB")} ({openTabsCount})
                 </button>
               </div>
             </div>
@@ -802,15 +797,15 @@ export default function ConcessionPage() {
             {historyLoading ? (
               <div className="p-12 text-center text-[#8B8179]">
                 <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#D96827]" />
-                <p className="text-xs">Loading sales history...</p>
+                <p className="text-xs">{t("common.loading", "Loading...")}</p>
               </div>
             ) : filteredSalesHistory.length === 0 ? (
               <div className="p-12 text-center text-[#8B8179]">
                 <Receipt className="h-10 w-10 mx-auto mb-2 opacity-30 text-[#D96827]" />
                 <p className="text-xs">
                   {historyStatusFilter === "ALL"
-                    ? "No sales recorded yet today."
-                    : `No ${historyStatusFilter === "PAID" ? "paid sales" : "open unpaid tabs"} found.`}
+                    ? (lang === "am" ? "ዛሬ እስካሁን የተመዘገበ ሽያጭ የለም" : "No sales recorded yet today.")
+                    : (lang === "am" ? "ምንም የተገኘ መረጃ የለም" : "No matching sales found.")}
                 </p>
               </div>
             ) : (
@@ -825,12 +820,12 @@ export default function ConcessionPage() {
                             {sale.saleType === "TAB" ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] font-bold text-xs border border-[#E9D9C5]">
                                 <Footprints className="h-3 w-3" />
-                                Shoe {sale.shoeId || "Tab"}
+                                {t("shoes.title", "Shoe")} {sale.shoeId || "Tab"}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#F7F6F3] text-[#29221E] font-bold text-xs border border-[#E9D9C5]">
                                 <User className="h-3 w-3" />
-                                Counter Sale
+                                {t("concession.walkInCustomer", "Counter Sale")}
                               </span>
                             )}
                             <span className="text-[11px] text-[#8B8179] font-mono">
@@ -845,11 +840,11 @@ export default function ConcessionPage() {
                           </div>
                           {sale.paymentStatus === "PAID" ? (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30 inline-block mt-0.5">
-                              PAID ({sale.paymentMethod || "CASH"})
+                              {t("concession.paid", "PAID")} ({sale.paymentMethod || "CASH"})
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5] inline-block mt-0.5">
-                              OPEN TAB
+                              {t("concession.openTab", "OPEN TAB")}
                             </span>
                           )}
                         </div>
@@ -868,7 +863,7 @@ export default function ConcessionPage() {
                           type="button"
                           onClick={() => setSaleToDelete(sale)}
                           className="p-2 text-[#8B8179] hover:text-[#D94B45] rounded-xl hover:bg-[#FDF0EF] transition-colors cursor-pointer shrink-0"
-                          title="Void order and restore stock"
+                          title={t("concession.voidOrder", "Void Order")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -882,12 +877,12 @@ export default function ConcessionPage() {
                   <table className="w-full text-left text-xs">
                     <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                       <tr>
-                        <th className="px-5 py-3">Time</th>
-                        <th className="px-5 py-3">Destination</th>
-                        <th className="px-5 py-3">Items Sold</th>
-                        <th className="px-5 py-3">Total Amount</th>
-                        <th className="px-5 py-3">Payment</th>
-                        <th className="px-4 py-3 text-center">Action</th>
+                        <th className="px-5 py-3">{t("common.time", "Time")}</th>
+                        <th className="px-5 py-3">{t("concession.destinationLabel", "Destination")}</th>
+                        <th className="px-5 py-3">{t("concession.itemsSold", "Items Sold")}</th>
+                        <th className="px-5 py-3">{t("common.total", "Total")}</th>
+                        <th className="px-5 py-3">{t("expenses.channel", "Payment")}</th>
+                        <th className="px-4 py-3 text-center">{t("common.action", "Action")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E9D9C5]">
@@ -900,12 +895,12 @@ export default function ConcessionPage() {
                             {sale.saleType === "TAB" ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] font-semibold border border-[#E9D9C5]">
                                 <Footprints className="h-3 w-3" />
-                                Shoe {sale.shoeId || "Tab"}
+                                {t("shoes.title", "Shoe")} {sale.shoeId || "Tab"}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#F7F6F3] text-[#29221E] font-semibold border border-[#E9D9C5]">
                                 <User className="h-3 w-3" />
-                                Counter Sale
+                                {t("concession.walkInCustomer", "Counter Sale")}
                               </span>
                             )}
                           </td>
@@ -923,11 +918,11 @@ export default function ConcessionPage() {
                           <td className="px-5 py-3">
                             {sale.paymentStatus === "PAID" ? (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
-                                PAID ({sale.paymentMethod || "CASH"})
+                                {t("concession.paid", "PAID")} ({sale.paymentMethod || "CASH"})
                               </span>
                             ) : (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                                OPEN TAB
+                                {t("concession.openTab", "OPEN TAB")}
                               </span>
                             )}
                           </td>
@@ -936,7 +931,7 @@ export default function ConcessionPage() {
                               type="button"
                               onClick={() => setSaleToDelete(sale)}
                               className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
-                              title="Void order and restore stock"
+                              title={t("concession.voidOrder", "Void Order")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -960,7 +955,7 @@ export default function ConcessionPage() {
                 type="button"
                 onClick={() => setCompletedSale(null)}
                 className="absolute top-4 right-4 p-1 rounded-lg text-[#8B8179] hover:text-[#29221E] cursor-pointer"
-                title="Close"
+                title={t("common.close", "Close")}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -969,13 +964,13 @@ export default function ConcessionPage() {
                 <div className="h-10 w-10 rounded-full bg-[#EBF5F0] text-[#26845B] flex items-center justify-center mx-auto mb-2">
                   <CheckCircle2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-base font-bold text-[#29221E]">Order Recorded!</h3>
+                <h3 className="text-base font-bold text-[#29221E]">{t("concession.orderRecorded", "Order Recorded!")}</h3>
                 <p className="text-xs text-[#8B8179]">
                   {completedSale.saleType === "TAB"
                     ? completedSale.paymentStatus === "PAID"
-                      ? `Settled for Shoe ${completedSale.shoeId} via ${completedSale.paymentMethod || "CASH"}`
-                      : `Charged to Shoe ${completedSale.shoeId}'s Tab (Pay on Return)`
-                    : `Settled via ${completedSale.paymentMethod || "CASH"}`}
+                      ? `${t("concession.paid", "PAID")} (#${completedSale.shoeId})`
+                      : `${t("concession.openTab", "OPEN TAB")} (#${completedSale.shoeId})`
+                    : `${t("concession.paid", "PAID")} (${completedSale.paymentMethod || "CASH"})`}
                 </p>
               </div>
 
@@ -991,7 +986,7 @@ export default function ConcessionPage() {
                 ))}
 
                 <div className="pt-2 border-t border-[#E9D9C5] flex justify-between font-bold text-sm text-[#29221E]">
-                  <span>Total Amount:</span>
+                  <span>{t("common.total", "Total")}:</span>
                   <span className="text-[#D96827] font-black">{formatETB(completedSale.totalAmount)}</span>
                 </div>
               </div>
@@ -1002,7 +997,7 @@ export default function ConcessionPage() {
                   onClick={() => setCompletedSale(null)}
                   className="w-full py-2.5 px-4 bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm"
                 >
-                  Done / Next Order
+                  {t("common.done", "Done")} / {t("concession.newSale", "New Sale")}
                 </button>
               </div>
             </div>
@@ -1018,14 +1013,14 @@ export default function ConcessionPage() {
                   <Trash2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#29221E]">Void this Order?</h3>
-                  <p className="text-xs text-[#8B8179]">Product stock will be returned to inventory.</p>
+                  <h3 className="text-base font-bold text-[#29221E]">{t("concession.voidModalTitle", "Void this Order?")}</h3>
+                  <p className="text-xs text-[#8B8179]">{t("concession.voidModalDesc", "Product stock will be returned to inventory.")}</p>
                 </div>
               </div>
 
               <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
                 <div className="font-bold text-[#29221E]">
-                  Total: {formatETB(saleToDelete.totalAmount)}
+                  {t("common.total", "Total")}: {formatETB(saleToDelete.totalAmount)}
                 </div>
                 <div className="text-[11px] text-[#8B8179]">
                   {saleToDelete.items.map((i) => `${i.quantity}x ${i.productName}`).join(", ")}
@@ -1038,7 +1033,7 @@ export default function ConcessionPage() {
                   onClick={() => setSaleToDelete(null)}
                   className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="button"
@@ -1046,7 +1041,7 @@ export default function ConcessionPage() {
                   onClick={handleDeleteSale}
                   className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
-                  {deletingSale ? "Voiding..." : "Confirm Void"}
+                  {deletingSale ? t("common.loading", "Loading...") : t("concession.confirmVoid", "Confirm Void")}
                 </button>
               </div>
             </div>

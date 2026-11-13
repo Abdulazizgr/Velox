@@ -4,10 +4,12 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Lock, Phone, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 import { PWAInlineButton } from "@/components/PWAInstallBanner";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { lang, toggleLang, t } = useLanguage();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,7 +31,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Invalid phone number or password");
+        setError(data.error || (lang === "am" ? "የስልክ ቁጥር ወይም የይለፍ ቃል ስህተት ነው" : "Invalid phone number or password"));
         setLoading(false);
         return;
       }
@@ -37,13 +39,30 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } catch {
-      setError("An unexpected network error occurred. Please try again.");
+      setError(lang === "am" ? "የኔትወርክ ስህተት ተከስቷል። እባክዎ እንደገና ይሞክሩ።" : "An unexpected network error occurred. Please try again.");
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-start sm:justify-center items-center bg-[#F7F6F3] px-4 pt-5 pb-8 sm:py-12 relative overflow-hidden">
+      {/* Top-Right Language Switcher */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          type="button"
+          onClick={toggleLang}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-bold text-[#29221E] shadow-2xs hover:border-[#D96827] transition-all cursor-pointer"
+          title={t("nav.switchLanguage", "Switch Language")}
+        >
+          <span className="text-[11px] text-[#8B8179] font-medium mr-0.5">
+            {lang === "am" ? "ቋንቋ" : "Lang"}
+          </span>
+          <span className={lang === "en" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>EN</span>
+          <span className="text-[#8B8179]">|</span>
+          <span className={lang === "am" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>አማ</span>
+        </button>
+      </div>
+
       {/* Background ambient accents */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FFF4E5] rounded-full blur-3xl pointer-events-none opacity-80" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#E9D9C5] rounded-full blur-3xl pointer-events-none opacity-50" />
@@ -62,19 +81,19 @@ export default function LoginPage() {
             />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#29221E]">
-            Velox Skate
+            {t("login.title", "Velox Skate")}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-[#8B8179]">
-            Internal Operations & Counter POS System
+            {t("login.subtitle", "Internal Operations & Counter POS System")}
           </p>
         </div>
 
         {/* Login Card */}
         <div className="bg-white border border-[#E9D9C5] rounded-2xl p-6 sm:p-8 shadow-xl shadow-[#29221E]/5">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-[#29221E]">Sign In</h2>
+            <h2 className="text-xl font-bold text-[#29221E]">{t("login.signInTitle", "Sign In")}</h2>
             <p className="mt-1 text-xs text-[#8B8179]">
-              Enter your registered credentials to access the terminal.
+              {t("login.signInSubtitle", "Enter your registered credentials to access the terminal.")}
             </p>
           </div>
 
@@ -88,7 +107,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#29221E] mb-1.5">
-                Phone Number
+                {t("login.phone", "Phone Number")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8B8179]">
@@ -108,7 +127,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#29221E] mb-1.5">
-                Password
+                {t("login.password", "Password")}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#8B8179]">
@@ -147,24 +166,22 @@ export default function LoginPage() {
                 <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>Sign In</span>
+                  <span>{t("login.signInButton", "Sign In")}</span>
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Quick Install App Action */}
-          <div className="mt-4">
+          {/* Quick Install PWA Prompt on Login */}
+          <div className="mt-5 pt-4 border-t border-[#E9D9C5] flex items-center justify-center">
             <PWAInlineButton />
           </div>
-
-          <div className="mt-6 pt-5 border-t border-[#E9D9C5] text-center">
-            <p className="text-[11px] text-[#8B8179]">
-              Velox Skate Operations • Internal Counter System
-            </p>
-          </div>
         </div>
+
+        <p className="mt-6 text-center text-xs text-[#8B8179]">
+          Velox Skate &copy; {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   );

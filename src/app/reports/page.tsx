@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { formatETB, exportToCSV, format12HourTime, format12HourDateTime } from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
+import { useLanguage } from "@/lib/i18n";
 import {
   FileText,
   Printer,
@@ -183,6 +184,7 @@ type MainTab = "DRAWER" | "FLEET" | "CONCESSION" | "TRAFFIC";
 
 export default function ReportsPage() {
   const { showAlert, showConfirm } = useAlertModal();
+  const { t, lang } = useLanguage();
   const [activeTab, setActiveTab] = useState<MainTab>("DRAWER");
   const [drawerSubTab, setDrawerSubTab] = useState<"TODAY" | "HISTORY">("TODAY");
   const [selectedRange, setSelectedRange] = useState<string>("7days");
@@ -430,12 +432,12 @@ export default function ReportsPage() {
               <Image src="/icon-192.png" alt="Velox" fill sizes="48px" className="object-cover" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-[#29221E]">VELOX SKATE</h1>
-              <p className="text-xs text-[#8B8179]">Shift Closing & Cash Audit</p>
+              <h1 className="text-xl font-black text-[#29221E]">{t("login.title", "VELOX SKATE")}</h1>
+              <p className="text-xs text-[#8B8179]">{t("reports.title", "Shift Closing & Cash Audit")}</p>
             </div>
           </div>
           <div className="text-right text-xs text-[#29221E] font-mono">
-            <p className="font-bold">Date: {registerData?.summary.date}</p>
+            <p className="font-bold">{t("common.date", "Date")}: {registerData?.summary.date}</p>
             <p className="text-[#8B8179] text-[11px]">{format12HourDateTime(new Date())}</p>
           </div>
         </div>
@@ -449,10 +451,10 @@ export default function ReportsPage() {
               </div>
               <div className="min-w-0">
                 <h1 className="text-base sm:text-xl font-black tracking-tight text-[#29221E] truncate">
-                  Reports & Audits
+                  {t("reports.title", "Reports & Audits")}
                 </h1>
                 <p className="text-[11px] text-[#8B8179] truncate">
-                  Cash balancing, shoe demand & profit margins.
+                  {t("reports.subtitle", "Cash balancing, shoe demand & profit margins")}
                 </p>
               </div>
             </div>
@@ -461,10 +463,10 @@ export default function ReportsPage() {
               <button
                 onClick={handlePrint}
                 className="px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-bold text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#29221E] hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
-                title="Print Shift Receipt"
+                title={t("reports.printReceipt", "Print Shift Receipt")}
               >
                 <Printer className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Print</span>
+                <span className="hidden sm:inline">{t("reports.printReceipt", "Print")}</span>
               </button>
 
               <button
@@ -494,7 +496,7 @@ export default function ReportsPage() {
                 }`}
               >
                 <Banknote className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>Cash Drawer</span>
+                <span>{t("reports.cashDrawerTab", "Cash Drawer")}</span>
               </button>
 
               <button
@@ -506,7 +508,7 @@ export default function ReportsPage() {
                 }`}
               >
                 <Footprints className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>Skate Fleet</span>
+                <span>{t("reports.shoeDemandTab", "Shoe Demand")}</span>
               </button>
 
               <button
@@ -518,7 +520,7 @@ export default function ReportsPage() {
                 }`}
               >
                 <ShoppingBag className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>Concession</span>
+                <span>{t("reports.productProfitsTab", "Product Profits")}</span>
               </button>
 
               <button
@@ -530,7 +532,7 @@ export default function ReportsPage() {
                 }`}
               >
                 <Clock className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>Peak Hours</span>
+                <span>{t("reports.hoursTrafficTab", "Peak Hours")}</span>
               </button>
             </div>
           </div>
@@ -540,11 +542,11 @@ export default function ReportsPage() {
             <div className="overflow-x-auto scrollbar-none max-w-full">
               <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#E9D9C5] shadow-xs w-max">
                 {[
-                  { key: "today", label: "Today" },
-                  { key: "yesterday", label: "Yesterday" },
-                  { key: "7days", label: "Last 7 Days" },
-                  { key: "30days", label: "Last 30 Days" },
-                  { key: "all", label: "All Time" },
+                  { key: "today", label: t("expenses.today", "Today") },
+                  { key: "yesterday", label: t("expenses.yesterday", "Yesterday") },
+                  { key: "7days", label: t("expenses.past7Days", "7 Days") },
+                  { key: "30days", label: t("expenses.thisMonth", "30 Days") },
+                  { key: "all", label: t("expenses.allTime", "All Time") },
                 ].map((item) => (
                   <button
                     key={item.key}
@@ -576,7 +578,7 @@ export default function ReportsPage() {
                     : "text-[#8B8179] hover:text-[#29221E]"
                 }`}
               >
-                Today
+                {t("dashboard.today", "Today")}
               </button>
               <button
                 onClick={() => setDrawerSubTab("HISTORY")}
@@ -586,7 +588,7 @@ export default function ReportsPage() {
                     : "text-[#8B8179] hover:text-[#29221E]"
                 }`}
               >
-                Shift Logs
+                {t("reports.pastRegisters", "Past Shifts")}
               </button>
             </div>
 
@@ -617,7 +619,7 @@ export default function ReportsPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <h2 className="text-sm sm:text-base font-black text-[#29221E] truncate">
-                          Shift: {registerData?.summary.date}
+                          {lang === "am" ? "ፈረቃ" : "Shift"}: {registerData?.summary.date}
                         </h2>
                         <span
                           className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
@@ -626,13 +628,13 @@ export default function ReportsPage() {
                               : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
                           }`}
                         >
-                          {registerData?.register.status === "CLOSED" ? "Closed" : "Open"}
+                          {registerData?.register.status === "CLOSED" ? t("nav.shiftClosed", "Closed") : t("nav.shiftOpen", "Open")}
                         </span>
                       </div>
                       <p className="text-[11px] text-[#8B8179] truncate">
                         {registerData?.register.status === "CLOSED"
-                          ? `Closed at ${format12HourTime(registerData?.register.closedAt)}`
-                          : `Float: ${formatETB(registerData?.register.openingCash || 0)}`}
+                          ? `${lang === "am" ? "የተዘጋበት ሰዓት" : "Closed at"} ${format12HourTime(registerData?.register.closedAt)}`
+                          : `${t("dashboard.float", "Float")}: ${formatETB(registerData?.register.openingCash || 0)}`}
                       </p>
                     </div>
                   </div>
@@ -647,7 +649,7 @@ export default function ReportsPage() {
                         className="px-3 py-2 bg-white hover:bg-[#F7F6F3] text-[#29221E] font-bold text-xs rounded-xl border border-[#E9D9C5] transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <Edit3 className="h-3.5 w-3.5 text-[#D96827]" />
-                        <span>Edit Float</span>
+                        <span>{t("reports.editFloatButton", "Edit Float")}</span>
                       </button>
 
                       <button
@@ -658,20 +660,20 @@ export default function ReportsPage() {
                         className="px-4 py-2 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5 print:hidden"
                       >
                         <Lock className="h-3.5 w-3.5" />
-                        <span>Close Shift</span>
+                        <span>{t("reports.closeShiftButton", "Close Shift")}</span>
                       </button>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="text-xs text-[#26845B] font-bold bg-[#EBF5F0] px-2.5 py-1 rounded-xl border border-[#26845B]/30 flex items-center gap-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>Reconciled</span>
+                        <span>{t("reports.reconciled", "Reconciled")}</span>
                       </div>
                       <button
                         onClick={handleReopenShift}
                         className="text-xs text-[#8B8179] hover:text-[#29221E] px-2 py-1 underline cursor-pointer print:hidden"
                       >
-                        Re-open
+                        {t("reports.reopen", "Re-open")}
                       </button>
                     </div>
                   )}
@@ -681,52 +683,52 @@ export default function ReportsPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 min-w-0">
                   <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs min-w-0">
                     <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
-                      <span className="uppercase font-semibold text-[10px]">Rentals</span>
+                      <span className="uppercase font-semibold text-[10px]">{t("nav.rentals", "Rentals")}</span>
                       <Footprints className="h-3.5 w-3.5 text-[#D96827]" />
                     </div>
                     <div className="text-base sm:text-xl font-black text-[#29221E] font-mono truncate">
                       {formatETB(registerData?.summary.rentalsTotal || 0)}
                     </div>
                     <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">
-                      {registerData?.summary.rentalsCount || 0} sessions
+                      {registerData?.summary.rentalsCount || 0} {t("common.units", "sessions")}
                     </div>
                   </div>
 
                   <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs min-w-0">
                     <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
-                      <span className="uppercase font-semibold text-[10px]">Concessions</span>
+                      <span className="uppercase font-semibold text-[10px]">{t("nav.pos", "Concessions")}</span>
                       <ShoppingBag className="h-3.5 w-3.5 text-[#D96827]" />
                     </div>
                     <div className="text-base sm:text-xl font-black text-[#29221E] font-mono truncate">
                       {formatETB(registerData?.summary.concessionsTotal || 0)}
                     </div>
                     <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">
-                      {registerData?.summary.concessionsCount || 0} orders
+                      {registerData?.summary.concessionsCount || 0} {t("expenses.entries", "orders")}
                     </div>
                   </div>
 
                   <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs min-w-0">
                     <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
-                      <span className="uppercase font-semibold text-[10px]">Expenses</span>
+                      <span className="uppercase font-semibold text-[10px]">{t("nav.expenses", "Expenses")}</span>
                       <span className="text-[#D94B45] font-bold text-[10px]">OpEx</span>
                     </div>
                     <div className="text-base sm:text-xl font-black text-[#D94B45] font-mono truncate">
                       -{formatETB(registerData?.summary.dailyExpensesTotal || 0)}
                     </div>
-                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">Petty cash</div>
+                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">{t("expenses.dailyExpensesDesc", "Petty cash")}</div>
                   </div>
 
                   <div className="p-3 rounded-2xl bg-white border border-[#26845B]/40 shadow-xs min-w-0">
                     <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
                       <span className="uppercase font-semibold text-[#26845B] text-[10px]">
-                        Net Cash
+                        {t("dashboard.netCashFlow", "Net Cash")}
                       </span>
                       <TrendingUp className="h-3.5 w-3.5 text-[#26845B]" />
                     </div>
                     <div className="text-base sm:text-xl font-black text-[#26845B] font-mono truncate">
                       {formatETB(registerData?.summary.netOperatingIncome || 0)}
                     </div>
-                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">After expenses</div>
+                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">{t("reports.dailyExpensesTotal", "After expenses")}</div>
                   </div>
                 </div>
 
@@ -735,7 +737,7 @@ export default function ReportsPage() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                       <Banknote className="h-4 w-4 text-[#D96827]" />
-                      Cash Drawer Balancing
+                      {t("reports.cashDrawerTab", "Cash Drawer Balancing")}
                     </h3>
                     <button
                       onClick={() => {
@@ -745,27 +747,27 @@ export default function ReportsPage() {
                       className="text-xs text-[#D96827] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <Edit3 className="h-3 w-3" />
-                      <span>Edit Float</span>
+                      <span>{t("reports.editFloatButton", "Edit Float")}</span>
                     </button>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs font-mono">
                     <div>
-                      <span className="text-[#8B8179] block font-sans text-[10px]">1. Float</span>
+                      <span className="text-[#8B8179] block font-sans text-[10px]">1. {t("dashboard.float", "Float")}</span>
                       <strong className="text-[#29221E] text-sm">
                         {formatETB(registerData?.summary.channels.cash.openingFloat || 0)}
                       </strong>
                     </div>
 
                     <div>
-                      <span className="text-[#8B8179] block font-sans text-[10px]">2. (+) Cash In</span>
+                      <span className="text-[#8B8179] block font-sans text-[10px]">2. (+) {t("dashboard.cashIntake", "Cash In")}</span>
                       <strong className="text-[#26845B] text-sm">
                         +{formatETB(registerData?.summary.channels.cash.inflow || 0)}
                       </strong>
                     </div>
 
                     <div>
-                      <span className="text-[#8B8179] block font-sans text-[10px]">3. (-) Outflow</span>
+                      <span className="text-[#8B8179] block font-sans text-[10px]">3. (-) {t("dashboard.minusExpenses", "Outflow")}</span>
                       <strong className="text-[#D94B45] text-sm">
                         -{formatETB(registerData?.summary.channels.cash.outflow || 0)}
                       </strong>
@@ -773,7 +775,7 @@ export default function ReportsPage() {
 
                     <div>
                       <span className="text-[#D96827] block font-sans text-[10px] font-bold">
-                        4. (=) Expected
+                        4. (=) {t("reports.expectedCash", "Expected")}
                       </span>
                       <strong className="text-[#29221E] text-sm">
                         {formatETB(registerData?.summary.channels.cash.expectedInDrawer || 0)}
@@ -784,14 +786,14 @@ export default function ReportsPage() {
                   {registerData?.register.status === "CLOSED" && (
                     <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] flex flex-wrap items-center justify-between gap-2 text-xs">
                       <div>
-                        <span className="text-[#8B8179]">Actual Counted: </span>
+                        <span className="text-[#8B8179]">{t("reports.actualCounted", "Actual Counted:")} </span>
                         <strong className="text-[#29221E] font-mono text-sm ml-1">
                           {formatETB(registerData.register.actualClosingCash || 0)}
                         </strong>
                       </div>
 
                       <div>
-                        <span className="text-[#8B8179]">Discrepancy: </span>
+                        <span className="text-[#8B8179]">{t("reports.difference", "Discrepancy:")} </span>
                         <span
                           className={`font-mono font-bold text-xs ml-1 ${
                             (registerData.register.discrepancy || 0) === 0
@@ -802,10 +804,10 @@ export default function ReportsPage() {
                           }`}
                         >
                           {(registerData.register.discrepancy || 0) === 0
-                            ? "Balanced ✓"
+                            ? t("reports.balanced", "Balanced ✓")
                             : (registerData.register.discrepancy || 0) > 0
-                            ? `+${formatETB(registerData.register.discrepancy || 0)} Surplus`
-                            : `${formatETB(registerData.register.discrepancy || 0)} Shortage`}
+                            ? `+${formatETB(registerData.register.discrepancy || 0)} ${t("reports.surplus", "Surplus")}`
+                            : `${formatETB(registerData.register.discrepancy || 0)} ${t("reports.shortage", "Shortage")}`}
                         </span>
                       </div>
                     </div>
@@ -846,8 +848,8 @@ export default function ReportsPage() {
               <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-xs">
                 <div className="p-3.5 border-b border-[#E9D9C5] flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold text-[#29221E]">Past Shifts</h3>
-                    <p className="text-[11px] text-[#8B8179]">Historical cash drawer logs</p>
+                    <h3 className="text-sm font-bold text-[#29221E]">{t("reports.pastRegisters", "Past Shifts")}</h3>
+                    <p className="text-[11px] text-[#8B8179]">{lang === "am" ? "ያለፉ የሳጥን ቆጠራዎች መዝገብ" : "Historical cash drawer logs"}</p>
                   </div>
                   {history.length > 0 && (
                     <button
@@ -881,14 +883,14 @@ export default function ReportsPage() {
                       className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] transition-colors cursor-pointer"
                     >
                       <Download className="h-3.5 w-3.5 text-[#D96827]" />
-                      <span>CSV</span>
+                      <span>{t("common.downloadCsv", "CSV")}</span>
                     </button>
                   )}
                 </div>
 
                 {history.length === 0 ? (
                   <div className="p-8 text-center text-[#8B8179] text-xs">
-                    No past shifts found.
+                    {lang === "am" ? "ምንም ያለፈ ፈረቃ አልተገኘም።" : "No past shifts found."}
                   </div>
                 ) : (
                   <div className="divide-y divide-[#E9D9C5]">
@@ -903,26 +905,26 @@ export default function ReportsPage() {
                                 : "bg-[#EBF5F0] text-[#26845B]"
                             }`}
                           >
-                            {h.status}
+                            {h.status === "CLOSED" ? t("nav.shiftClosed", "Closed") : t("nav.shiftOpen", "Open")}
                           </span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-1.5 p-2 rounded-xl bg-[#F7F6F3] font-mono text-[11px]">
-                          <div>Cash: {formatETB(h.cashInTotal)}</div>
+                          <div>{t("common.cash", "Cash")}: {formatETB(h.cashInTotal)}</div>
                           <div>Telebirr: {formatETB(h.telebirrTotal)}</div>
                           <div>CBE: {formatETB(h.cbeTotal)}</div>
                           <div>OpEx: -{formatETB(h.dailyExpensesTotal)}</div>
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] pt-0.5">
-                          <span>Counted: <strong>{formatETB(h.actualClosingCash || 0)}</strong></span>
+                          <span>{t("reports.actualCounted", "Counted")}: <strong>{formatETB(h.actualClosingCash || 0)}</strong></span>
                           <span>
                             {(h.discrepancy || 0) === 0 ? (
-                              <span className="text-[#26845B] font-bold">✓ Balanced</span>
+                              <span className="text-[#26845B] font-bold">✓ {t("reports.balanced", "Balanced")}</span>
                             ) : (h.discrepancy || 0) > 0 ? (
-                              <span className="text-[#D96827] font-bold">+{formatETB(h.discrepancy || 0)}</span>
+                              <span className="text-[#D96827] font-bold">+{formatETB(h.discrepancy || 0)} {t("reports.surplus", "Surplus")}</span>
                             ) : (
-                              <span className="text-[#D94B45] font-bold">{formatETB(h.discrepancy || 0)}</span>
+                              <span className="text-[#D94B45] font-bold">{formatETB(h.discrepancy || 0)} {t("reports.shortage", "Shortage")}</span>
                             )}
                           </span>
                         </div>
@@ -948,14 +950,14 @@ export default function ReportsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h3 className="text-sm font-black text-[#29221E]">
-                        Shoe Size Demand
+                        {t("reports.mostRentedSizes", "Shoe Size Demand")}
                       </h3>
                       <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-[#FDF0EF] text-[#D94B45]">
-                        {analyticsData.shoeSizeReport.totalMissedCount} Turnaways
+                        {analyticsData.shoeSizeReport.totalMissedCount} {t("reports.turnawaysCount", "Turnaways")}
                       </span>
                     </div>
                     <p className="text-[11px] text-[#8B8179]">
-                      Customers turned away when sizes were out of stock.
+                      {t("reports.turnawaysNote", "Customers turned away when sizes were out of stock.")}
                     </p>
                   </div>
                 </div>
@@ -963,7 +965,7 @@ export default function ReportsPage() {
                 <div className="flex items-center gap-3 bg-[#F7F6F3] p-2.5 rounded-xl border border-[#E9D9C5] font-mono text-xs shrink-0">
                   <div>
                     <span className="text-[9px] text-[#8B8179] block font-sans font-semibold">
-                      Lost Revenue
+                      {t("reports.lostRevenue", "Lost Revenue")}
                     </span>
                     <strong className="text-[#D94B45]">
                       {formatETB(analyticsData.shoeSizeReport.totalLostRevenue)}
@@ -971,10 +973,10 @@ export default function ReportsPage() {
                   </div>
                   <div className="border-l border-[#E9D9C5] pl-3">
                     <span className="text-[9px] text-[#8B8179] block font-sans font-semibold">
-                      Fleet Size
+                      {t("reports.fleetSize", "Fleet Size")}
                     </span>
                     <strong className="text-[#29221E]">
-                      {analyticsData.shoeSizeReport.sizes.reduce((acc, s) => acc + s.fleetCount, 0)} pairs
+                      {analyticsData.shoeSizeReport.sizes.reduce((acc, s) => acc + s.fleetCount, 0)} {t("reports.pairs", "pairs")}
                     </strong>
                   </div>
                 </div>
@@ -986,10 +988,10 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                   <Footprints className="h-3.5 w-3.5 text-[#D96827]" />
-                  Demand by Shoe Size
+                  {t("reports.mostRentedSizes", "Demand by Shoe Size")}
                 </h3>
                 <span className="text-[11px] font-mono text-[#8B8179]">
-                  {analyticsData.durationReport.totalRentals} sessions
+                  {analyticsData.durationReport.totalRentals} {t("reports.sessions", "sessions")}
                 </span>
               </div>
 
@@ -998,6 +1000,9 @@ export default function ReportsPage() {
                   const relativePct = Math.round((s.rentalsCount / maxShoeRentals) * 100);
                   const isHighDemand = relativePct >= 70;
                   const hasBottleneck = s.missedDemandCount > 0;
+                  const recLabel = lang === "am"
+                    ? s.recommendation.replace("CONSIDER ADDING", "ቢጨመር ይመከራል").replace("FLEET SUFFICIENT", "በቂ ክምችት")
+                    : s.recommendation;
 
                   return (
                     <div
@@ -1011,7 +1016,7 @@ export default function ReportsPage() {
                             #{s.size}
                           </span>
                           <span className="text-[11px] text-[#8B8179] truncate">
-                            {s.fleetCount} in fleet ({s.inlineCount} In / {s.quadCount} Quad)
+                            {s.fleetCount} {t("reports.inFleet", "in fleet")} ({s.inlineCount} In / {s.quadCount} Quad)
                           </span>
                         </div>
 
@@ -1022,25 +1027,25 @@ export default function ReportsPage() {
                               : "bg-white text-[#8B8179] border border-[#E9D9C5]"
                           }`}
                         >
-                          {s.recommendation}
+                          {recLabel}
                         </span>
                       </div>
 
                       {/* Row 2: Turnaways Alert if any */}
                       {hasBottleneck && (
                         <div className="text-[10px] font-bold text-[#D94B45] bg-[#FDF0EF] px-2 py-1 rounded-lg border border-[#D94B45]/20 flex items-center justify-between">
-                          <span>⚠️ {s.missedDemandCount} Turnaway customers</span>
-                          <span>-{formatETB(s.estimatedLostRevenue)} lost</span>
+                          <span>⚠️ {s.missedDemandCount} {t("reports.turnawayCustomers", "Turnaway customers")}</span>
+                          <span>-{formatETB(s.estimatedLostRevenue)} {t("reports.lost", "lost")}</span>
                         </div>
                       )}
 
                       {/* Row 3: Numbers */}
                       <div className="flex items-center justify-between text-xs font-mono">
                         <span className="text-[#8B8179] text-[11px]">
-                          Rentals: <strong className="text-[#29221E]">{s.rentalsCount}</strong>
+                          {t("reports.rentalsCount", "Rentals")}: <strong className="text-[#29221E]">{s.rentalsCount}</strong>
                         </span>
                         <span className="text-[#8B8179] text-[11px]">
-                          Revenue: <strong className="text-[#D96827]">{formatETB(s.revenue)}</strong>
+                          {t("reports.revenueGenerated", "Revenue")}: <strong className="text-[#D96827]">{formatETB(s.revenue)}</strong>
                         </span>
                       </div>
 
@@ -1061,19 +1066,19 @@ export default function ReportsPage() {
             <div className="bg-white rounded-2xl border border-[#E9D9C5] p-3.5 sm:p-5 shadow-xs space-y-3 min-w-0">
               <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-[#D96827]" />
-                Session Duration Ratios
+                {t("reports.sessionRatios", "Session Duration Ratios")}
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-[#29221E]">30-Min</span>
+                    <span className="font-bold text-[#29221E]">{t("reports.duration30", "30-Min")}</span>
                     <span className="font-mono font-bold text-[#D96827]">
                       {analyticsData.durationReport.duration30.percentage}%
                     </span>
                   </div>
                   <div className="text-lg font-black text-[#29221E] font-mono">
-                    {analyticsData.durationReport.duration30.count} sessions
+                    {analyticsData.durationReport.duration30.count} {t("reports.sessions", "sessions")}
                   </div>
                   <div className="w-full bg-[#E9D9C5]/50 h-1.5 rounded-full overflow-hidden">
                     <div
@@ -1088,13 +1093,13 @@ export default function ReportsPage() {
 
                 <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-[#29221E]">60-Min</span>
+                    <span className="font-bold text-[#29221E]">{t("reports.duration60", "60-Min")}</span>
                     <span className="font-mono font-bold text-[#29221E]">
                       {analyticsData.durationReport.duration60.percentage}%
                     </span>
                   </div>
                   <div className="text-lg font-black text-[#29221E] font-mono">
-                    {analyticsData.durationReport.duration60.count} sessions
+                    {analyticsData.durationReport.duration60.count} {t("reports.sessions", "sessions")}
                   </div>
                   <div className="w-full bg-[#E9D9C5]/50 h-1.5 rounded-full overflow-hidden">
                     <div
@@ -1109,13 +1114,13 @@ export default function ReportsPage() {
 
                 <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-[#26845B]">+30m Extension</span>
+                    <span className="font-bold text-[#26845B]">{t("reports.extensions", "+30m Extension")}</span>
                     <span className="font-mono font-bold text-[#26845B]">
                       {analyticsData.durationReport.extensions.percentage}%
                     </span>
                   </div>
                   <div className="text-lg font-black text-[#26845B] font-mono">
-                    {analyticsData.durationReport.extensions.count} sessions
+                    {analyticsData.durationReport.extensions.count} {t("reports.sessions", "sessions")}
                   </div>
                   <div className="w-full bg-[#E9D9C5]/50 h-1.5 rounded-full overflow-hidden">
                     <div
@@ -1140,16 +1145,16 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                   <ShoppingBag className="h-3.5 w-3.5 text-[#D96827]" />
-                  Top Selling Products & Margins
+                  {t("reports.topSellingProducts", "Top Selling Items & Margins")}
                 </h3>
                 <span className="text-[11px] text-[#8B8179] font-mono">
-                  {analyticsData.topSellingProducts.length} items
+                  {analyticsData.topSellingProducts.length} {t("nav.stock", "Items")}
                 </span>
               </div>
 
               {analyticsData.topSellingProducts.length === 0 ? (
                 <div className="p-6 text-center text-xs text-[#8B8179]">
-                  No concession sales in this period.
+                  {t("reports.noConcessionSales", "No concession sales in this period.")}
                 </div>
               ) : (
                 <div className="space-y-2.5 min-w-0">
@@ -1171,15 +1176,15 @@ export default function ReportsPage() {
                             </span>
                           </div>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF5F0] text-[#26845B] font-mono shrink-0">
-                            {p.marginPct}% Margin
+                            {p.marginPct}% {t("reports.margin", "Margin")}
                           </span>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] font-mono">
-                          <div>Sold: <strong>{p.unitsSold}</strong></div>
-                          <div>Price: {formatETB(p.sellingPrice)}</div>
-                          <div>Revenue: <strong className="text-[#D96827]">{formatETB(p.grossRevenue)}</strong></div>
-                          <div>Profit: <strong className="text-[#26845B]">+{formatETB(p.grossProfit)}</strong></div>
+                          <div>{t("reports.sold", "Sold")}: <strong>{p.unitsSold}</strong></div>
+                          <div>{t("reports.price", "Price")}: {formatETB(p.sellingPrice)}</div>
+                          <div>{t("reports.revenueGenerated", "Revenue")}: <strong className="text-[#D96827]">{formatETB(p.grossRevenue)}</strong></div>
+                          <div>{t("reports.profit", "Profit")}: <strong className="text-[#26845B]">+{formatETB(p.grossProfit)}</strong></div>
                         </div>
 
                         <div className="w-full bg-[#E9D9C5]/50 h-1.5 rounded-full overflow-hidden">
@@ -1198,16 +1203,16 @@ export default function ReportsPage() {
             {/* Tab vs Walk-in split */}
             <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-2.5 min-w-0">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-[#29221E] uppercase">Skater Tab vs Walk-in</span>
+                <span className="text-xs font-bold text-[#29221E] uppercase">{t("reports.tabVsWalkin", "Skater Tab vs Walk-in")}</span>
                 <span className="text-[10px] font-bold text-[#26845B] bg-[#EBF5F0] px-2 py-0.5 rounded-full font-mono">
-                  {analyticsData.tabVsWalkin.attachmentRatePct}% Skater Attachment
+                  {analyticsData.tabVsWalkin.attachmentRatePct}% {t("reports.attachmentRate", "Skater Attachment")}
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="font-bold text-[#29221E]">Skater Tab</span>
+                    <span className="font-bold text-[#29221E]">{t("reports.skaterTab", "Skater Tab")}</span>
                     <span className="font-mono text-[#D96827]">{analyticsData.tabVsWalkin.tabPercentage}%</span>
                   </div>
                   <div className="text-base font-black font-mono">{formatETB(analyticsData.tabVsWalkin.tabRevenue)}</div>
@@ -1215,7 +1220,7 @@ export default function ReportsPage() {
 
                 <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="font-bold text-[#29221E]">Walk-in Counter</span>
+                    <span className="font-bold text-[#29221E]">{t("reports.walkinCounter", "Walk-in Counter")}</span>
                     <span className="font-mono text-[#29221E]">{analyticsData.tabVsWalkin.walkinPercentage}%</span>
                   </div>
                   <div className="text-base font-black font-mono">{formatETB(analyticsData.tabVsWalkin.walkinRevenue)}</div>
@@ -1226,7 +1231,7 @@ export default function ReportsPage() {
             {/* Shrinkage */}
             <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-2.5 min-w-0">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-[#29221E] uppercase">Stock Shrinkage & Loss</span>
+                <span className="text-xs font-bold text-[#29221E] uppercase">{t("reports.stockShrinkage", "Stock Shrinkage & Loss")}</span>
                 <span className="text-xs font-black text-[#D94B45] font-mono">
                   -{formatETB(analyticsData.shrinkageReport.totalCostShrinkage)}
                 </span>
@@ -1236,7 +1241,7 @@ export default function ReportsPage() {
                 {analyticsData.shrinkageReport.byReason.map((r) => (
                   <div key={r.key} className="p-2 bg-[#F7F6F3] rounded-xl border border-[#E9D9C5] text-xs">
                     <span className="text-[10px] text-[#8B8179] block truncate">{r.label}</span>
-                    <div className="font-bold font-mono">{r.units} units</div>
+                    <div className="font-bold font-mono">{r.units} {t("stock.units", "units")}</div>
                     <span className="text-[10px] text-[#D94B45] font-mono">-{formatETB(r.cost)}</span>
                   </div>
                 ))}
@@ -1253,7 +1258,7 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                   <Flame className="h-3.5 w-3.5 text-[#D96827]" />
-                  Hourly Traffic (10 AM – 9 PM)
+                  {t("reports.hourlyFlow", "Hourly Traffic (10 AM – 9 PM)")}
                 </h3>
               </div>
 
@@ -1271,10 +1276,10 @@ export default function ReportsPage() {
                         <div className="flex items-center gap-2 font-mono">
                           {isPeak && (
                             <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#FFF4E5] text-[#D96827]">
-                              PEAK
+                              {t("dashboard.peak", "PEAK")}
                             </span>
                           )}
-                          <strong>{slot.skaters} skaters</strong>
+                          <strong>{slot.skaters} {t("reports.skaters", "skaters")}</strong>
                         </div>
                       </div>
 
@@ -1293,22 +1298,22 @@ export default function ReportsPage() {
             {/* Financial Summary */}
             <div className="p-3.5 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-3 min-w-0">
               <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider">
-                Financial Summary
+                {t("dashboard.netRevenue", "Financial Summary")}
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-0.5">
-                  <span className="text-[10px] text-[#8B8179] font-bold uppercase">Gross Revenue</span>
+                  <span className="text-[10px] text-[#8B8179] font-bold uppercase">{t("reports.grossRevenue", "Gross Revenue")}</span>
                   <div className="text-lg font-black font-mono">{formatETB(analyticsData.financialSummary.grossTotalRevenue)}</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-0.5">
-                  <span className="text-[10px] text-[#8B8179] font-bold uppercase">Daily OpEx</span>
+                  <span className="text-[10px] text-[#8B8179] font-bold uppercase">{t("reports.dailyOpEx", "Daily OpEx")}</span>
                   <div className="text-lg font-black text-[#D94B45] font-mono">-{formatETB(analyticsData.financialSummary.dailyCashOpEx)}</div>
                 </div>
 
                 <div className="p-3 rounded-xl bg-[#EBF5F0] border border-[#26845B]/30 space-y-0.5">
-                  <span className="text-[10px] text-[#26845B] font-bold uppercase">Net Operating Cash</span>
+                  <span className="text-[10px] text-[#26845B] font-bold uppercase">{t("reports.netOperatingCash", "Net Operating Cash")}</span>
                   <div className="text-lg font-black text-[#26845B] font-mono">+{formatETB(analyticsData.financialSummary.netOperatingCashFlow)}</div>
                 </div>
               </div>
@@ -1321,7 +1326,7 @@ export default function ReportsPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-[#29221E]">
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
-                <h3 className="text-sm font-bold text-[#29221E]">Edit Drawer Float</h3>
+                <h3 className="text-sm font-bold text-[#29221E]">{t("reports.editDrawerFloat", "Edit Drawer Float")}</h3>
                 <button onClick={() => setShowFloatModal(false)} className="p-1 text-[#8B8179] hover:text-[#29221E]">
                   <X className="h-5 w-5" />
                 </button>
@@ -1330,7 +1335,7 @@ export default function ReportsPage() {
               <form onSubmit={handleUpdateFloat} className="mt-4 space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    Float Amount (ETB)
+                    {t("reports.floatAmount", "Float Amount (ETB)")}
                   </label>
                   <input
                     type="number"
@@ -1341,7 +1346,7 @@ export default function ReportsPage() {
                     className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                   />
                   <p className="text-[10px] text-[#8B8179] mt-1">
-                    Change the daily opening float without hardcoded defaults.
+                    {t("reports.floatHelp", "Change the daily opening float without hardcoded defaults.")}
                   </p>
                 </div>
 
@@ -1351,14 +1356,14 @@ export default function ReportsPage() {
                     onClick={() => setShowFloatModal(false)}
                     className="px-3 py-2 text-xs font-semibold text-[#8B8179]"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={updatingFloat}
                     className="px-4 py-2 bg-[#D96827] text-white font-bold text-xs rounded-xl shadow-xs"
                   >
-                    {updatingFloat ? "Saving..." : "Save Float"}
+                    {updatingFloat ? t("reports.saving", "Saving...") : t("reports.saveFloat", "Save Float")}
                   </button>
                 </div>
               </form>
@@ -1373,7 +1378,7 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
                   <Lock className="h-5 w-5 text-[#D94B45]" />
-                  <h3 className="text-sm sm:text-base font-bold text-[#29221E]">Count Drawer & Close Shift</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-[#29221E]">{t("reports.closeShiftModalTitle", "Count Drawer & Close Shift")}</h3>
                 </div>
                 <button
                   onClick={() => setShowCloseModal(false)}
@@ -1387,7 +1392,7 @@ export default function ReportsPage() {
                 {/* 1. EDITABLE FLOAT INPUT (Requirement 5) */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    Drawer Opening Float (ETB)
+                    {t("reports.openingFloatInput", "Drawer Opening Float (ETB)")}
                   </label>
                   <input
                     type="number"
@@ -1399,27 +1404,27 @@ export default function ReportsPage() {
                     className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
                   />
                   <p className="text-[10px] text-[#8B8179] mt-0.5">
-                    Type whatever float was actually provided in the drawer.
+                    {t("reports.floatHelp", "Type whatever float was actually provided in the drawer.")}
                   </p>
                 </div>
 
                 {/* 2. LIVE FORMULA RECALCULATION */}
                 <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs space-y-1 font-mono">
                   <div className="flex justify-between text-[#8B8179]">
-                    <span>Expected Cash in Drawer:</span>
+                    <span>{t("reports.expectedCashInDrawer", "Expected Cash in Drawer:")}</span>
                     <strong className="text-[#29221E] text-sm">
                       {formatETB(liveExpectedClosingCash)}
                     </strong>
                   </div>
                   <p className="text-[10px] text-[#8B8179] font-sans">
-                    Float ({formatETB(activeFloat)}) + Cash In ({formatETB(registerData?.summary.channels.cash.inflow || 0)}) - Outflow ({formatETB(registerData?.summary.dailyExpensesTotal || 0)})
+                    {t("reports.floatFormula", "Float")} ({formatETB(activeFloat)}) + {t("reports.cashIn", "Cash In")} ({formatETB(registerData?.summary.channels.cash.inflow || 0)}) - {t("reports.outflow", "Outflow")} ({formatETB(registerData?.summary.dailyExpensesTotal || 0)})
                   </p>
                 </div>
 
                 {/* 3. ACTUAL PHYSICAL CASH COUNTED */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    Actual Counted Cash (ETB)
+                    {t("reports.countedCashPrompt", "Actual Counted Cash (ETB)")}
                   </label>
                   <input
                     type="number"
@@ -1441,23 +1446,23 @@ export default function ReportsPage() {
                       : "bg-[#FDF0EF] border-[#D94B45]/30 text-[#D94B45]"
                   }`}
                 >
-                  <span className="font-sans font-semibold">Balance:</span>
+                  <span className="font-sans font-semibold">{t("reports.balanceLabel", "Balance:")}</span>
                   <span className="font-bold text-xs">
                     {liveDiscrepancy === 0
-                      ? "0 ETB (Balanced ✓)"
+                      ? `0 ETB (${t("reports.balanced", "Balanced ✓")})`
                       : liveDiscrepancy > 0
-                      ? `+${formatETB(liveDiscrepancy)} Surplus`
-                      : `${formatETB(liveDiscrepancy)} Shortage`}
+                      ? `+${formatETB(liveDiscrepancy)} ${t("reports.surplus", "Surplus")}`
+                      : `${formatETB(liveDiscrepancy)} ${t("reports.shortage", "Shortage")}`}
                   </span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Notes (Optional)
+                    {t("reports.notesOptional", "Notes (Optional)")}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Handed key to owner"
+                    placeholder={t("reports.notesPlaceholder", "e.g. Handed key to owner")}
                     value={closeNotes}
                     onChange={(e) => setCloseNotes(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
@@ -1470,14 +1475,14 @@ export default function ReportsPage() {
                     onClick={() => setShowCloseModal(false)}
                     className="px-3 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={closing}
                     className="px-4 py-2 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                   >
-                    {closing ? "Locking..." : "Confirm & Lock"}
+                    {closing ? t("reports.locking", "Locking...") : t("reports.confirmLock", "Confirm & Lock")}
                   </button>
                 </div>
               </form>

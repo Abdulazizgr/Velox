@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { formatETB, exportToCSV, format12HourDateTime } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n";
 import {
   Wallet,
   Plus,
@@ -64,6 +65,7 @@ interface FinanceData {
 type DatePreset = "TODAY" | "YESTERDAY" | "WEEK" | "MONTH" | "ALL" | "CUSTOM";
 
 export default function ExpensesPage() {
+  const { t, lang } = useLanguage();
   const [isOwner, setIsOwner] = useState(true);
   const [data, setData] = useState<FinanceData | null>(null);
   const [reasons, setReasons] = useState<ExpenseReasonItem[]>([]);
@@ -436,6 +438,17 @@ export default function ExpensesPage() {
 
   // Map reason code to human readable name
   const getReasonDisplay = (reasonCode: string) => {
+    if (lang === "am") {
+      switch (reasonCode) {
+        case "LUNCH": return "የሰራተኞች ምሳ";
+        case "TRANSPORT": return "የትራንስፖርት / ታክሲ";
+        case "SUPPLIES": return "የጽዳትና መጠቀሚያ እቃዎች";
+        case "SKATE_SHOES": return "የስኬት ጫማ ግዢ";
+        case "SNACK_RESTOCK": return "የመክሰስና መጠጥ ክምችት";
+        case "RENT": return "የቦታ ኪራይ";
+        case "MAINTENANCE": return "የጥገና ወጪ";
+      }
+    }
     const found = reasons.find((r) => r.name === reasonCode);
     if (found) return found.displayName;
     return reasonCode
@@ -446,12 +459,12 @@ export default function ExpensesPage() {
 
   // Date preset title
   const getDateLabel = () => {
-    if (datePreset === "TODAY") return "Today";
-    if (datePreset === "YESTERDAY") return "Yesterday";
-    if (datePreset === "WEEK") return "Past 7 Days";
-    if (datePreset === "MONTH") return "This Month";
-    if (datePreset === "ALL") return "All Time";
-    return customDate || "Custom Date";
+    if (datePreset === "TODAY") return t("expenses.today", "Today");
+    if (datePreset === "YESTERDAY") return t("expenses.yesterday", "Yesterday");
+    if (datePreset === "WEEK") return t("expenses.past7Days", "7 Days");
+    if (datePreset === "MONTH") return t("expenses.thisMonth", "This Month");
+    if (datePreset === "ALL") return t("expenses.allTime", "All Time");
+    return customDate || t("expenses.customDate", "Custom");
   };
 
   return (
@@ -465,11 +478,11 @@ export default function ExpensesPage() {
                 <Wallet className="h-6 w-6" />
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
-                Expenses
+                {t("expenses.title", "Expenses")}
               </h1>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#8B8179]">
-              Audit and record daily operational petty expenses and capital expenditures.
+              {t("expenses.subtitle", "Track daily spending and operational costs")}
             </p>
           </div>
 
@@ -480,7 +493,7 @@ export default function ExpensesPage() {
               className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden sm:inline">{t("common.refresh", "Refresh")}</span>
             </button>
 
             <button
@@ -488,7 +501,7 @@ export default function ExpensesPage() {
               className="flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-semibold text-[#29221E] bg-white border border-[#E9D9C5] hover:border-[#D96827] hover:bg-[#FFF4E5]/40 rounded-xl transition-all cursor-pointer shadow-xs"
             >
               <Tag className="h-4 w-4 text-[#D96827]" />
-              <span>+ Reason</span>
+              <span>{t("expenses.newReason", "+ Reason")}</span>
             </button>
 
             <button
@@ -499,7 +512,7 @@ export default function ExpensesPage() {
               className="flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-[#D96827] hover:bg-[#C2571A] rounded-xl transition-all shadow-md shadow-[#D96827]/20 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              <span>Record Expense</span>
+              <span>{t("expenses.recordExpense", "+ Record Expense")}</span>
             </button>
           </div>
         </div>
@@ -510,7 +523,7 @@ export default function ExpensesPage() {
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-[#D96827]" />
               <span className="text-xs font-bold uppercase tracking-wider text-[#8B8179]">
-                Date Period:
+                {t("expenses.datePeriod", "Date Period:")}
               </span>
               <span className="text-xs font-extrabold text-[#D96827] bg-[#FFF4E5] px-2 py-0.5 rounded-md border border-[#E9D9C5]">
                 {getDateLabel()}
@@ -521,12 +534,12 @@ export default function ExpensesPage() {
             <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
               {(
                 [
-                  { id: "TODAY", label: "Today" },
-                  { id: "YESTERDAY", label: "Yesterday" },
-                  { id: "WEEK", label: "7 Days" },
-                  { id: "MONTH", label: "This Month" },
-                  { id: "ALL", label: "All Time" },
-                  { id: "CUSTOM", label: "Custom" },
+                  { id: "TODAY", label: t("expenses.today", "Today") },
+                  { id: "YESTERDAY", label: t("expenses.yesterday", "Yesterday") },
+                  { id: "WEEK", label: t("expenses.past7Days", "7 Days") },
+                  { id: "MONTH", label: t("expenses.thisMonth", "This Month") },
+                  { id: "ALL", label: t("expenses.allTime", "All Time") },
+                  { id: "CUSTOM", label: t("expenses.customDate", "Custom") },
                 ] as const
               ).map((preset) => (
                 <button
@@ -547,7 +560,7 @@ export default function ExpensesPage() {
           {/* Custom Date Picker (if Custom is chosen) */}
           {datePreset === "CUSTOM" && (
             <div className="pt-2 border-t border-[#E9D9C5] flex items-center gap-3">
-              <label className="text-xs font-semibold text-[#8B8179]">Pick Date:</label>
+              <label className="text-xs font-semibold text-[#8B8179]">{t("common.date", "Pick Date:")}</label>
               <input
                 type="date"
                 value={customDate}
@@ -565,7 +578,7 @@ export default function ExpensesPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B8179]">
-                  Daily Expenses (OpEx)
+                  {t("expenses.dailyExpenses", "Daily Expenses (OpEx)")}
                 </span>
                 <div className="p-1.5 rounded-lg bg-[#FFF4E5] text-[#D96827]">
                   <Banknote className="h-4 w-4" />
@@ -575,13 +588,13 @@ export default function ExpensesPage() {
                 {formatETB(data?.summary.dailyTotal || 0)}
               </div>
               <p className="mt-1 text-[11px] text-[#8B8179]">
-                Staff lunch, taxi, cleaning & petty supplies
+                {t("expenses.dailyExpensesDesc", "Staff lunch, taxi, cleaning & petty supplies")}
               </p>
             </div>
             <div className="mt-3 pt-2.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[11px] text-[#8B8179]">
-              <span>Transactions:</span>
+              <span>{t("expenses.transactions", "Transactions:")}</span>
               <span className="font-bold text-[#29221E] font-mono">
-                {data?.summary.dailyCount || 0} entries
+                {data?.summary.dailyCount || 0} {t("expenses.entries", "entries")}
               </span>
             </div>
           </div>
@@ -592,7 +605,7 @@ export default function ExpensesPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B8179]">
-                    Capital Expenses (CapEx)
+                    {t("expenses.capitalExpenses", "Capital Expenses (CapEx)")}
                   </span>
                   <div className="p-1.5 rounded-lg bg-[#F7F6F3] text-[#29221E]">
                     <Building2 className="h-4 w-4" />
@@ -602,12 +615,12 @@ export default function ExpensesPage() {
                   {formatETB(data?.summary.capitalTotal || 0)}
                 </div>
                 <p className="mt-1 text-[11px] text-[#8B8179]">
-                  Skate shoes, bulk stock restock, rent & equipment
+                  {t("expenses.capitalExpensesDesc", "Skate shoes, bulk stock restock, rent & equipment")}
                 </p>
               </div>
               <div className="mt-3 pt-2.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[11px] text-[#8B8179]">
                 <span className="flex items-center gap-1.5">
-                  Reserve:{" "}
+                  {t("expenses.reserve", "Reserve")}:{" "}
                   <strong className="text-[#29221E] font-mono">
                     {formatETB(data?.capital.remainingBalance || 0)}
                   </strong>
@@ -616,7 +629,7 @@ export default function ExpensesPage() {
                   onClick={() => setShowTopupModal(true)}
                   className="text-[#D96827] font-bold hover:underline cursor-pointer"
                 >
-                  + Top Up
+                  {t("expenses.topUpCapital", "+ Top Up")}
                 </button>
               </div>
             </div>
@@ -628,7 +641,7 @@ export default function ExpensesPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#D96827]">
-                    Total Expenses (Both)
+                    {t("expenses.totalBoth", "Total Expenses (Both)")}
                   </span>
                   <div className="p-1.5 rounded-lg bg-[#D96827] text-white">
                     <Calculator className="h-4 w-4" />
@@ -638,13 +651,13 @@ export default function ExpensesPage() {
                   {formatETB(data?.summary.totalBoth || 0)}
                 </div>
                 <p className="mt-1 text-[11px] text-[#8B8179]">
-                  Combined Daily Operational + Capital Expenditures
+                  {t("expenses.totalBothDesc", "Combined Daily Operational + Capital Expenditures")}
                 </p>
               </div>
               <div className="mt-3 pt-2.5 border-t border-[#E9D9C5] flex items-center justify-between text-[11px] text-[#8B8179]">
-                <span>Combined Total:</span>
+                <span>{t("common.total", "Combined Total:")}</span>
                 <span className="font-bold text-[#D96827] font-mono">
-                  {data?.summary.totalCount || 0} transactions
+                  {data?.summary.totalCount || 0} {t("expenses.entries", "entries")}
                 </span>
               </div>
             </div>
@@ -654,9 +667,9 @@ export default function ExpensesPage() {
         {/* 3. REASON SCROLLER & QUICK CONTROLS */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-[#8B8179] px-1">
-            <span className="uppercase tracking-wider">Filter by Reason:</span>
+            <span className="uppercase tracking-wider">{t("expenses.filterReason", "Filter by Reason:")}</span>
             <span className="text-[11px] font-normal">
-              Showing {filteredExpenses.length} of {data?.expenses.length || 0}
+              {t("common.showing", "Showing")} {filteredExpenses.length} {t("common.of", "of")} {data?.expenses.length || 0}
             </span>
           </div>
 
@@ -670,7 +683,7 @@ export default function ExpensesPage() {
                   : "bg-white border border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
               }`}
             >
-              All Reasons ({data?.expenses.length || 0})
+              {t("common.all", "All")} ({data?.expenses.length || 0})
             </button>
 
             {reasons.map((r) => {
@@ -686,7 +699,7 @@ export default function ExpensesPage() {
                       : "bg-white border border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                   }`}
                 >
-                  {r.displayName} {count > 0 ? `(${count})` : ""}
+                  {getReasonDisplay(r.name)} {count > 0 ? `(${count})` : ""}
                 </button>
               );
             })}
@@ -696,7 +709,7 @@ export default function ExpensesPage() {
               className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#D96827] bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] transition-all shrink-0 cursor-pointer flex items-center gap-1"
             >
               <Plus className="h-3 w-3" />
-              <span>New Reason</span>
+              <span>{t("expenses.newReason", "+ Reason")}</span>
             </button>
           </div>
         </div>
@@ -710,7 +723,7 @@ export default function ExpensesPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8B8179]" />
               <input
                 type="text"
-                placeholder="Search reason, notes, channel..."
+                placeholder={t("expenses.searchExpenses", "Search reason, notes, channel...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#F7F6F3] border border-[#E9D9C5] rounded-xl text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
@@ -737,7 +750,7 @@ export default function ExpensesPage() {
                         : "text-[#8B8179] hover:text-[#29221E]"
                     }`}
                   >
-                    All Funds
+                    {t("expenses.allFunds", "All Funds")}
                   </button>
                   <button
                     onClick={() => setFundFilter("DAILY_CASH")}
@@ -747,7 +760,7 @@ export default function ExpensesPage() {
                         : "text-[#8B8179] hover:text-[#29221E]"
                     }`}
                   >
-                    Daily Cash
+                    {t("expenses.dailyCashDrawer", "Daily Cash")}
                   </button>
                   <button
                     onClick={() => setFundFilter("CAPITAL")}
@@ -757,7 +770,7 @@ export default function ExpensesPage() {
                         : "text-[#8B8179] hover:text-[#29221E]"
                     }`}
                   >
-                    Capital
+                    {t("expenses.generalCapital", "Capital")}
                   </button>
                 </div>
               )}
@@ -782,7 +795,7 @@ export default function ExpensesPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] hover:bg-[#FFF4E5] transition-colors shadow-xs cursor-pointer"
                 >
                   <Download className="h-3.5 w-3.5 text-[#D96827]" />
-                  <span>Export CSV</span>
+                  <span>{t("common.downloadCsv", "Export CSV")}</span>
                 </button>
               )}
             </div>
@@ -792,14 +805,14 @@ export default function ExpensesPage() {
           {loading ? (
             <div className="p-12 text-center text-[#8B8179]">
               <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#D96827]" />
-              <p className="text-xs">Loading expenses...</p>
+              <p className="text-xs">{t("common.loading", "Loading...")}</p>
             </div>
           ) : filteredExpenses.length === 0 ? (
             <div className="p-12 text-center text-[#8B8179]">
               <Wallet className="h-10 w-10 mx-auto mb-2 opacity-30 text-[#D96827]" />
-              <p className="text-sm font-bold text-[#29221E]">No expenses found</p>
+              <p className="text-sm font-bold text-[#29221E]">{t("expenses.noExpenses", "No expenses recorded for this period")}</p>
               <p className="text-xs text-[#8B8179] mt-1">
-                No recorded expenses matching the active date & reason filters.
+                {lang === "am" ? "ከተመረጡት ማጣሪያዎች ጋር የሚዛመድ ወጪ አልተገኘም።" : "No recorded expenses matching the active date & reason filters."}
               </p>
             </div>
           ) : (
@@ -837,11 +850,11 @@ export default function ExpensesPage() {
                         </span>
                         {exp.fundSource === "DAILY_CASH" ? (
                           <span className="px-2 py-0.5 rounded font-semibold bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
-                            Daily Cash
+                            {t("expenses.dailyCashDrawer", "Daily Cash")}
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded font-semibold bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                            Capital
+                            {t("expenses.generalCapital", "Capital")}
                           </span>
                         )}
                         <span className="px-2 py-0.5 rounded bg-white text-[#29221E] font-bold border border-[#E9D9C5]">
@@ -853,14 +866,14 @@ export default function ExpensesPage() {
                         <button
                           onClick={() => openEditModal(exp)}
                           className="p-1 text-[#8B8179] hover:text-[#D96827] cursor-pointer"
-                          title="Edit expense"
+                          title={t("common.edit", "Edit")}
                         >
                           <Edit3 className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => setExpenseToDelete(exp)}
                           className="p-1 text-[#8B8179] hover:text-[#D94B45] cursor-pointer"
-                          title="Delete expense"
+                          title={t("common.delete", "Delete")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -875,13 +888,13 @@ export default function ExpensesPage() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-[#F7F6F3] uppercase tracking-wider text-[#8B8179] border-b border-[#E9D9C5]">
                     <tr>
-                      <th className="px-5 py-3">Date / Time</th>
-                      <th className="px-5 py-3">Expense / Details</th>
-                      <th className="px-5 py-3">Reason</th>
-                      <th className="px-5 py-3">Funding Source</th>
-                      <th className="px-5 py-3">Channel</th>
-                      <th className="px-5 py-3 text-right">Amount</th>
-                      <th className="px-4 py-3 text-center">Action</th>
+                      <th className="px-5 py-3">{t("common.date", "Date")} / {t("common.time", "Time")}</th>
+                      <th className="px-5 py-3">{t("expenses.expenseTitle", "Expense / Details")}</th>
+                      <th className="px-5 py-3">{t("common.reason", "Reason")}</th>
+                      <th className="px-5 py-3">{t("expenses.fundSource", "Funding Source")}</th>
+                      <th className="px-5 py-3">{t("expenses.channel", "Channel")}</th>
+                      <th className="px-5 py-3 text-right">{t("expenses.amount", "Amount")}</th>
+                      <th className="px-4 py-3 text-center">{t("common.action", "Action")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E9D9C5]">
@@ -906,11 +919,11 @@ export default function ExpensesPage() {
                         <td className="px-5 py-3">
                           {exp.fundSource === "DAILY_CASH" ? (
                             <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30">
-                              Daily Cash Drawer
+                              {t("expenses.dailyCashDrawer", "Daily Cash Drawer")}
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded font-semibold text-[10px] bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                              General Capital
+                              {t("expenses.generalCapital", "General Capital")}
                             </span>
                           )}
                         </td>
@@ -925,14 +938,14 @@ export default function ExpensesPage() {
                             <button
                               onClick={() => openEditModal(exp)}
                               className="p-1 text-[#8B8179] hover:text-[#D96827] transition-colors cursor-pointer"
-                              title="Edit expense"
+                              title={t("common.edit", "Edit")}
                             >
                               <Edit3 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setExpenseToDelete(exp)}
                               className="p-1 text-[#8B8179] hover:text-[#D94B45] transition-colors cursor-pointer"
-                              title="Delete expense"
+                              title={t("common.delete", "Delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -957,8 +970,8 @@ export default function ExpensesPage() {
                     <TrendingDown className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">Record Expense</h3>
-                    <p className="text-xs text-[#8B8179]">Select funding source & reason</p>
+                    <h3 className="text-base font-bold text-[#29221E]">{t("expenses.recordExpense", "Record Expense")}</h3>
+                    <p className="text-xs text-[#8B8179]">{t("expenses.subtitle", "Select funding source & reason")}</p>
                   </div>
                 </div>
                 <button
@@ -973,7 +986,7 @@ export default function ExpensesPage() {
                 {/* 1. FUNDING SOURCE SELECTOR */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
-                    Funding Source
+                    {t("expenses.fundSource", "Funding Source")}
                   </label>
                   {isOwner ? (
                     <div className="grid grid-cols-2 gap-2 mb-2">
@@ -989,9 +1002,9 @@ export default function ExpensesPage() {
                             : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                         }`}
                       >
-                        <div className="font-bold text-xs text-[#29221E]">Daily Cash Drawer</div>
+                        <div className="font-bold text-xs text-[#29221E]">{t("expenses.dailyCashDrawer", "Daily Cash Drawer")}</div>
                         <div className="text-[10px] text-[#8B8179] mt-0.5">
-                          Lunch, transport, supplies
+                          {t("expenses.dailyExpensesDesc", "Lunch, transport, supplies")}
                         </div>
                       </button>
 
@@ -1007,20 +1020,20 @@ export default function ExpensesPage() {
                             : "bg-white border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
                         }`}
                       >
-                        <div className="font-bold text-xs">General Capital</div>
+                        <div className="font-bold text-xs">{t("expenses.generalCapital", "General Capital")}</div>
                         <div className="text-[10px] mt-0.5 opacity-80">
-                          Skates, restock, rent
+                          {t("expenses.capitalExpensesDesc", "Skates, restock, rent")}
                         </div>
                       </button>
                     </div>
                   ) : (
                     <div className="p-3 mb-2 rounded-xl bg-[#EBF5F0] border border-[#26845B]/30 flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-xs text-[#26845B]">Daily Cash Drawer</div>
-                        <div className="text-[10px] text-[#26845B]/80">Operating petty cash & supplies</div>
+                        <div className="font-bold text-xs text-[#26845B]">{t("expenses.dailyCashDrawer", "Daily Cash Drawer")}</div>
+                        <div className="text-[10px] text-[#26845B]/80">{t("expenses.dailyExpensesDesc", "Operating petty cash & supplies")}</div>
                       </div>
                       <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white text-[#26845B] border border-[#26845B]/20">
-                        Daily
+                        {t("expenses.dailyCashDrawer", "Daily Cash")}
                       </span>
                     </div>
                   )}
@@ -1028,45 +1041,45 @@ export default function ExpensesPage() {
                   {/* Quick Fill Chips */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                     <span className="text-[10px] text-[#8B8179] uppercase font-bold shrink-0">
-                      Quick Fill:
+                      {lang === "am" ? "ፈጣን ምርጫ:" : "Quick Fill:"}
                     </span>
                     {fundSource === "DAILY_CASH" ? (
                       <>
                         <button
                           type="button"
                           onClick={() => {
-                            setTitle("Staff Lunch");
+                            setTitle(lang === "am" ? "የሰራተኞች ምሳ" : "Staff Lunch");
                             setAmount("200");
                             setSelectedReason("LUNCH");
                             setPaymentMethod("CASH");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#F7F6F3] hover:bg-[#FFF4E5] text-[#29221E] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
                         >
-                          Lunch 200 ETB
+                          {lang === "am" ? "ምሳ 200 ብር" : "Lunch 200 ETB"}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
-                            setTitle("Taxi Transport");
+                            setTitle(lang === "am" ? "የትራንስፖርት ታክሲ" : "Taxi Transport");
                             setAmount("100");
                             setSelectedReason("TRANSPORT");
                             setPaymentMethod("CASH");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#F7F6F3] hover:bg-[#FFF4E5] text-[#29221E] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
                         >
-                          Taxi 100 ETB
+                          {lang === "am" ? "ታክሲ 100 ብር" : "Taxi 100 ETB"}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
-                            setTitle("Cleaning Supplies");
+                            setTitle(lang === "am" ? "የጽዳት እቃዎች" : "Cleaning Supplies");
                             setAmount("150");
                             setSelectedReason("SUPPLIES");
                             setPaymentMethod("CASH");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#F7F6F3] hover:bg-[#FFF4E5] text-[#29221E] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
                         >
-                          Supplies 150 ETB
+                          {lang === "am" ? "ጽዳት 150 ብር" : "Supplies 150 ETB"}
                         </button>
                       </>
                     ) : (
@@ -1074,35 +1087,35 @@ export default function ExpensesPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setTitle("New Skate Shoes Batch");
+                            setTitle(lang === "am" ? "አዳዲስ ስኬት ጫማዎች" : "New Skate Shoes Batch");
                             setSelectedReason("SKATE_SHOES");
                             setPaymentMethod("CBE");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#FFF4E5] hover:bg-[#FCEAD2] text-[#D96827] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
                         >
-                          Skate Shoes
+                          {lang === "am" ? "ስኬት ጫማዎች" : "Skate Shoes"}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
-                            setTitle("Bulk Concession Restock");
+                            setTitle(lang === "am" ? "የመክሰስ ክምችት" : "Bulk Concession Restock");
                             setSelectedReason("SNACK_RESTOCK");
                             setPaymentMethod("CBE");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#FFF4E5] hover:bg-[#FCEAD2] text-[#D96827] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
                         >
-                          Snack Restock
+                          {lang === "am" ? "የመክሰስ ክምችት" : "Snack Restock"}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
-                            setTitle("Facility Monthly Rent");
+                            setTitle(lang === "am" ? "የወር ኪራይ" : "Facility Monthly Rent");
                             setSelectedReason("RENT");
                             setPaymentMethod("CBE");
                           }}
                           className="px-2.5 py-1 rounded-lg bg-[#FFF4E5] hover:bg-[#FCEAD2] text-[#D96827] text-[11px] font-semibold whitespace-nowrap cursor-pointer border border-[#E9D9C5]"
                         >
-                          Facility Rent
+                          {lang === "am" ? "የሜዳ ኪራይ" : "Facility Rent"}
                         </button>
                       </>
                     )}
@@ -1114,14 +1127,14 @@ export default function ExpensesPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-semibold text-[#29221E]">
-                        Reason
+                        {t("common.reason", "Reason")}
                       </label>
                       <button
                         type="button"
                         onClick={() => setShowInlineReason(!showInlineReason)}
                         className="text-[10px] text-[#D96827] font-bold hover:underline cursor-pointer"
                       >
-                        {showInlineReason ? "Cancel" : "+ New"}
+                        {showInlineReason ? t("common.cancel", "Cancel") : t("expenses.newReason", "+ New")}
                       </button>
                     </div>
 
@@ -1133,7 +1146,7 @@ export default function ExpensesPage() {
                       >
                         {reasons.map((r) => (
                           <option key={r._id} value={r.name}>
-                            {r.displayName}
+                            {getReasonDisplay(r.name)}
                           </option>
                         ))}
                       </select>
@@ -1141,7 +1154,7 @@ export default function ExpensesPage() {
                       <div className="flex items-center gap-1">
                         <input
                           type="text"
-                          placeholder="New reason..."
+                          placeholder={lang === "am" ? "አዲስ ምክንያት..." : "New reason..."}
                           value={inlineReasonName}
                           onChange={(e) => setInlineReasonName(e.target.value)}
                           className="w-full px-2 py-1.5 bg-white border border-[#D96827] rounded-xl text-xs text-[#29221E] focus:outline-none"
@@ -1151,7 +1164,7 @@ export default function ExpensesPage() {
                           onClick={handleCreateInlineReason}
                           className="px-2 py-1.5 bg-[#D96827] text-white rounded-xl text-xs font-bold shrink-0 cursor-pointer"
                         >
-                          Add
+                          {t("common.save", "Add")}
                         </button>
                       </div>
                     )}
@@ -1159,7 +1172,7 @@ export default function ExpensesPage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Amount (ETB)
+                      {t("expenses.amount", "Amount (ETB)")}
                     </label>
                     <input
                       type="number"
@@ -1176,11 +1189,11 @@ export default function ExpensesPage() {
                 {/* 3. OPTIONAL DETAILS / TITLE */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Description / Details <span className="font-normal text-[#8B8179]">(Optional)</span>
+                    {t("expenses.expenseTitle", "Description / Details")} <span className="font-normal text-[#8B8179]">({t("common.optional", "Optional")})</span>
                   </label>
                   <input
                     type="text"
-                    placeholder={`e.g. ${getReasonDisplay(selectedReason)} details, receipt ref`}
+                    placeholder={lang === "am" ? "ዝርዝር መግለጫ (ምሳሌ፡ ደረሰኝ ቁጥር)..." : "e.g. Details, receipt ref..."}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]"
@@ -1191,7 +1204,7 @@ export default function ExpensesPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                      Paid Channel
+                      {t("expenses.channel", "Paid Channel")}
                     </label>
                     <div className="grid grid-cols-3 gap-1">
                       {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
@@ -1205,7 +1218,7 @@ export default function ExpensesPage() {
                               : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
                           }`}
                         >
-                          {method === "TELEBIRR" ? "Tele" : method}
+                          {method === "CASH" ? t("common.cash", "Cash") : method === "TELEBIRR" ? "Tele" : "CBE"}
                         </button>
                       ))}
                     </div>
@@ -1213,7 +1226,7 @@ export default function ExpensesPage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                      Date
+                      {t("common.date", "Date")}
                     </label>
                     <input
                       type="date"
@@ -1227,11 +1240,11 @@ export default function ExpensesPage() {
                 {/* 5. NOTES */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Notes (Optional)
+                    {t("common.notes", "Notes")} ({t("common.optional", "Optional")})
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Receipt #1234, staff name, vendor details"
+                    placeholder={lang === "am" ? "ተጨማሪ ማስታወሻ..." : "e.g. Receipt #1234, staff name, vendor details"}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none"
@@ -1244,14 +1257,14 @@ export default function ExpensesPage() {
                     onClick={() => setShowExpenseModal(false)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
                     className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D94B45]/20 cursor-pointer"
                   >
-                    {submitting ? "Saving..." : "Record Expense"}
+                    {submitting ? t("common.loading", "Saving...") : t("expenses.recordExpense", "Record Expense")}
                   </button>
                 </div>
               </form>
@@ -1269,8 +1282,8 @@ export default function ExpensesPage() {
                     <Edit3 className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">Edit Expense</h3>
-                    <p className="text-xs text-[#8B8179]">Update expense entry</p>
+                    <h3 className="text-base font-bold text-[#29221E]">{t("expenses.editExpenseModalTitle", "Edit Expense")}</h3>
+                    <p className="text-xs text-[#8B8179]">{t("expenses.editExpenseModalSub", "Update expense entry")}</p>
                   </div>
                 </div>
                 <button
@@ -1284,7 +1297,7 @@ export default function ExpensesPage() {
               <form onSubmit={handleEditSubmit} className="mt-4 space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Reason
+                    {t("common.reason", "Reason")}
                   </label>
                   <select
                     value={editReason}
@@ -1293,7 +1306,7 @@ export default function ExpensesPage() {
                   >
                     {reasons.map((r) => (
                       <option key={r._id || r.name} value={r.name}>
-                        {r.displayName}
+                        {getReasonDisplay(r.name)}
                       </option>
                     ))}
                   </select>
@@ -1301,7 +1314,7 @@ export default function ExpensesPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Expense Title
+                    {t("expenses.expenseTitle", "Expense Title")}
                   </label>
                   <input
                     type="text"
@@ -1315,7 +1328,7 @@ export default function ExpensesPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Amount (ETB)
+                      {t("expenses.amount", "Amount (ETB)")}
                     </label>
                     <input
                       type="number"
@@ -1328,7 +1341,7 @@ export default function ExpensesPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Channel
+                      {t("expenses.channel", "Channel")}
                     </label>
                     <select
                       value={editPaymentMethod}
@@ -1337,7 +1350,7 @@ export default function ExpensesPage() {
                       }
                       className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
                     >
-                      <option value="CASH">Cash</option>
+                      <option value="CASH">{t("common.cash", "Cash")}</option>
                       <option value="TELEBIRR">Telebirr</option>
                       <option value="CBE">CBE Birr</option>
                     </select>
@@ -1346,7 +1359,7 @@ export default function ExpensesPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Date
+                    {t("common.date", "Date")}
                   </label>
                   <input
                     type="date"
@@ -1358,7 +1371,7 @@ export default function ExpensesPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Notes (Optional)
+                    {t("common.notes", "Notes")} ({t("common.optional", "Optional")})
                   </label>
                   <textarea
                     rows={2}
@@ -1374,14 +1387,14 @@ export default function ExpensesPage() {
                     onClick={() => setShowEditModal(false)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={savingEdit}
                     className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 cursor-pointer"
                   >
-                    {savingEdit ? "Saving..." : "Save Changes"}
+                    {savingEdit ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}
                   </button>
                 </div>
               </form>
@@ -1399,8 +1412,8 @@ export default function ExpensesPage() {
                     <Tag className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">Expense Reasons</h3>
-                    <p className="text-xs text-[#8B8179]">Add or manage custom reasons</p>
+                    <h3 className="text-base font-bold text-[#29221E]">{t("expenses.reasonsModalTitle", "Expense Reasons")}</h3>
+                    <p className="text-xs text-[#8B8179]">{t("expenses.reasonsModalSub", "Add or manage custom reasons")}</p>
                   </div>
                 </div>
                 <button
@@ -1414,13 +1427,13 @@ export default function ExpensesPage() {
               <form onSubmit={handleCreateReason} className="mt-4 space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Add New Reason Name
+                    {lang === "am" ? "አዲስ ምክንያት ስም" : "Add New Reason Name"}
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Electricity, First Aid"
+                      placeholder={lang === "am" ? "ምሳሌ፡ መብራት፣ የመጀመሪያ ህክምና..." : "e.g. Electricity, First Aid"}
                       value={newReasonName}
                       onChange={(e) => setNewReasonName(e.target.value)}
                       className="flex-1 px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]"
@@ -1430,7 +1443,7 @@ export default function ExpensesPage() {
                       disabled={creatingReason}
                       className="px-4 py-2 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs shrink-0 cursor-pointer"
                     >
-                      {creatingReason ? "..." : "+ Add"}
+                      {creatingReason ? "..." : t("common.save", "+ Add")}
                     </button>
                   </div>
                 </div>
@@ -1439,7 +1452,7 @@ export default function ExpensesPage() {
               {/* List of Custom Reasons with Delete */}
               <div className="mt-4 pt-3 border-t border-[#E9D9C5]">
                 <span className="text-[11px] font-bold text-[#8B8179] uppercase tracking-wider block mb-2">
-                  Active Reasons
+                  {lang === "am" ? "የተመዘገቡ ምክንያቶች" : "Active Reasons"}
                 </span>
                 <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin">
                   {reasons.map((r) => (
@@ -1447,13 +1460,13 @@ export default function ExpensesPage() {
                       key={r._id || r.name}
                       className="flex items-center justify-between p-2 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs"
                     >
-                      <span className="font-semibold text-[#29221E]">{r.displayName}</span>
+                      <span className="font-semibold text-[#29221E]">{getReasonDisplay(r.name)}</span>
                       {r._id && (
                         <button
                           type="button"
                           onClick={() => handleDeleteReason(r._id!, r.name)}
                           className="p-1 text-[#8B8179] hover:text-[#D94B45] cursor-pointer"
-                          title="Delete reason"
+                          title={t("common.delete", "Delete reason")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1473,7 +1486,7 @@ export default function ExpensesPage() {
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-[#D96827]" />
-                  <h3 className="text-base font-bold text-[#29221E]">Top Up Capital Fund</h3>
+                  <h3 className="text-base font-bold text-[#29221E]">{t("expenses.topUpModalTitle", "Top Up Capital Fund")}</h3>
                 </div>
                 <button
                   onClick={() => setShowTopupModal(false)}
@@ -1485,12 +1498,12 @@ export default function ExpensesPage() {
 
               <form onSubmit={handleTopupCapital} className="mt-4 space-y-3.5">
                 <p className="text-xs text-[#8B8179] leading-relaxed">
-                  Inject additional capital reserves for purchasing new skates, paying facility rent, or large stock replenishments.
+                  {t("expenses.topUpModalSub", "Inject additional capital reserves for purchasing new skates, paying facility rent, or large stock replenishments.")}
                 </p>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Deposit Amount (ETB)
+                    {t("expenses.depositAmount", "Deposit Amount (ETB)")}
                   </label>
                   <input
                     type="number"
@@ -1509,14 +1522,14 @@ export default function ExpensesPage() {
                     onClick={() => setShowTopupModal(false)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={topupLoading}
                     className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 cursor-pointer"
                   >
-                    {topupLoading ? "Saving..." : "Deposit Capital"}
+                    {topupLoading ? t("common.loading", "Saving...") : t("expenses.depositCapital", "Deposit Capital")}
                   </button>
                 </div>
               </form>
@@ -1533,8 +1546,8 @@ export default function ExpensesPage() {
                   <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#29221E]">Delete Expense?</h3>
-                  <p className="text-xs text-[#8B8179]">This action cannot be undone.</p>
+                  <h3 className="text-base font-bold text-[#29221E]">{t("expenses.deleteExpenseModalTitle", "Delete Expense?")}</h3>
+                  <p className="text-xs text-[#8B8179]">{t("expenses.deleteExpenseModalSub", "This action cannot be undone.")}</p>
                 </div>
               </div>
 
@@ -1547,8 +1560,8 @@ export default function ExpensesPage() {
                 </div>
                 <div className="text-[11px] text-[#8B8179]">
                   {expenseToDelete.fundSource === "DAILY_CASH"
-                    ? "Daily Cash Drawer"
-                    : "General Capital"}
+                    ? t("expenses.dailyCashDrawer", "Daily Cash Drawer")
+                    : t("expenses.generalCapital", "General Capital")}
                 </div>
               </div>
 
@@ -1558,7 +1571,7 @@ export default function ExpensesPage() {
                   onClick={() => setExpenseToDelete(null)}
                   className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="button"
@@ -1566,7 +1579,7 @@ export default function ExpensesPage() {
                   onClick={handleDeleteExpense}
                   className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
-                  {deleting ? "Deleting..." : "Confirm Delete"}
+                  {deleting ? t("common.loading", "Deleting...") : t("common.confirm", "Confirm Delete")}
                 </button>
               </div>
             </div>
@@ -1601,7 +1614,7 @@ export default function ExpensesPage() {
                   onClick={() => setNotification({ ...notification, show: false })}
                   className="px-4 py-2 bg-[#29221E] text-white text-xs font-bold rounded-xl hover:bg-black transition-colors cursor-pointer"
                 >
-                  Dismiss
+                  {t("common.dismiss", "Dismiss")}
                 </button>
               </div>
             </div>

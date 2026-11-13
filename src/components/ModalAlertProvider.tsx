@@ -14,6 +14,7 @@ import {
   XCircle,
   X,
 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 export type ModalType = "info" | "warning" | "error" | "success";
 
@@ -68,6 +69,7 @@ export function ModalAlertProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const { t } = useLanguage();
   const [modal, setModal] = useState<ModalState>({
     isOpen: false,
     isConfirm: false,
@@ -91,12 +93,12 @@ export function ModalAlertProvider({
 
       const defaultTitle =
         opts.type === "error"
-          ? "Action Failed"
+          ? t("common.error", "Error")
           : opts.type === "warning"
-          ? "Attention Required"
+          ? t("common.warning", "Warning")
           : opts.type === "success"
-          ? "Success"
-          : "Notice";
+          ? t("common.success", "Success")
+          : t("common.notice", "Notice");
 
       setModal({
         isOpen: true,
@@ -104,15 +106,15 @@ export function ModalAlertProvider({
         title: opts.title || defaultTitle,
         message: opts.message,
         type: opts.type || "info",
-        confirmText: opts.buttonText || "Got it",
-        cancelText: "Cancel",
+        confirmText: opts.buttonText || t("common.dismiss", "Dismiss"),
+        cancelText: t("common.cancel", "Cancel"),
         onConfirm: () => {
           opts.onClose?.();
           closeModal();
         },
       });
     },
-    [closeModal]
+    [closeModal, t]
   );
 
   const showConfirm = useCallback(
@@ -120,11 +122,11 @@ export function ModalAlertProvider({
       setModal({
         isOpen: true,
         isConfirm: true,
-        title: options.title || "Please Confirm",
+        title: options.title || t("common.confirm", "Please Confirm"),
         message: options.message,
         type: options.type || "warning",
-        confirmText: options.confirmText || "Confirm",
-        cancelText: options.cancelText || "Cancel",
+        confirmText: options.confirmText || t("common.confirm", "Confirm"),
+        cancelText: options.cancelText || t("common.cancel", "Cancel"),
         onConfirm: async () => {
           setIsProcessing(true);
           try {
@@ -140,7 +142,7 @@ export function ModalAlertProvider({
         },
       });
     },
-    [closeModal]
+    [closeModal, t]
   );
 
   // Intercept window.alert so any residual native alert() calls across the app become modal popups
@@ -148,7 +150,7 @@ export function ModalAlertProvider({
     if (typeof window === "undefined") return;
 
     const originalAlert = window.alert;
-    window.alert = (msg?: any) => {
+    window.alert = (msg?: unknown) => {
       const message =
         typeof msg === "string"
           ? msg
@@ -156,7 +158,7 @@ export function ModalAlertProvider({
           ? JSON.stringify(msg, null, 2)
           : String(msg ?? "");
       showAlert({
-        title: "Alert",
+        title: t("common.notice", "Notice"),
         message,
         type: "warning",
       });
@@ -165,7 +167,7 @@ export function ModalAlertProvider({
     return () => {
       window.alert = originalAlert;
     };
-  }, [showAlert]);
+  }, [showAlert, t]);
 
   const getIcon = () => {
     switch (modal.type) {
@@ -270,7 +272,7 @@ export function ModalAlertProvider({
                     : "bg-[#D96827] hover:bg-[#C2571A]"
                 }`}
               >
-                {isProcessing ? "Processing..." : modal.confirmText}
+                {isProcessing ? t("common.loading", "Loading...") : modal.confirmText}
               </button>
             </div>
           </div>
@@ -279,4 +281,3 @@ export function ModalAlertProvider({
     </ModalContext.Provider>
   );
 }
-

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { ShoeStatus, SkateType } from "@/models/Shoe";
 import { useAlertModal } from "@/components/ModalAlertProvider";
+import { useLanguage } from "@/lib/i18n";
 import {
   Footprints,
   Plus,
@@ -32,6 +33,7 @@ interface ShoeItem {
 
 export default function ShoesInventoryPage() {
   const { showAlert } = useAlertModal();
+  const { t } = useLanguage();
   const [shoes, setShoes] = useState<ShoeItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -86,8 +88,8 @@ export default function ShoesInventoryPage() {
     e.preventDefault();
     if (!newShoeId.trim()) {
       showAlert({
-        title: "Shoe ID Required",
-        message: "Please enter a unique Shoe ID barcode or tag.",
+        title: t("common.warning", "Warning"),
+        message: t("shoes.shoeIdLabel", "Shoe ID Tag") + ": " + t("common.error", "Required"),
         type: "warning",
       });
       return;
@@ -111,23 +113,23 @@ export default function ShoesInventoryPage() {
         setNewShoeId("");
         setNewNotes("");
         showAlert({
-          title: "Shoe Asset Registered",
-          message: `${newType === "QUAD" ? "Quads" : "Inline Skates"} ${newShoeId.toUpperCase()} (Size #${newSize}) added to inventory.`,
+          title: t("common.success", "Success"),
+          message: `${newShoeId.toUpperCase()} (#${newSize})`,
           type: "success",
         });
         fetchShoes();
       } else {
         const err = await res.json();
         showAlert({
-          title: "Registration Failed",
-          message: err.error || "Failed to add shoe asset",
+          title: t("common.error", "Error"),
+          message: err.error || t("common.error", "Failed to add shoe"),
           type: "error",
         });
       }
     } catch {
       showAlert({
-        title: "Connection Error",
-        message: "Network error while saving shoe asset",
+        title: t("common.error", "Error"),
+        message: t("common.error", "Network error"),
         type: "error",
       });
     } finally {
@@ -147,8 +149,8 @@ export default function ShoesInventoryPage() {
       } else {
         const err = await res.json();
         showAlert({
-          title: "Status Update Failed",
-          message: err.error || "Could not update status",
+          title: t("common.error", "Error"),
+          message: err.error || t("common.error", "Could not update status"),
           type: "error",
         });
       }
@@ -185,23 +187,23 @@ export default function ShoesInventoryPage() {
       if (res.ok) {
         setEditingShoe(null);
         showAlert({
-          title: "Shoe Updated",
-          message: `Shoe ${editShoeId.toUpperCase()} updated.`,
+          title: t("common.success", "Success"),
+          message: `${editShoeId.toUpperCase()}`,
           type: "success",
         });
         fetchShoes();
       } else {
         const err = await res.json();
         showAlert({
-          title: "Update Failed",
-          message: err.error || "Failed to update shoe",
+          title: t("common.error", "Error"),
+          message: err.error || t("common.error", "Failed to update shoe"),
           type: "error",
         });
       }
     } catch {
       showAlert({
-        title: "Connection Error",
-        message: "Failed to connect to server",
+        title: t("common.error", "Error"),
+        message: t("common.error", "Failed to connect"),
         type: "error",
       });
     } finally {
@@ -219,23 +221,23 @@ export default function ShoesInventoryPage() {
       if (res.ok) {
         setShoeToDelete(null);
         showAlert({
-          title: "Shoe Removed",
-          message: `Shoe ${shoeToDelete.shoeId} deleted from inventory.`,
+          title: t("common.success", "Success"),
+          message: `${shoeToDelete.shoeId}`,
           type: "success",
         });
         fetchShoes();
       } else {
         const err = await res.json();
         showAlert({
-          title: "Delete Failed",
-          message: err.error || "Failed to delete shoe",
+          title: t("common.error", "Error"),
+          message: err.error || t("common.error", "Failed to delete"),
           type: "error",
         });
       }
     } catch {
       showAlert({
-        title: "Error",
-        message: "Failed to delete shoe",
+        title: t("common.error", "Error"),
+        message: t("common.error", "Failed to delete shoe"),
         type: "error",
       });
     } finally {
@@ -293,11 +295,11 @@ export default function ShoesInventoryPage() {
             <div className="flex items-center gap-2">
               <Footprints className="h-5 w-5 sm:h-6 sm:w-6 text-[#D96827]" />
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#29221E]">
-                Skate Shoe Asset Inventory
+                {t("shoes.title", "Skate Shoes")}
               </h1>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#8B8179]">
-              Asset registry & live tracking for Inline Skates & Quads across commercial shoe sizes.
+              {t("shoes.subtitle", "Track physical skates by size and condition")}
             </p>
           </div>
 
@@ -308,7 +310,7 @@ export default function ShoesInventoryPage() {
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors shadow-2xs cursor-pointer"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-              Refresh
+              {t("common.refresh", "Refresh")}
             </button>
             <button
               onClick={() => {
@@ -320,7 +322,7 @@ export default function ShoesInventoryPage() {
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#D96827] hover:bg-[#C2571A] rounded-xl transition-all shadow-md shadow-[#D96827]/20 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
-              Add Skate Shoe
+              {t("shoes.addShoe", "+ Add Skate Shoe")}
             </button>
           </div>
         </div>
@@ -339,7 +341,7 @@ export default function ShoesInventoryPage() {
           >
             <div className="min-w-0 pr-1">
               <span className="text-[9px] min-[360px]:text-[10px] sm:text-xs text-[#26845B] uppercase font-bold tracking-tight truncate block">
-                Available
+                {t("shoes.availableStat", "Available")}
               </span>
               <p className="text-lg sm:text-3xl font-black text-[#26845B] leading-tight">
                 {availableCount}
@@ -362,8 +364,8 @@ export default function ShoesInventoryPage() {
           >
             <div className="min-w-0 pr-1">
               <span className="text-[9px] min-[360px]:text-[10px] sm:text-xs text-[#D96827] uppercase font-bold tracking-tight truncate block">
-                <span className="sm:hidden">Rented</span>
-                <span className="hidden sm:inline">Rented (Active)</span>
+                <span className="sm:hidden">{t("common.rented", "Rented")}</span>
+                <span className="hidden sm:inline">{t("shoes.rentedStat", "Rented (Active)")}</span>
               </span>
               <p className="text-lg sm:text-3xl font-black text-[#D96827] leading-tight">
                 {rentedCount}
@@ -388,8 +390,8 @@ export default function ShoesInventoryPage() {
           >
             <div className="min-w-0 pr-1">
               <span className="text-[9px] min-[360px]:text-[10px] sm:text-xs text-[#D94B45] uppercase font-bold tracking-tight truncate block">
-                <span className="sm:hidden">Maint</span>
-                <span className="hidden sm:inline">Maintenance</span>
+                <span className="sm:hidden">{t("shoes.maintStat", "Maint")}</span>
+                <span className="hidden sm:inline">{t("shoes.maintStat", "Maintenance")}</span>
               </span>
               <p className="text-lg sm:text-3xl font-black text-[#D94B45] leading-tight">
                 {maintenanceCount}
@@ -403,12 +405,11 @@ export default function ShoesInventoryPage() {
 
         {/* 2. Collapsible Filter & Search Panel */}
         <div className="bg-white border border-[#E9D9C5] rounded-2xl shadow-2xs overflow-hidden transition-all">
-          {/* Header Bar with Toggle (Removed orange badge per request) */}
           <div className="p-3 sm:p-4 flex items-center justify-between gap-3 border-b border-[#E9D9C5]/60 bg-[#FAF9F6]">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-[#D96827]" />
               <span className="text-xs font-bold text-[#29221E] uppercase tracking-wider">
-                Filter Shoes
+                {t("shoes.filterTitle", "Filter Shoes")}
               </span>
             </div>
 
@@ -419,7 +420,7 @@ export default function ShoesInventoryPage() {
                   onClick={resetFilters}
                   className="text-[11px] font-semibold text-[#8B8179] hover:text-[#D94B45] transition-colors cursor-pointer mr-1"
                 >
-                  Reset
+                  {t("common.reset", "Reset")}
                 </button>
               )}
               <button
@@ -427,7 +428,7 @@ export default function ShoesInventoryPage() {
                 onClick={() => setFiltersOpen(!filtersOpen)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-[#E9D9C5] text-[#29221E] hover:bg-[#FFF4E5] transition-colors cursor-pointer shadow-2xs"
               >
-                <span>{filtersOpen ? "Collapse" : "Open Filters"}</span>
+                <span>{filtersOpen ? t("common.collapse", "Collapse") : t("common.openFilters", "Open Filters")}</span>
                 {filtersOpen ? (
                   <ChevronUp className="h-3.5 w-3.5 text-[#8B8179]" />
                 ) : (
@@ -447,7 +448,7 @@ export default function ShoesInventoryPage() {
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8B8179]" />
                   <input
                     type="text"
-                    placeholder="Search Shoe ID, size, or notes..."
+                    placeholder={t("shoes.searchPlaceholder", "Search shoe ID, size, or notes...")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-9 pr-3.5 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
@@ -465,25 +466,25 @@ export default function ShoesInventoryPage() {
                 {/* Skate Type Selector (Inline vs Quads) */}
                 <div className="sm:col-span-6 lg:col-span-4 flex items-center gap-1.5">
                   <span className="text-xs text-[#8B8179] font-semibold whitespace-nowrap">
-                    Type:
+                    {t("shoes.shoeTypeLabel", "Type:")}
                   </span>
                   <div className="grid grid-cols-3 gap-1 w-full">
                     {[
-                      { id: "ALL", label: "All Types" },
-                      { id: "INLINE", label: "Inline" },
-                      { id: "QUAD", label: "Quads" },
-                    ].map((t) => (
+                      { id: "ALL", label: t("shoes.typeAll", "All Types") },
+                      { id: "INLINE", label: t("common.inline", "Inline") },
+                      { id: "QUAD", label: t("common.quads", "Quads") },
+                    ].map((item) => (
                       <button
-                        key={t.id}
+                        key={item.id}
                         type="button"
-                        onClick={() => setSelectedType(t.id)}
+                        onClick={() => setSelectedType(item.id)}
                         className={`py-1.5 px-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors text-center truncate ${
-                          selectedType === t.id
+                          selectedType === item.id
                             ? "bg-[#29221E] text-white font-bold shadow-2xs"
                             : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
                         }`}
                       >
-                        {t.label}
+                        {item.label}
                       </button>
                     ))}
                   </div>
@@ -492,30 +493,29 @@ export default function ShoesInventoryPage() {
                 {/* Status Dropdown */}
                 <div className="sm:col-span-12 lg:col-span-3 flex items-center gap-1.5">
                   <span className="text-xs text-[#8B8179] font-semibold whitespace-nowrap">
-                    Status:
+                    {t("common.status", "Status:")}
                   </span>
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
                     className="w-full py-1.5 px-2.5 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 cursor-pointer"
                   >
-                    <option value="ALL">All Statuses ({shoes.length})</option>
-                    <option value="AVAILABLE">Available ({availableCount})</option>
-                    <option value="RENTED">Rented ({rentedCount})</option>
-                    <option value="MAINTENANCE">Maintenance ({maintenanceCount})</option>
-                    <option value="RETIRED">Retired</option>
+                    <option value="ALL">{t("shoes.statusAll", "All Statuses")} ({shoes.length})</option>
+                    <option value="AVAILABLE">{t("shoes.availableStat", "Available")} ({availableCount})</option>
+                    <option value="RENTED">{t("shoes.rentedStat", "Rented")} ({rentedCount})</option>
+                    <option value="MAINTENANCE">{t("shoes.maintStat", "Maintenance")} ({maintenanceCount})</option>
+                    <option value="RETIRED">{t("shoes.retired", "Retired")}</option>
                   </select>
                 </div>
               </div>
 
-              {/* Row 2: Shoe Size Pills (Horizontal scrollable with whitespace-nowrap) */}
+              {/* Row 2: Shoe Size Pills */}
               <div className="pt-2 border-t border-[#E9D9C5]/50">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
                   <span className="text-xs text-[#8B8179] font-semibold mr-1 whitespace-nowrap">
-                    Sizes:
+                    {t("shoes.sizes", "Sizes:")}
                   </span>
 
-                  {/* All Sizes button */}
                   <button
                     type="button"
                     onClick={() => setSelectedSize("ALL")}
@@ -525,10 +525,9 @@ export default function ShoesInventoryPage() {
                         : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
                     }`}
                   >
-                    All ({shoes.length})
+                    {t("common.all", "All")} ({shoes.length})
                   </button>
 
-                  {/* Individual size buttons */}
                   {allSizes.map((size) => {
                     const totalForSize = shoes.filter((s) => s.size === size).length;
                     const availForSize = shoes.filter(
@@ -546,7 +545,7 @@ export default function ShoesInventoryPage() {
                             : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
                         }`}
                       >
-                        Size {size} ({availForSize}/{totalForSize})
+                        {t("common.size", "Size")} #{size} ({availForSize}/{totalForSize})
                       </button>
                     );
                   })}
@@ -559,32 +558,32 @@ export default function ShoesInventoryPage() {
         {/* Results Counter */}
         <div className="flex items-center justify-between text-xs text-[#8B8179] px-1">
           <span>
-            Showing <strong className="text-[#29221E]">{filteredShoes.length}</strong> of{" "}
-            {shoes.length} total shoes
+            {t("common.showing", "Showing")} <strong className="text-[#29221E]">{filteredShoes.length}</strong> {t("common.of", "of")}{" "}
+            {shoes.length} {t("shoes.ofTotalShoes", "total shoes")}
           </span>
           {activeFiltersCount > 0 && (
             <button
               onClick={resetFilters}
               className="text-[#D96827] hover:underline font-semibold cursor-pointer"
             >
-              Clear all filters
+              {t("shoes.clearFilters", "Clear all filters")}
             </button>
           )}
         </div>
 
-        {/* 3. Shoe Asset Cards Grid (Removed color chips per request) */}
+        {/* 3. Shoe Asset Cards Grid */}
         {filteredShoes.length === 0 ? (
           <div className="p-8 text-center bg-white border border-[#E9D9C5] rounded-2xl shadow-2xs space-y-2">
             <Footprints className="h-8 w-8 text-[#8B8179] mx-auto opacity-50" />
-            <h4 className="text-sm font-bold text-[#29221E]">No Skate Shoes Match Current Filters</h4>
+            <h4 className="text-sm font-bold text-[#29221E]">{t("shoes.noShoesFound", "No skate shoes match current filters")}</h4>
             <p className="text-xs text-[#8B8179]">
-              Try adjusting your size, status, or type selection.
+              {t("shoes.clearFilters", "Try adjusting your size, status, or type selection.")}
             </p>
             <button
               onClick={resetFilters}
               className="mt-2 px-4 py-2 bg-[#D96827] text-white rounded-xl text-xs font-bold cursor-pointer"
             >
-              Reset Filters
+              {t("common.reset", "Reset Filters")}
             </button>
           </div>
         ) : (
@@ -619,7 +618,13 @@ export default function ShoesInventoryPage() {
                             : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5]"
                         }`}
                       >
-                        {shoe.status === "MAINTENANCE" ? "Maint" : shoe.status}
+                        {shoe.status === "AVAILABLE"
+                          ? t("common.available", "Available")
+                          : shoe.status === "RENTED"
+                          ? t("common.rented", "Rented")
+                          : shoe.status === "MAINTENANCE"
+                          ? t("shoes.maintStat", "Maint")
+                          : t("shoes.retired", "Retired")}
                       </span>
                     </div>
 
@@ -637,7 +642,7 @@ export default function ShoesInventoryPage() {
                             : "bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD]"
                         }`}
                       >
-                        {shoeType === "QUAD" ? "Quads" : "Inline Skates"}
+                        {shoeType === "QUAD" ? t("common.quads", "Quads") : t("common.inlineSkates", "Inline Skates")}
                       </span>
                     </div>
 
@@ -657,10 +662,10 @@ export default function ShoesInventoryPage() {
                       }
                       className="w-full py-1.5 px-2 bg-white border border-[#E9D9C5] rounded-xl text-[11px] font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 cursor-pointer shadow-2xs"
                     >
-                      <option value="AVAILABLE">✓ Available</option>
-                      <option value="RENTED">⏱ Rented</option>
-                      <option value="MAINTENANCE">🔧 Maintenance</option>
-                      <option value="RETIRED">⛔ Retired</option>
+                      <option value="AVAILABLE">✓ {t("common.available", "Available")}</option>
+                      <option value="RENTED">⏱ {t("common.rented", "Rented")}</option>
+                      <option value="MAINTENANCE">🔧 {t("shoes.maintStat", "Maintenance")}</option>
+                      <option value="RETIRED">⛔ {t("shoes.retired", "Retired")}</option>
                     </select>
 
                     <div className="flex items-center justify-end gap-1">
@@ -668,7 +673,7 @@ export default function ShoesInventoryPage() {
                         type="button"
                         onClick={() => openEditModal(shoe)}
                         className="p-1 text-[#8B8179] hover:text-[#D96827] rounded-md hover:bg-[#FFF4E5] transition-colors cursor-pointer"
-                        title="Edit shoe"
+                        title={t("common.edit", "Edit")}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -676,7 +681,7 @@ export default function ShoesInventoryPage() {
                         type="button"
                         onClick={() => setShoeToDelete(shoe)}
                         className="p-1 text-[#8B8179] hover:text-[#D94B45] rounded-md hover:bg-[#FDF0EF] transition-colors cursor-pointer"
-                        title="Delete shoe"
+                        title={t("common.delete", "Delete")}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -688,15 +693,15 @@ export default function ShoesInventoryPage() {
           </div>
         )}
 
-        {/* 4. Add Shoe Asset Modal (No colors) */}
+        {/* 4. Add Shoe Asset Modal */}
         {showAddModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-6 shadow-2xl text-[#29221E] space-y-4">
               <div className="flex items-start justify-between pb-3 border-b border-[#E9D9C5]">
                 <div>
-                  <h3 className="text-lg font-bold text-[#29221E]">Add Skate Shoe Asset</h3>
+                  <h3 className="text-lg font-bold text-[#29221E]">{t("shoes.addModalTitle", "Add New Skate Shoe")}</h3>
                   <p className="text-xs text-[#8B8179]">
-                    Register a new physical skate shoe into the rental fleet.
+                    {t("shoes.addModalSub", "Register a new shoe into the rental fleet")}
                   </p>
                 </div>
                 <button
@@ -712,7 +717,7 @@ export default function ShoesInventoryPage() {
                 {/* Skate Type Selector (Inline vs Quads) */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1.5 uppercase tracking-wider">
-                    Skate Type
+                    {t("shoes.shoeTypeLabel", "Skate Type")}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -725,7 +730,7 @@ export default function ShoesInventoryPage() {
                       }`}
                     >
                       <Footprints className="h-4 w-4" />
-                      <span>Inline Skates</span>
+                      <span>{t("common.inlineSkates", "Inline Skates")}</span>
                     </button>
                     <button
                       type="button"
@@ -737,7 +742,7 @@ export default function ShoesInventoryPage() {
                       }`}
                     >
                       <Sparkles className="h-4 w-4" />
-                      <span>Quads</span>
+                      <span>{t("common.quads", "Quads")}</span>
                     </button>
                   </div>
                 </div>
@@ -745,7 +750,7 @@ export default function ShoesInventoryPage() {
                 {/* Shoe Size */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Shoe Size (Commercial #)
+                    {t("shoes.shoeSizeLabel", "Shoe Size")}
                   </label>
                   <input
                     type="number"
@@ -769,7 +774,7 @@ export default function ShoesInventoryPage() {
                 {/* Unique Shoe ID */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Unique Shoe ID (Barcode / Asset Tag)
+                    {t("shoes.shoeIdLabel", "Shoe Tag ID (Barcode)")}
                   </label>
                   <input
                     type="text"
@@ -779,19 +784,16 @@ export default function ShoesInventoryPage() {
                     onChange={(e) => setNewShoeId(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 uppercase font-mono font-bold"
                   />
-                  <span className="text-[10px] text-[#8B8179] mt-0.5 block">
-                    Must be unique across all shoe sizes.
-                  </span>
                 </div>
 
                 {/* Notes (Optional) */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Notes (Optional)
+                    {t("common.notes", "Notes")} ({t("common.optional", "Optional")})
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Brand, wheel hardness, condition..."
+                    placeholder="e.g. Brand, condition..."
                     value={newNotes}
                     onChange={(e) => setNewNotes(e.target.value)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
@@ -804,14 +806,14 @@ export default function ShoesInventoryPage() {
                     onClick={() => setShowAddModal(false)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] rounded-xl cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
                     className="px-5 py-2.5 text-xs font-bold bg-[#D96827] hover:bg-[#C2571A] text-white rounded-xl transition-colors cursor-pointer shadow-md shadow-[#D96827]/25"
                   >
-                    {submitting ? "Adding..." : "Add to Fleet"}
+                    {submitting ? t("common.loading", "Adding...") : t("shoes.addToFleet", "Add to Fleet")}
                   </button>
                 </div>
               </form>
@@ -829,8 +831,8 @@ export default function ShoesInventoryPage() {
                     <Pencil className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#29221E]">Edit Skate Shoe</h3>
-                    <p className="text-xs text-[#8B8179]">Update asset details</p>
+                    <h3 className="text-base font-bold text-[#29221E]">{t("shoes.editModalTitle", "Edit Skate Shoe")}</h3>
+                    <p className="text-xs text-[#8B8179]">{t("shoes.editModalSub", "Update asset details")}</p>
                   </div>
                 </div>
                 <button
@@ -846,7 +848,7 @@ export default function ShoesInventoryPage() {
                 {/* Skate Type */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Skate Type
+                    {t("shoes.shoeTypeLabel", "Skate Type")}
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
@@ -858,7 +860,7 @@ export default function ShoesInventoryPage() {
                           : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
                       }`}
                     >
-                      Inline Skates
+                      {t("common.inlineSkates", "Inline Skates")}
                     </button>
                     <button
                       type="button"
@@ -869,7 +871,7 @@ export default function ShoesInventoryPage() {
                           : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
                       }`}
                     >
-                      Quads
+                      {t("common.quads", "Quads")}
                     </button>
                   </div>
                 </div>
@@ -877,7 +879,7 @@ export default function ShoesInventoryPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Shoe ID Tag
+                      {t("shoes.shoeIdLabel", "Shoe ID Tag")}
                     </label>
                     <input
                       type="text"
@@ -889,7 +891,7 @@ export default function ShoesInventoryPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      Shoe Size
+                      {t("shoes.shoeSizeLabel", "Shoe Size")}
                     </label>
                     <select
                       value={editSize}
@@ -898,7 +900,7 @@ export default function ShoesInventoryPage() {
                     >
                       {Array.from({ length: 18 }, (_, i) => 30 + i).map((sz) => (
                         <option key={sz} value={sz}>
-                          Size #{sz}
+                          {t("common.size", "Size")} #{sz}
                         </option>
                       ))}
                     </select>
@@ -907,23 +909,23 @@ export default function ShoesInventoryPage() {
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Status
+                    {t("common.status", "Status")}
                   </label>
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value as ShoeStatus)}
                     className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
                   >
-                    <option value="AVAILABLE">Available</option>
-                    <option value="RENTED">Rented</option>
-                    <option value="MAINTENANCE">Maintenance</option>
-                    <option value="RETIRED">Retired</option>
+                    <option value="AVAILABLE">{t("common.available", "Available")}</option>
+                    <option value="RENTED">{t("common.rented", "Rented")}</option>
+                    <option value="MAINTENANCE">{t("shoes.maintStat", "Maintenance")}</option>
+                    <option value="RETIRED">{t("shoes.retired", "Retired")}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    Notes (Optional)
+                    {t("common.notes", "Notes")} ({t("common.optional", "Optional")})
                   </label>
                   <input
                     type="text"
@@ -940,14 +942,14 @@ export default function ShoesInventoryPage() {
                     onClick={() => setEditingShoe(null)}
                     className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                   >
-                    Cancel
+                    {t("common.cancel", "Cancel")}
                   </button>
                   <button
                     type="submit"
                     disabled={editSubmitting}
                     className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                   >
-                    {editSubmitting ? "Saving..." : "Save Changes"}
+                    {editSubmitting ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}
                   </button>
                 </div>
               </form>
@@ -964,17 +966,17 @@ export default function ShoesInventoryPage() {
                   <Trash2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#29221E]">Delete Skate Shoe?</h3>
-                  <p className="text-xs text-[#8B8179]">This permanently deletes this shoe asset.</p>
+                  <h3 className="text-base font-bold text-[#29221E]">{t("shoes.deleteModalTitle", "Delete Skate Shoe?")}</h3>
+                  <p className="text-xs text-[#8B8179]">{t("shoes.deleteModalSub", "This permanently deletes this shoe asset.")}</p>
                 </div>
               </div>
 
               <div className="bg-[#F7F6F3] p-3 rounded-xl border border-[#E9D9C5] my-3 text-xs space-y-1">
                 <div className="font-bold text-[#29221E]">
-                  Shoe Tag: {shoeToDelete.shoeId}
+                  {t("shoes.shoeIdLabel", "Shoe Tag")}: {shoeToDelete.shoeId}
                 </div>
                 <div className="text-[11px] text-[#8B8179]">
-                  Size #{shoeToDelete.size} • {shoeToDelete.type === "QUAD" ? "Quads" : "Inline Skates"}
+                  {t("common.size", "Size")} #{shoeToDelete.size} • {shoeToDelete.type === "QUAD" ? t("common.quads", "Quads") : t("common.inlineSkates", "Inline Skates")}
                 </div>
               </div>
 
@@ -984,7 +986,7 @@ export default function ShoesInventoryPage() {
                   onClick={() => setShoeToDelete(null)}
                   className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
                 >
-                  Cancel
+                  {t("common.cancel", "Cancel")}
                 </button>
                 <button
                   type="button"
@@ -992,7 +994,7 @@ export default function ShoesInventoryPage() {
                   onClick={handleDeleteShoe}
                   className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
-                  {deletingShoe ? "Deleting..." : "Confirm Delete"}
+                  {deletingShoe ? t("common.loading", "Deleting...") : t("common.delete", "Confirm Delete")}
                 </button>
               </div>
             </div>

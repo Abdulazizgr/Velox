@@ -19,6 +19,7 @@ import {
   ChevronRight,
   FileText,
 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 import { PWAInlineButton } from "@/components/PWAInstallBanner";
 
 interface AppShellProps {
@@ -30,6 +31,7 @@ export function AppShell({ user, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { lang, toggleLang, t } = useLanguage();
 
   // If on login page or unauthenticated, render raw content
   const isLoginPage = pathname === "/login";
@@ -52,38 +54,38 @@ export function AppShell({ user, children }: AppShellProps) {
   // Nav links: Dashboard, Reports, and Staff are hidden for staff
   const navLinks = isOwner
     ? [
-        { href: "/", label: "Dashboard", icon: Sparkles },
-        { href: "/rentals", label: "Rental Board", icon: Timer },
-        { href: "/concession", label: "Snacks & Drinks", icon: ShoppingBag },
-        { href: "/inventory/shoes", label: "Skate Shoes", icon: Footprints },
-        { href: "/inventory/stock", label: "Stock Control", icon: Package },
-        { href: "/finances", label: "Expenses", icon: Wallet },
-        { href: "/reports", label: "Daily Reports", icon: FileText },
-        { href: "/staff", label: "Staff", icon: Users },
+        { href: "/", label: t("nav.dashboard", "Dashboard"), icon: Sparkles },
+        { href: "/rentals", label: t("nav.rentals", "Rentals"), icon: Timer },
+        { href: "/concession", label: t("nav.cafe", "Shop & Cafe"), icon: ShoppingBag },
+        { href: "/inventory/shoes", label: t("nav.shoes", "Skate Shoes"), icon: Footprints },
+        { href: "/inventory/stock", label: t("nav.stock", "Stock"), icon: Package },
+        { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
+        { href: "/reports", label: t("nav.reports", "Reports"), icon: FileText },
+        { href: "/staff", label: t("nav.staff", "Staff"), icon: Users },
       ]
     : [
-        { href: "/rentals", label: "Rental Board", icon: Timer },
-        { href: "/concession", label: "Snacks & Drinks", icon: ShoppingBag },
-        { href: "/inventory/shoes", label: "Skate Shoes", icon: Footprints },
-        { href: "/inventory/stock", label: "Stock Control", icon: Package },
-        { href: "/finances", label: "Expenses", icon: Wallet },
+        { href: "/rentals", label: t("nav.rentals", "Rentals"), icon: Timer },
+        { href: "/concession", label: t("nav.cafe", "Shop & Cafe"), icon: ShoppingBag },
+        { href: "/inventory/shoes", label: t("nav.shoes", "Skate Shoes"), icon: Footprints },
+        { href: "/inventory/stock", label: t("nav.stock", "Stock"), icon: Package },
+        { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
       ];
 
-  // Mobile bottom quick links: "More" is replaced with "Expenses"
+  // Mobile bottom quick links
   const bottomBarLinks = isOwner
     ? [
-        { href: "/", label: "Home", icon: Sparkles },
-        { href: "/rentals", label: "Rentals", icon: Timer },
-        { href: "/concession", label: "POS", icon: ShoppingBag },
-        { href: "/inventory/shoes", label: "Shoes", icon: Footprints },
-        { href: "/finances", label: "Expenses", icon: Wallet },
+        { href: "/", label: t("nav.home", "Home"), icon: Sparkles },
+        { href: "/rentals", label: t("nav.rentals", "Rentals"), icon: Timer },
+        { href: "/concession", label: t("nav.pos", "Shop"), icon: ShoppingBag },
+        { href: "/inventory/shoes", label: t("nav.shoes", "Shoes"), icon: Footprints },
+        { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
       ]
     : [
-        { href: "/rentals", label: "Rentals", icon: Timer },
-        { href: "/concession", label: "POS", icon: ShoppingBag },
-        { href: "/inventory/shoes", label: "Shoes", icon: Footprints },
-        { href: "/inventory/stock", label: "Stock", icon: Package },
-        { href: "/finances", label: "Expenses", icon: Wallet },
+        { href: "/rentals", label: t("nav.rentals", "Rentals"), icon: Timer },
+        { href: "/concession", label: t("nav.pos", "Shop"), icon: ShoppingBag },
+        { href: "/inventory/shoes", label: t("nav.shoes", "Shoes"), icon: Footprints },
+        { href: "/inventory/stock", label: t("nav.stock", "Stock"), icon: Package },
+        { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
       ];
 
   return (
@@ -110,8 +112,27 @@ export function AppShell({ user, children }: AppShellProps) {
           </div>
         </div>
 
+        {/* Language Switcher Desktop */}
+        <div className="px-3 pt-3">
+          <button
+            type="button"
+            onClick={toggleLang}
+            className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl bg-[#362D28] border border-[#433832] text-xs font-bold text-[#E9D9C5] hover:border-[#D96827] transition-all cursor-pointer shadow-2xs"
+            title={t("nav.switchLanguage", "Switch Language")}
+          >
+            <span className="text-[11px] text-[#8B8179] font-medium">
+              {lang === "am" ? "ቋንቋ" : "Language"}
+            </span>
+            <div className="flex items-center gap-1 font-mono">
+              <span className={lang === "en" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>EN</span>
+              <span className="text-[#55473f]">|</span>
+              <span className={lang === "am" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>አማ</span>
+            </div>
+          </button>
+        </div>
+
         {/* User Card */}
-        <div className="p-3.5 mx-3 my-3 rounded-xl bg-[#362D28] border border-[#433832] flex items-center justify-between">
+        <div className="p-3.5 mx-3 my-2.5 rounded-xl bg-[#362D28] border border-[#433832] flex items-center justify-between">
           <div className="overflow-hidden">
             <div className="text-xs font-bold text-white truncate">{user.name}</div>
             <div className="text-[11px] font-mono text-[#8B8179] truncate">{user.phone}</div>
@@ -159,16 +180,16 @@ export function AppShell({ user, children }: AppShellProps) {
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold text-[#8B8179] hover:text-[#D94B45] hover:bg-[#D94B45]/10 transition-colors border border-transparent hover:border-[#D94B45]/20 cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
+            <span>{t("nav.signOut", "Sign Out")}</span>
           </button>
         </div>
       </aside>
 
       {/* 2. MOBILE TOP HEADER (Hidden on desktop) */}
-      <header className="md:hidden sticky top-0 z-40 bg-[#29221E] text-white border-b border-[#433832] px-4 h-14 flex items-center justify-between shadow-md">
+      <header className="md:hidden sticky top-0 z-40 bg-[#29221E] text-white border-b border-[#433832] px-3.5 h-14 flex items-center justify-between shadow-md">
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="p-2 -ml-2 rounded-xl text-[#E9D9C5] hover:text-white hover:bg-[#362D28] transition-colors cursor-pointer"
+          className="p-2 -ml-1 rounded-xl text-[#E9D9C5] hover:text-white hover:bg-[#362D28] transition-colors cursor-pointer"
           title="Open Menu"
           aria-label="Open Navigation Drawer"
         >
@@ -187,6 +208,18 @@ export function AppShell({ user, children }: AppShellProps) {
             />
           </div>
         </Link>
+
+        {/* Mobile Language Switcher */}
+        <button
+          type="button"
+          onClick={toggleLang}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#362D28] border border-[#433832] text-xs font-bold text-[#E9D9C5] hover:border-[#D96827] transition-all cursor-pointer shadow-2xs font-mono"
+          title={t("nav.switchLanguage", "Switch Language")}
+        >
+          <span className={lang === "en" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>EN</span>
+          <span className="text-[#55473f]">|</span>
+          <span className={lang === "am" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>አማ</span>
+        </button>
       </header>
 
       {/* 3. MAIN CONTENT CONTAINER */}
@@ -275,6 +308,24 @@ export function AppShell({ user, children }: AppShellProps) {
                   );
                 })}
               </div>
+
+              {/* Language Switcher in Drawer */}
+              <div className="mt-4 pt-3 border-t border-[#362D28]">
+                <button
+                  type="button"
+                  onClick={toggleLang}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#362D28] border border-[#433832] text-xs font-bold text-[#E9D9C5] hover:border-[#D96827] transition-all cursor-pointer font-mono"
+                >
+                  <span className="text-[11px] text-[#8B8179] font-sans font-medium">
+                    {lang === "am" ? "ቋንቋ" : "Language"}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={lang === "en" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>English</span>
+                    <span className="text-[#55473f]">/</span>
+                    <span className={lang === "am" ? "text-[#D96827] font-black" : "text-[#8B8179]"}>አማርኛ</span>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* Install App & Logout */}
@@ -285,7 +336,7 @@ export function AppShell({ user, children }: AppShellProps) {
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold text-[#D94B45] bg-[#D94B45]/10 hover:bg-[#D94B45]/20 border border-[#D94B45]/30 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Sign Out ({user.phone})</span>
+                <span>{t("nav.signOut", "Sign Out")} ({user.phone})</span>
               </button>
             </div>
           </div>
