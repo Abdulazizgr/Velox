@@ -32,6 +32,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (sessionUser.role === "STAFF" && fundSource === "CAPITAL") {
+      return NextResponse.json(
+        { error: "Staff members can only record Daily Petty Cash expenses." },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
 
     // If funded from General Capital, verify balance and deduct
@@ -128,6 +135,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
+    if (sessionUser.role === "STAFF" && expense.fundSource === "CAPITAL") {
+      return NextResponse.json({ error: "Unauthorized to delete capital expenses" }, { status: 403 });
+    }
+
     // If staff, prevent editing capital expenses
     if (sessionUser.role === "STAFF" && expense.fundSource === "CAPITAL") {
       return NextResponse.json({ error: "Unauthorized to edit capital expenses" }, { status: 403 });
@@ -188,6 +199,10 @@ export async function DELETE(req: NextRequest) {
     const expense = await Expense.findById(id);
     if (!expense) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
+    }
+
+    if (sessionUser.role === "STAFF" && expense.fundSource === "CAPITAL") {
+      return NextResponse.json({ error: "Unauthorized to delete capital expenses" }, { status: 403 });
     }
 
     // If it was a capital expense, restore balance

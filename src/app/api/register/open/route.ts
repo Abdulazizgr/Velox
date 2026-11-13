@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
       if (openingCash !== undefined && !isNaN(Number(openingCash))) {
         register.openingCash = Number(openingCash);
       }
+      register.expectedClosingCash =
+        register.openingCash + (register.cashInTotal || 0) - (register.dailyExpensesTotal || 0);
       register.actualClosingCash = undefined;
       register.discrepancy = 0;
       register.closedAt = undefined;

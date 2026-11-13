@@ -83,3 +83,4 @@ export async function POST(
     return NextResponse.json({ error: "Failed to cancel rental session" }, { status: 500 });
   }
 }
+

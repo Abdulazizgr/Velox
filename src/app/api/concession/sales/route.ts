@@ -123,7 +123,7 @@ export async function PATCH(req: NextRequest) {
             const product = await Product.findById(newItem.productId);
             if (!product || product.currentStock < delta) {
               return NextResponse.json(
-                { error: `Insufficient stock for ${newItem.productName}. Available: ${product?.currentStock || 0}` },
+                { error: `Insufficient stock for ${newItem.productName || product?.name || "item"}. Available: ${product?.currentStock || 0}` },
                 { status: 400 }
               );
             }
@@ -138,12 +138,21 @@ export async function PATCH(req: NextRequest) {
           }
         }
 
+        const existingItem = sale.items.find(
+          (i) => i.productId?.toString() === prodId
+        );
+        let resolvedName = newItem.productName || existingItem?.productName;
+        if (!resolvedName) {
+          const prodDoc = await Product.findById(newItem.productId);
+          resolvedName = prodDoc?.name || "Product";
+        }
+
         if (newQty > 0) {
           const subtotal = newQty * Number(newItem.unitPrice);
           newTotal += subtotal;
           updatedItems.push({
             productId: newItem.productId,
-            productName: newItem.productName,
+            productName: resolvedName,
             quantity: newQty,
             unitPrice: Number(newItem.unitPrice),
             subtotal,

@@ -74,10 +74,19 @@ export async function DELETE(
 
     const { id } = await params;
     await connectDB();
-    const shoe = await Shoe.findByIdAndDelete(id);
+    const shoe = await Shoe.findById(id);
     if (!shoe) {
       return NextResponse.json({ error: "Shoe not found" }, { status: 404 });
     }
+
+    if (shoe.status === "RENTED") {
+      return NextResponse.json(
+        { error: "Cannot delete a shoe that is currently rented. Return or cancel the rental first." },
+        { status: 400 }
+      );
+    }
+
+    await Shoe.findByIdAndDelete(id);
 
     return NextResponse.json({ success: true, message: "Shoe asset deleted" });
   } catch (error) {

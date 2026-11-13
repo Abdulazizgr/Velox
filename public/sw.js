@@ -1,7 +1,6 @@
-// Simple Service Worker for Velox POS PWA
-const CACHE_NAME = "velox-pos-cache-v2";
+// Advanced Service Worker for Velox POS PWA
+const CACHE_NAME = "velox-pos-cache-v3";
 const STATIC_ASSETS = [
-  "/",
   "/favicon.ico",
   "/favicon.png",
   "/icon-192.png",
@@ -31,19 +30,51 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
-  // Network first with cache fallback for HTML pages
-  if (event.request.mode === "navigate") {
+  const url = new URL(event.request.url);
+
+  // 1. Never cache API routes or non-GET requests - always live from network
+  if (url.pathname.startsWith("/api/") || event.request.method !== "GET") {
+    return;
+  }
+
+  // 2. Navigation & Next.js RSC requests: Network first, cache fallback
+  if (event.request.mode === "navigate" || url.searchParams.has("_rsc")) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match("/"))
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((res) => res || caches.match("/")))
     );
     return;
   }
 
+  // 3. Static assets & Next.js scripts: Stale-while-revalidate or Network-first
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => cachedResponse);
+
+      // Return cached immediately if available, while updating cache in background
+      return cachedResponse || fetchPromise;
     })
   );
 });
-

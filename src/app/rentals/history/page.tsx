@@ -543,3 +543,4 @@ export default function RentalHistoryPage() {
     </div>
   );
 }
+

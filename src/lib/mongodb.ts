@@ -41,7 +41,7 @@ export async function connectDB(): Promise<typeof mongoose> {
     const opts: mongoose.ConnectOptions = {
       dbName: "velox_db",
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000, // 5s timeout instead of hanging 30s
+      serverSelectionTimeoutMS: 15000, // 15s timeout for resilient Atlas cloud connections
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {

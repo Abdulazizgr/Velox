@@ -155,6 +155,7 @@ export default function ConcessionPage() {
           paymentStatus: editPaymentStatus,
           items: editItems.map((i) => ({
             productId: i.productId,
+            productName: i.productName,
             quantity: i.quantity,
             unitPrice: i.unitPrice,
           })),
