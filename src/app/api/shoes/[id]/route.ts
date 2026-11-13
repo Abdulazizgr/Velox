@@ -15,12 +15,26 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { shoeId, size, type, status, notes } = body;
+    const { shoeId, size, type, status, notes, forceRelease } = body;
 
     await connectDB();
     const shoe = await Shoe.findById(id);
     if (!shoe) {
       return NextResponse.json({ error: "Shoe not found" }, { status: 404 });
+    }
+
+    if (status === "RENTED") {
+      return NextResponse.json(
+        { error: "Cannot manually set shoe to RENTED. Rental sessions must be started on the Rental Board." },
+        { status: 400 }
+      );
+    }
+
+    if (shoe.status === "RENTED" && status && status !== "RENTED" && !forceRelease) {
+      return NextResponse.json(
+        { error: "This shoe is currently out with a skater. Please complete or cancel the rental on the Rental Board, or use Emergency Release." },
+        { status: 400 }
+      );
     }
 
     if (shoeId && typeof shoeId === "string") {
@@ -32,7 +46,7 @@ export async function PATCH(
     if (type === "INLINE" || type === "QUAD") {
       shoe.type = type;
     }
-    if (status) {
+    if (status && ["AVAILABLE", "MAINTENANCE", "RETIRED"].includes(status)) {
       shoe.status = status;
     }
     if (typeof notes === "string") {

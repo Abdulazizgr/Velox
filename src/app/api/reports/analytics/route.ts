@@ -23,12 +23,20 @@ export async function GET(req: NextRequest) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const range = searchParams.get("range") || "7days"; // "today" | "yesterday" | "7days" | "30days" | "all"
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
 
     const now = new Date();
     let rangeStart: Date;
     let rangeEnd: Date = endOfDay(now);
 
-    if (range === "today") {
+    if (startDate && endDate) {
+      rangeStart = startOfDay(new Date(startDate));
+      rangeEnd = endOfDay(new Date(endDate));
+    } else if (startDate) {
+      rangeStart = startOfDay(new Date(startDate));
+      rangeEnd = endOfDay(new Date(startDate));
+    } else if (range === "today") {
       rangeStart = startOfDay(now);
     } else if (range === "yesterday") {
       rangeStart = startOfDay(subDays(now, 1));

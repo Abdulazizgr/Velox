@@ -5,6 +5,7 @@ import { formatETB, format12HourTime } from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
 import { useLanguage } from "@/lib/i18n";
 import { ProductCategory } from "@/models/Product";
+import { subDays, startOfMonth, format } from "date-fns";
 import {
   ShoppingBag,
   Plus,
@@ -23,6 +24,7 @@ import {
   Tag,
   ArrowRight,
   Clock,
+  Pencil,
 } from "lucide-react";
 
 interface ProductItem {
@@ -56,9 +58,17 @@ interface SaleRecordItem {
   totalAmount: number;
   paymentStatus: "PAID" | "UNPAID";
   paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
-  items: { productName: string; quantity: number; unitPrice: number; subtotal: number }[];
+  items: {
+    productId?: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+  }[];
   createdAt: string;
 }
+
+type HistoryPeriod = "today" | "yesterday" | "7days" | "month" | "custom" | "all";
 
 export default function ConcessionPage() {
   const { showAlert } = useAlertModal();
@@ -71,6 +81,10 @@ export default function ConcessionPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [historyStatusFilter, setHistoryStatusFilter] = useState<"ALL" | "PAID" | "UNPAID">("ALL");
+  const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>("today");
+  const [historyStartDate, setHistoryStartDate] = useState<string>("");
+  const [historyEndDate, setHistoryEndDate] = useState<string>("");
+  const [historySearch, setHistorySearch] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Cart state
@@ -88,6 +102,93 @@ export default function ConcessionPage() {
   const [saleToDelete, setSaleToDelete] = useState<SaleRecordItem | null>(null);
   const [deletingSale, setDeletingSale] = useState(false);
 
+  // Edit Sale Modal State
+  const [editingSale, setEditingSale] = useState<SaleRecordItem | null>(null);
+  const [editPaymentMethod, setEditPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
+  const [editPaymentStatus, setEditPaymentStatus] = useState<"PAID" | "UNPAID">("PAID");
+  const [editItems, setEditItems] = useState<{ productId?: string; productName: string; quantity: number; unitPrice: number; subtotal: number }[]>([]);
+  const [editSaleSubmitting, setEditSaleSubmitting] = useState(false);
+
+  const openEditSale = (sale: SaleRecordItem) => {
+    setEditingSale(sale);
+    setEditPaymentMethod(sale.paymentMethod || "CASH");
+    setEditPaymentStatus(sale.paymentStatus);
+    setEditItems(
+      sale.items.map((i) => ({
+        productId: i.productId,
+        productName: i.productName,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        subtotal: i.subtotal || i.quantity * i.unitPrice,
+      }))
+    );
+  };
+
+  const updateEditItemQty = (index: number, delta: number) => {
+    setEditItems((prev) => {
+      const updated = [...prev];
+      const newQty = Math.max(1, updated[index].quantity + delta);
+      updated[index] = {
+        ...updated[index],
+        quantity: newQty,
+        subtotal: newQty * updated[index].unitPrice,
+      };
+      return updated;
+    });
+  };
+
+  const editTotalAmount = useMemo(() => {
+    return editItems.reduce((acc, item) => acc + item.subtotal, 0);
+  }, [editItems]);
+
+  const handleEditSaleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSale) return;
+    setEditSaleSubmitting(true);
+    try {
+      const res = await fetch("/api/concession/sales", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingSale._id,
+          paymentMethod: editPaymentMethod,
+          paymentStatus: editPaymentStatus,
+          items: editItems.map((i) => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+          })),
+        }),
+      });
+
+      if (res.ok) {
+        showAlert({
+          title: t("common.success", "Success"),
+          message: t("concession.orderSuccess", "Order recorded successfully!"),
+          type: "success",
+        });
+        setEditingSale(null);
+        fetchHistory();
+        fetchData();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: t("common.error", "Error"),
+          message: err.error || "Failed to update sale",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: t("common.error", "Error"),
+        message: "Failed to connect to server.",
+        type: "error",
+      });
+    } finally {
+      setEditSaleSubmitting(false);
+    }
+  };
+
   const handleDeleteSale = async () => {
     if (!saleToDelete) return;
     setDeletingSale(true);
@@ -98,8 +199,8 @@ export default function ConcessionPage() {
       if (res.ok) {
         setSaleToDelete(null);
         showAlert({
-          title: "Order Voided",
-          message: "The sale was voided and product quantities were restored to inventory.",
+          title: t("concession.voidOrder", "Order Voided"),
+          message: t("concession.voidModalDesc", "Product stock will be returned to inventory."),
           type: "success",
         });
         fetchHistory();
@@ -107,14 +208,14 @@ export default function ConcessionPage() {
       } else {
         const err = await res.json();
         showAlert({
-          title: "Cannot Void Order",
+          title: t("common.error", "Error"),
           message: err.error || "Failed to void sale",
           type: "error",
         });
       }
     } catch {
       showAlert({
-        title: "Connection Error",
+        title: t("common.error", "Error"),
         message: "Failed to connect to server.",
         type: "error",
       });
@@ -153,7 +254,35 @@ export default function ConcessionPage() {
   const fetchHistory = async () => {
     setHistoryLoading(true);
     try {
-      const res = await fetch("/api/concession/sales");
+      const params = new URLSearchParams();
+      if (historyStatusFilter !== "ALL") {
+        params.set("paymentStatus", historyStatusFilter);
+      }
+      if (historySearch.trim()) {
+        params.set("search", historySearch.trim());
+      }
+
+      const now = new Date();
+      if (historyPeriod === "today") {
+        const todayStr = format(now, "yyyy-MM-dd");
+        params.set("startDate", todayStr);
+        params.set("endDate", todayStr);
+      } else if (historyPeriod === "yesterday") {
+        const yStr = format(subDays(now, 1), "yyyy-MM-dd");
+        params.set("startDate", yStr);
+        params.set("endDate", yStr);
+      } else if (historyPeriod === "7days") {
+        params.set("startDate", format(subDays(now, 7), "yyyy-MM-dd"));
+        params.set("endDate", format(now, "yyyy-MM-dd"));
+      } else if (historyPeriod === "month") {
+        params.set("startDate", format(startOfMonth(now), "yyyy-MM-dd"));
+        params.set("endDate", format(now, "yyyy-MM-dd"));
+      } else if (historyPeriod === "custom") {
+        if (historyStartDate) params.set("startDate", historyStartDate);
+        if (historyEndDate) params.set("endDate", historyEndDate);
+      }
+
+      const res = await fetch(`/api/concession/sales?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setSalesHistory(data.sales || []);
@@ -173,7 +302,7 @@ export default function ConcessionPage() {
     if (activeTab === "HISTORY") {
       fetchHistory();
     }
-  }, [activeTab]);
+  }, [activeTab, historyPeriod, historyStatusFilter]);
 
   // Cart operations
   const addToCart = (product: ProductItem) => {
@@ -750,48 +879,134 @@ export default function ConcessionPage() {
         ) : (
           /* TAB 2: CONCESSION SALES HISTORY */
           <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-[#E9D9C5] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-bold text-[#29221E]">{t("concession.salesHistoryTab", "Sales History")}</h3>
-                <p className="text-xs text-[#8B8179]">{t("concession.subtitle", "All recent snack and drink orders")}</p>
+            <div className="p-4 border-b border-[#E9D9C5] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#29221E]">{t("concession.salesHistoryTab", "Sales History")}</h3>
+                  <p className="text-xs text-[#8B8179]">{t("concession.subtitle", "All recent snack and drink orders")}</p>
+                </div>
+
+                {/* Status Filter Tabs: All, Paid, Open Tabs */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#F7F6F3] rounded-xl border border-[#E9D9C5] text-xs self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryStatusFilter("ALL")}
+                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                      historyStatusFilter === "ALL"
+                        ? "bg-white text-[#29221E] shadow-xs"
+                        : "text-[#8B8179] hover:text-[#29221E]"
+                    }`}
+                  >
+                    {t("common.all", "All")} ({salesHistory.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryStatusFilter("PAID")}
+                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                      historyStatusFilter === "PAID"
+                        ? "bg-[#26845B] text-white shadow-xs"
+                        : "text-[#8B8179] hover:text-[#26845B]"
+                    }`}
+                  >
+                    {t("concession.paid", "PAID")} ({paidSalesCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryStatusFilter("UNPAID")}
+                    className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                      historyStatusFilter === "UNPAID"
+                        ? "bg-[#D96827] text-white shadow-xs"
+                        : "text-[#8B8179] hover:text-[#D96827]"
+                    }`}
+                  >
+                    {t("concession.openTab", "OPEN TAB")} ({openTabsCount})
+                  </button>
+                </div>
               </div>
 
-              {/* Status Filter Tabs: All, Paid, Open Tabs */}
-              <div className="flex items-center gap-1.5 p-1 bg-[#F7F6F3] rounded-xl border border-[#E9D9C5] text-xs self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setHistoryStatusFilter("ALL")}
-                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                    historyStatusFilter === "ALL"
-                      ? "bg-white text-[#29221E] shadow-xs"
-                      : "text-[#8B8179] hover:text-[#29221E]"
-                  }`}
-                >
-                  {t("common.all", "All")} ({salesHistory.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryStatusFilter("PAID")}
-                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                    historyStatusFilter === "PAID"
-                      ? "bg-[#26845B] text-white shadow-xs"
-                      : "text-[#8B8179] hover:text-[#26845B]"
-                  }`}
-                >
-                  {t("concession.paid", "PAID")} ({paidSalesCount})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHistoryStatusFilter("UNPAID")}
-                  className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-                    historyStatusFilter === "UNPAID"
-                      ? "bg-[#D96827] text-white shadow-xs"
-                      : "text-[#8B8179] hover:text-[#D96827]"
-                  }`}
-                >
-                  {t("concession.openTab", "OPEN TAB")} ({openTabsCount})
-                </button>
+              {/* Date Period Filter Pills & Search */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 pt-2 border-t border-[#E9D9C5]/60">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                  {(
+                    [
+                      { id: "today", label: lang === "am" ? "ዛሬ" : "Today" },
+                      { id: "yesterday", label: lang === "am" ? "ትናንት" : "Yesterday" },
+                      { id: "7days", label: lang === "am" ? "7 ቀናት" : "7 Days" },
+                      { id: "month", label: lang === "am" ? "ይህ ወር" : "This Month" },
+                      { id: "custom", label: t("concession.customRange", "Custom Range") },
+                      { id: "all", label: t("reports.allTime", "All Time") },
+                    ] as const
+                  ).map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setHistoryPeriod(p.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                        historyPeriod === p.id
+                          ? "bg-[#D96827] text-white shadow-xs"
+                          : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1 sm:w-48">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8B8179]" />
+                    <input
+                      type="text"
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") fetchHistory();
+                      }}
+                      placeholder={t("concession.searchProduct", "Search items, shoe #...")}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-[#E9D9C5] bg-[#F7F6F3] text-[#29221E] focus:outline-none focus:border-[#D96827]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchHistory}
+                    className="p-1.5 rounded-xl border border-[#E9D9C5] bg-white text-[#8B8179] hover:text-[#D96827] cursor-pointer"
+                    title={t("common.refresh", "Refresh")}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${historyLoading ? "animate-spin text-[#D96827]" : ""}`} />
+                  </button>
+                </div>
               </div>
+
+              {/* Custom Date Inputs if selected */}
+              {historyPeriod === "custom" && (
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-[#8B8179]">{t("concession.startDate", "Start")}:</span>
+                    <input
+                      type="date"
+                      value={historyStartDate}
+                      onChange={(e) => setHistoryStartDate(e.target.value)}
+                      className="px-2.5 py-1 rounded-lg border border-[#E9D9C5] bg-[#F7F6F3] text-[#29221E] text-xs focus:outline-none focus:border-[#D96827]"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-[#8B8179]">{t("concession.endDate", "End")}:</span>
+                    <input
+                      type="date"
+                      value={historyEndDate}
+                      onChange={(e) => setHistoryEndDate(e.target.value)}
+                      className="px-2.5 py-1 rounded-lg border border-[#E9D9C5] bg-[#F7F6F3] text-[#29221E] text-xs focus:outline-none focus:border-[#D96827]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fetchHistory}
+                    className="px-3 py-1 rounded-lg bg-[#D96827] text-white font-bold text-xs cursor-pointer hover:bg-[#C2571A]"
+                  >
+                    {t("concession.applyFilter", "Apply Filter")}
+                  </button>
+                </div>
+              )}
             </div>
 
             {historyLoading ? (
@@ -859,14 +1074,24 @@ export default function ConcessionPage() {
                             </span>
                           ))}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setSaleToDelete(sale)}
-                          className="p-2 text-[#8B8179] hover:text-[#D94B45] rounded-xl hover:bg-[#FDF0EF] transition-colors cursor-pointer shrink-0"
-                          title={t("concession.voidOrder", "Void Order")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => openEditSale(sale)}
+                            className="p-2 text-[#8B8179] hover:text-[#D96827] rounded-xl hover:bg-[#FFF4E5] transition-colors cursor-pointer"
+                            title={t("common.edit", "Edit")}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSaleToDelete(sale)}
+                            className="p-2 text-[#8B8179] hover:text-[#D94B45] rounded-xl hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                            title={t("concession.voidOrder", "Void Order")}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -927,14 +1152,24 @@ export default function ConcessionPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              type="button"
-                              onClick={() => setSaleToDelete(sale)}
-                              className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
-                              title={t("concession.voidOrder", "Void Order")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => openEditSale(sale)}
+                                className="p-1.5 text-[#8B8179] hover:text-[#D96827] rounded-lg hover:bg-[#FFF4E5] transition-colors cursor-pointer"
+                                title={t("common.edit", "Edit")}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSaleToDelete(sale)}
+                                className="p-1.5 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                                title={t("concession.voidOrder", "Void Order")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1044,6 +1279,165 @@ export default function ConcessionPage() {
                   {deletingSale ? t("common.loading", "Loading...") : t("concession.confirmVoid", "Confirm Void")}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5. EDIT SALE MODAL */}
+        {editingSale && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
+              <div className="flex items-start justify-between pb-3 border-b border-[#E9D9C5]">
+                <div>
+                  <h3 className="text-base font-bold text-[#29221E]">
+                    {t("concession.editSaleModalTitle", "Edit Sale Order")}
+                  </h3>
+                  <p className="text-xs text-[#8B8179]">
+                    {editingSale.saleType === "TAB"
+                      ? `${t("shoes.title", "Shoe")} #${editingSale.shoeId || "Tab"}`
+                      : t("concession.walkInCustomer", "Counter Sale")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingSale(null)}
+                  className="p-1 rounded-lg text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSaleSubmit} className="space-y-4 pt-3 text-xs">
+                {/* Payment Status */}
+                <div>
+                  <label className="block text-[11px] font-bold text-[#8B8179] uppercase mb-1">
+                    {t("common.status", "Payment Status")}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditPaymentStatus("PAID")}
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        editPaymentStatus === "PAID"
+                          ? "bg-[#26845B] text-white shadow-xs border-[#26845B]"
+                          : "bg-[#F7F6F3] border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
+                      }`}
+                    >
+                      {t("concession.paid", "PAID")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditPaymentStatus("UNPAID")}
+                      className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        editPaymentStatus === "UNPAID"
+                          ? "bg-[#D96827] text-white shadow-xs border-[#D96827]"
+                          : "bg-[#F7F6F3] border-[#E9D9C5] text-[#8B8179] hover:text-[#29221E]"
+                      }`}
+                    >
+                      {t("concession.openTab", "OPEN TAB")}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Payment Method */}
+                <div>
+                  <label className="block text-[11px] font-bold text-[#8B8179] uppercase mb-1">
+                    {t("expenses.channel", "Payment Method")}
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setEditPaymentMethod(method)}
+                        className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          editPaymentMethod === method
+                            ? "bg-[#D96827] text-white shadow-xs border-[#D96827]"
+                            : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
+                        }`}
+                      >
+                        {method === "CASH"
+                          ? t("common.cash", "Cash")
+                          : method === "TELEBIRR"
+                          ? t("common.telebirr", "Telebirr")
+                          : t("common.cbe", "CBE")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Items & Quantities */}
+                <div>
+                  <label className="block text-[11px] font-bold text-[#8B8179] uppercase mb-1">
+                    {t("concession.updateStock", "Quantities & Stock")}
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto divide-y divide-[#E9D9C5]/60 pr-1">
+                    {editItems.map((item, idx) => (
+                      <div key={idx} className="pt-2 flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-[#29221E]">{item.productName}</div>
+                          <div className="text-[11px] text-[#8B8179] font-mono">
+                            {formatETB(item.unitPrice)} each
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 bg-[#F7F6F3] border border-[#E9D9C5] rounded-lg p-0.5">
+                            <button
+                              type="button"
+                              onClick={() => updateEditItemQty(idx, -1)}
+                              className="p-1 text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+                            <span className="w-6 text-center font-bold text-[#29221E] text-xs">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateEditItemQty(idx, 1)}
+                              className="p-1 text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <span className="font-mono font-bold text-[#D96827] w-14 text-right">
+                            {formatETB(item.subtotal)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subtotal Recalculation */}
+                <div className="pt-3 border-t border-[#E9D9C5] flex items-center justify-between">
+                  <span className="font-bold text-[#8B8179] uppercase text-xs">
+                    {t("common.total", "Total")}:
+                  </span>
+                  <span className="text-xl font-mono font-black text-[#D96827]">
+                    {formatETB(editTotalAmount)}
+                  </span>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSale(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    {t("common.cancel", "Cancel")}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editSaleSubmitting}
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    {editSaleSubmitting ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

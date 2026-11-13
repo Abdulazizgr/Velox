@@ -193,6 +193,37 @@ export default async function DashboardPage() {
     ? Math.round((rentedShoes / totalFleetTracked) * 100)
     : 0;
 
+  // 6. Weekly Comparison: This Week (last 7 days) vs Prior Week (days 7 to 13)
+  const thisWeekStart = startOfDay(subDays(now, 6));
+  const thisWeekEnd = endOfDay(now);
+  const priorWeekStart = startOfDay(subDays(now, 13));
+  const priorWeekEnd = endOfDay(subDays(now, 7));
+
+  const [thisWeekRentals, priorWeekRentals, thisWeekSales, priorWeekSales] = await Promise.all([
+    RentalSession.find({ startedAt: { $gte: thisWeekStart, $lte: thisWeekEnd }, paymentStatus: "PAID" }).lean(),
+    RentalSession.find({ startedAt: { $gte: priorWeekStart, $lte: priorWeekEnd }, paymentStatus: "PAID" }).lean(),
+    Sale.find({ createdAt: { $gte: thisWeekStart, $lte: thisWeekEnd }, paymentStatus: "PAID" }).lean(),
+    Sale.find({ createdAt: { $gte: priorWeekStart, $lte: priorWeekEnd }, paymentStatus: "PAID" }).lean(),
+  ]);
+
+  const thisWeekRentRev = thisWeekRentals.reduce((acc, r) => acc + (r.totalRentalFee || 0), 0);
+  const thisWeekSaleRev = thisWeekSales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
+  const priorWeekRentRev = priorWeekRentals.reduce((acc, r) => acc + (r.totalRentalFee || 0), 0);
+  const priorWeekSaleRev = priorWeekSales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
+
+  const weeklyComparison = {
+    thisWeek: {
+      revenue: thisWeekRentRev + thisWeekSaleRev,
+      skaters: thisWeekRentals.length,
+      concessions: thisWeekSaleRev,
+    },
+    priorWeek: {
+      revenue: priorWeekRentRev + priorWeekSaleRev,
+      skaters: priorWeekRentals.length,
+      concessions: priorWeekSaleRev,
+    },
+  };
+
   return (
     <DashboardClient
       session={{
@@ -213,6 +244,7 @@ export default async function DashboardPage() {
       activities={activities}
       maintenanceShoes={maintenanceShoes}
       lowStockCount={lowStockCount}
+      weeklyComparison={weeklyComparison}
     />
   );
 }

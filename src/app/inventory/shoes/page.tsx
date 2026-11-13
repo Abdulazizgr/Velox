@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { ShoeStatus, SkateType } from "@/models/Shoe";
 import { useAlertModal } from "@/components/ModalAlertProvider";
 import { useLanguage } from "@/lib/i18n";
@@ -653,20 +654,33 @@ export default function ShoesInventoryPage() {
                     )}
                   </div>
 
-                  {/* Quick Status Dropdown Changer & Actions */}
+                  {/* Quick Status Changer & Actions */}
                   <div className="mt-3 pt-2 border-t border-[#E9D9C5]/60 space-y-1.5">
-                    <select
-                      value={shoe.status}
-                      onChange={(e) =>
-                        handleStatusChange(shoe._id, e.target.value as ShoeStatus)
-                      }
-                      className="w-full py-1.5 px-2 bg-white border border-[#E9D9C5] rounded-xl text-[11px] font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 cursor-pointer shadow-2xs"
-                    >
-                      <option value="AVAILABLE">✓ {t("common.available", "Available")}</option>
-                      <option value="RENTED">⏱ {t("common.rented", "Rented")}</option>
-                      <option value="MAINTENANCE">🔧 {t("shoes.maintStat", "Maintenance")}</option>
-                      <option value="RETIRED">⛔ {t("shoes.retired", "Retired")}</option>
-                    </select>
+                    {shoe.status === "RENTED" ? (
+                      <div className="bg-[#FFF4E5] border border-[#D96827]/40 rounded-xl p-1.5 text-center">
+                        <span className="text-[10px] font-bold text-[#D96827] block">
+                          ⏱ {t("shoes.rentedLocked", "Rented (Active)")}
+                        </span>
+                        <Link
+                          href="/rentals"
+                          className="inline-flex items-center gap-1 text-[10px] text-[#D96827] font-extrabold hover:underline pt-0.5"
+                        >
+                          <span>{t("shoes.viewOnBoard", "View Rental")}</span> &rarr;
+                        </Link>
+                      </div>
+                    ) : (
+                      <select
+                        value={shoe.status}
+                        onChange={(e) =>
+                          handleStatusChange(shoe._id, e.target.value as ShoeStatus)
+                        }
+                        className="w-full py-1.5 px-2 bg-white border border-[#E9D9C5] rounded-xl text-[11px] font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 cursor-pointer shadow-2xs"
+                      >
+                        <option value="AVAILABLE">✓ {t("common.available", "Available")}</option>
+                        <option value="MAINTENANCE">🔧 {t("shoes.maintStat", "Maintenance")}</option>
+                        <option value="RETIRED">⛔ {t("shoes.retired", "Retired")}</option>
+                      </select>
+                    )}
 
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -911,16 +925,21 @@ export default function ShoesInventoryPage() {
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
                     {t("common.status", "Status")}
                   </label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as ShoeStatus)}
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
-                  >
-                    <option value="AVAILABLE">{t("common.available", "Available")}</option>
-                    <option value="RENTED">{t("common.rented", "Rented")}</option>
-                    <option value="MAINTENANCE">{t("shoes.maintStat", "Maintenance")}</option>
-                    <option value="RETIRED">{t("shoes.retired", "Retired")}</option>
-                  </select>
+                  {editingShoe?.status === "RENTED" ? (
+                    <div className="p-2.5 rounded-xl bg-[#FFF4E5] border border-[#D96827]/40 text-xs text-[#D96827] font-semibold">
+                      ⏱ {t("shoes.rentedLockedNotice", "This shoe is currently out on an active rental session. Status cannot be changed manually here.")}
+                    </div>
+                  ) : (
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value as ShoeStatus)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-semibold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    >
+                      <option value="AVAILABLE">{t("common.available", "Available")}</option>
+                      <option value="MAINTENANCE">{t("shoes.maintStat", "Maintenance")}</option>
+                      <option value="RETIRED">{t("shoes.retired", "Retired")}</option>
+                    </select>
+                  )}
                 </div>
 
                 <div>

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { formatETB, exportToCSV, format12HourTime, format12HourDateTime } from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
 import { useLanguage } from "@/lib/i18n";
 import {
-  FileText,
   Printer,
   RefreshCw,
   CheckCircle2,
@@ -21,58 +21,15 @@ import {
   Calendar,
   Footprints,
   ShoppingBag,
-  X,
   Download,
   Flame,
   Clock,
-  Package,
   ShieldAlert,
-  Tag,
-  Edit3,
+  ArrowRight,
+  Filter,
+  ArrowUpDown,
 } from "lucide-react";
 import SkateLoading from "@/components/SkateLoading";
-
-interface RegisterData {
-  register: {
-    _id: string;
-    date: string;
-    openingCash: number;
-    cashInTotal: number;
-    telebirrTotal: number;
-    cbeTotal: number;
-    dailyExpensesTotal: number;
-    expectedClosingCash: number;
-    actualClosingCash?: number;
-    discrepancy?: number;
-    status: "OPEN" | "CLOSED";
-    notes?: string;
-    closedAt?: string;
-  };
-  summary: {
-    date: string;
-    rentalsCount: number;
-    rentalsTotal: number;
-    concessionsCount: number;
-    concessionsTotal: number;
-    grossRevenue: number;
-    dailyExpensesTotal: number;
-    netOperatingIncome: number;
-    channels: {
-      cash: {
-        openingFloat: number;
-        inflow: number;
-        outflow: number;
-        expectedInDrawer: number;
-      };
-      telebirr: {
-        inflow: number;
-      };
-      cbe: {
-        inflow: number;
-      };
-    };
-  };
-}
 
 interface HistoryItem {
   _id: string;
@@ -156,7 +113,7 @@ interface AnalyticsData {
   };
   restockOutlay: {
     totalOutlay: number;
-    recentRestocks: Array<any>;
+    recentRestocks: Array<unknown>;
   };
   financialSummary: {
     grossRentalRev: number;
@@ -180,33 +137,34 @@ interface AnalyticsData {
   }>;
 }
 
-type MainTab = "DRAWER" | "FLEET" | "CONCESSION" | "TRAFFIC";
+type MainTab = "FLEET" | "CONCESSION" | "TRAFFIC" | "DRAWER";
+type DateRangeOption = "today" | "yesterday" | "7days" | "30days" | "custom" | "all";
+type ProductSortOption = "MARGIN_HIGH" | "MARGIN_LOW" | "UNITS" | "REVENUE";
 
 export default function ReportsPage() {
   const { showAlert, showConfirm } = useAlertModal();
   const { t, lang } = useLanguage();
-  const [activeTab, setActiveTab] = useState<MainTab>("DRAWER");
-  const [drawerSubTab, setDrawerSubTab] = useState<"TODAY" | "HISTORY">("TODAY");
-  const [selectedRange, setSelectedRange] = useState<string>("7days");
 
-  const [registerData, setRegisterData] = useState<RegisterData | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [activeTab, setActiveTab] = useState<MainTab>("FLEET");
+  const [selectedRange, setSelectedRange] = useState<DateRangeOption>("7days");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
-  // Close shift modal state
-  const [showCloseModal, setShowCloseModal] = useState(false);
-  const [closingFloat, setClosingFloat] = useState("");
-  const [countedCash, setCountedCash] = useState("");
-  const [closeNotes, setCloseNotes] = useState("");
-  const [closing, setClosing] = useState(false);
+  // Filters within Shoe Demand Tab
+  const [shoeFilterSize, setShoeFilterSize] = useState<number | "ALL">("ALL");
+  const [shoeFilterType, setShoeFilterType] = useState<"ALL" | "INLINE" | "QUAD">("ALL");
 
-  // Quick edit float modal state
-  const [showFloatModal, setShowFloatModal] = useState(false);
-  const [quickFloat, setQuickFloat] = useState("");
-  const [updatingFloat, setUpdatingFloat] = useState(false);
+  // Filters within Product Profits Tab
+  const [productFilterCat, setProductFilterCat] = useState<string>("ALL");
+  const [productSortBy, setProductSortBy] = useState<ProductSortOption>("MARGIN_HIGH");
+
+  // Filter within Past Shifts Archive Tab
+  const [historyFilterStatus, setHistoryFilterStatus] = useState<"ALL" | "BALANCED" | "DISCREPANCY">("ALL");
 
   // Check access: redirect non-owner (staff) to /rentals
   useEffect(() => {
@@ -220,26 +178,6 @@ export default function ReportsPage() {
       .catch(() => {});
   }, []);
 
-  // Fetch register (Today)
-  const fetchTodayRegister = async () => {
-    try {
-      const res = await fetch("/api/register/today");
-      if (res.ok) {
-        const json = await res.json();
-        setRegisterData(json);
-        const floatVal = json.register?.openingCash ?? 0;
-        setClosingFloat(floatVal.toString());
-        setQuickFloat(floatVal.toString());
-        if (json.register?.expectedClosingCash !== undefined) {
-          setCountedCash(json.register.expectedClosingCash.toString());
-        }
-      }
-    } catch (e) {
-      console.error("Register fetch error:", e);
-    }
-  };
-
-  // Fetch historical registers
   const fetchHistory = async () => {
     try {
       const res = await fetch("/api/register/history");
@@ -252,11 +190,18 @@ export default function ReportsPage() {
     }
   };
 
-  // Fetch analytics data
-  const fetchAnalytics = async (rangeKey = selectedRange) => {
+  const fetchAnalytics = async (rangeKey = selectedRange, start?: string, end?: string) => {
     setLoadingAnalytics(true);
     try {
-      const res = await fetch(`/api/reports/analytics?range=${rangeKey}`);
+      const params = new URLSearchParams();
+      if (rangeKey === "custom") {
+        if (start || customStart) params.set("startDate", start || customStart);
+        if (end || customEnd) params.set("endDate", end || customEnd);
+      } else {
+        params.set("range", rangeKey);
+      }
+
+      const res = await fetch(`/api/reports/analytics?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         setAnalyticsData(json);
@@ -268,141 +213,25 @@ export default function ReportsPage() {
     }
   };
 
-  // Initial load
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchTodayRegister(), fetchAnalytics(selectedRange)]).finally(() => {
+    Promise.all([fetchAnalytics("7days"), fetchHistory()]).finally(() => {
       setLoading(false);
     });
   }, []);
 
-  // When switching drawer subtab
-  useEffect(() => {
-    if (activeTab === "DRAWER" && drawerSubTab === "HISTORY") {
-      fetchHistory();
-    }
-  }, [activeTab, drawerSubTab]);
-
-  const handleRangeSelect = (range: string) => {
+  const handleRangeSelect = (range: DateRangeOption) => {
     setSelectedRange(range);
-    fetchAnalytics(range);
-  };
-
-  // Quick edit float
-  const handleUpdateFloat = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setUpdatingFloat(true);
-    try {
-      const res = await fetch("/api/register/today", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ openingCash: Number(quickFloat) }),
-      });
-      if (res.ok) {
-        setShowFloatModal(false);
-        fetchTodayRegister();
-        showAlert({
-          title: "Float Updated",
-          message: `Drawer float set to ${formatETB(Number(quickFloat))}.`,
-          type: "success",
-        });
-      } else {
-        showAlert({ title: "Error", message: "Failed to update float", type: "error" });
-      }
-    } catch {
-      showAlert({ title: "Error", message: "Network error", type: "error" });
-    } finally {
-      setUpdatingFloat(false);
+    if (range !== "custom") {
+      fetchAnalytics(range);
     }
   };
 
-  // Close shift handler
-  const handleCloseShift = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setClosing(true);
-
-    try {
-      const res = await fetch("/api/register/close", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          actualClosingCash: Number(countedCash),
-          openingCash: Number(closingFloat),
-          notes: closeNotes,
-        }),
-      });
-
-      const resJson = await res.json();
-      if (res.ok) {
-        setShowCloseModal(false);
-        fetchTodayRegister();
-        showAlert({
-          title: "Shift Closed",
-          message: "The register has been safely closed and locked.",
-          type: "success",
-        });
-      } else {
-        showAlert({
-          title: "Closure Failed",
-          message: resJson.error || "Failed to close shift register.",
-          type: "error",
-        });
-      }
-    } catch {
-      showAlert({
-        title: "Network Error",
-        message: "Network error occurred while closing shift.",
-        type: "error",
-      });
-    } finally {
-      setClosing(false);
+  const handleApplyCustomDate = () => {
+    if (customStart) {
+      fetchAnalytics("custom", customStart, customEnd || customStart);
     }
   };
-
-  // Reopen shift handler
-  const handleReopenShift = () => {
-    showConfirm({
-      title: "Re-Open Shift Register",
-      message: "Are you sure you want to re-open today's register?",
-      confirmText: "Yes, Re-Open",
-      cancelText: "Cancel",
-      type: "warning",
-      onConfirm: async () => {
-        try {
-          const res = await fetch("/api/register/open", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ openingCash: Number(closingFloat) || 0 }),
-          });
-          if (res.ok) {
-            fetchTodayRegister();
-            showAlert({
-              title: "Shift Re-Opened",
-              message: "Today's shift register is now active.",
-              type: "success",
-            });
-          } else {
-            showAlert({ title: "Failed", message: "Could not re-open register.", type: "error" });
-          }
-        } catch {
-          showAlert({ title: "Error", message: "Network error", type: "error" });
-        }
-      },
-    });
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  // Live expected cash calculation based on user-typed float
-  const activeFloat = closingFloat !== "" ? Number(closingFloat) : (registerData?.register.openingCash || 0);
-  const liveExpectedClosingCash =
-    activeFloat +
-    (registerData?.summary.channels.cash.inflow || 0) -
-    (registerData?.summary.dailyExpensesTotal || 0);
-
-  const liveDiscrepancy = Number(countedCash || 0) - liveExpectedClosingCash;
 
   const maxShoeRentals = Math.max(
     ...(analyticsData?.shoeSizeReport.sizes.map((s) => s.rentalsCount) || [1]),
@@ -414,10 +243,61 @@ export default function ReportsPage() {
     1
   );
 
+  // Filtered shoe sizes
+  const filteredShoeSizes = useMemo(() => {
+    if (!analyticsData?.shoeSizeReport.sizes) return [];
+    return analyticsData.shoeSizeReport.sizes.filter((s) => {
+      if (shoeFilterSize !== "ALL" && s.size !== shoeFilterSize) return false;
+      if (shoeFilterType === "INLINE" && s.inlineCount === 0) return false;
+      if (shoeFilterType === "QUAD" && s.quadCount === 0) return false;
+      return true;
+    });
+  }, [analyticsData, shoeFilterSize, shoeFilterType]);
+
+  // Product categories for filter
+  const productCategories = useMemo(() => {
+    if (!analyticsData?.topSellingProducts) return ["ALL"];
+    const cats = Array.from(new Set(analyticsData.topSellingProducts.map((p) => p.category))).filter(Boolean);
+    return ["ALL", ...cats];
+  }, [analyticsData]);
+
+  // Filtered & sorted products
+  const filteredProducts = useMemo(() => {
+    if (!analyticsData?.topSellingProducts) return [];
+    let list = [...analyticsData.topSellingProducts];
+
+    if (productFilterCat !== "ALL") {
+      list = list.filter((p) => p.category === productFilterCat);
+    }
+
+    if (productSortBy === "MARGIN_HIGH") {
+      list.sort((a, b) => b.marginPct - a.marginPct);
+    } else if (productSortBy === "MARGIN_LOW") {
+      list.sort((a, b) => a.marginPct - b.marginPct);
+    } else if (productSortBy === "UNITS") {
+      list.sort((a, b) => b.unitsSold - a.unitsSold);
+    } else if (productSortBy === "REVENUE") {
+      list.sort((a, b) => b.grossRevenue - a.grossRevenue);
+    }
+
+    return list;
+  }, [analyticsData, productFilterCat, productSortBy]);
+
+  // Filtered shifts history
+  const filteredHistory = useMemo(() => {
+    if (historyFilterStatus === "BALANCED") {
+      return history.filter((h) => (h.discrepancy || 0) === 0);
+    }
+    if (historyFilterStatus === "DISCREPANCY") {
+      return history.filter((h) => (h.discrepancy || 0) !== 0);
+    }
+    return history;
+  }, [history, historyFilterStatus]);
+
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
-        <SkateLoading label="Loading Reports..." />
+        <SkateLoading label={t("common.loading", "Loading...")} />
       </div>
     );
   }
@@ -425,136 +305,121 @@ export default function ReportsPage() {
   return (
     <div className="min-h-screen bg-[#F7F6F3] text-[#29221E] pb-16 overflow-x-hidden">
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
-        {/* ================= PRINT-ONLY RECEIPT ================= */}
-        <div className="hidden print:flex items-center justify-between pb-4 mb-4 border-b-2 border-[#29221E] text-[#29221E]">
-          <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 rounded-xl overflow-hidden border border-[#E9D9C5] bg-black shrink-0">
-              <Image src="/icon-192.png" alt="Velox" fill sizes="48px" className="object-cover" />
+        {/* ================= TOP HEADER & DAILY DRAWER SHORTCUT ================= */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E9D9C5]">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-2xl font-black tracking-tight text-[#29221E]">
+                {t("reports.analyticsTitle", "Reports & Analytics Center")}
+              </h1>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#29221E] text-white">
+                {t("staff.roleOwner", "Owner")}
+              </span>
             </div>
-            <div>
-              <h1 className="text-xl font-black text-[#29221E]">{t("login.title", "VELOX SKATE")}</h1>
-              <p className="text-xs text-[#8B8179]">{t("reports.title", "Shift Closing & Cash Audit")}</p>
-            </div>
+            <p className="text-xs text-[#8B8179]">
+              {t("reports.analyticsSub", "Fleet demand, product profit margins, peak hours, and shift history")}
+            </p>
           </div>
-          <div className="text-right text-xs text-[#29221E] font-mono">
-            <p className="font-bold">{t("common.date", "Date")}: {registerData?.summary.date}</p>
-            <p className="text-[#8B8179] text-[11px]">{format12HourDateTime(new Date())}</p>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Link
+              href="/reports/daily"
+              className="px-3.5 py-2 bg-[#D96827] hover:bg-[#C2571A] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span>{t("reports.openDailyDrawer", "Today's Drawer Closing")}</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+            <button
+              onClick={() => fetchAnalytics(selectedRange)}
+              className="p-2 rounded-xl border border-[#E9D9C5] bg-white text-[#8B8179] hover:text-[#D96827] cursor-pointer shadow-xs"
+              title={t("common.refresh", "Refresh")}
+            >
+              <RefreshCw className={`h-4 w-4 ${loadingAnalytics ? "animate-spin text-[#D96827]" : ""}`} />
+            </button>
           </div>
         </div>
 
-        {/* ================= HEADER (MOBILE-FIRST) ================= */}
-        <div className="flex flex-col gap-3 pb-3 border-b border-[#E9D9C5] print:hidden min-w-0">
-          <div className="flex items-center justify-between min-w-0">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-xl overflow-hidden border border-[#E9D9C5] shadow-xs shrink-0 bg-black">
-                <Image src="/icon-192.png" alt="Velox" fill sizes="44px" className="object-cover" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-black tracking-tight text-[#29221E] truncate">
-                  {t("reports.title", "Reports & Audits")}
-                </h1>
-                <p className="text-[11px] text-[#8B8179] truncate">
-                  {t("reports.subtitle", "Cash balancing, shoe demand & profit margins")}
-                </p>
-              </div>
-            </div>
+        {/* ================= 4 MAIN REPORT TABS ================= */}
+        <div className="overflow-x-auto scrollbar-none max-w-full pb-0.5">
+          <div className="flex items-center gap-1.5 w-max">
+            <button
+              onClick={() => setActiveTab("FLEET")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "FLEET"
+                  ? "bg-[#29221E] text-white shadow-xs"
+                  : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+              }`}
+            >
+              <Footprints className="h-3.5 w-3.5 text-[#D96827]" />
+              <span>{t("reports.shoeDemandTab", "Shoe Demand")}</span>
+            </button>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={handlePrint}
-                className="px-2.5 py-1.5 sm:px-3 sm:py-2 text-xs font-bold text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#29221E] hover:text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
-                title={t("reports.printReceipt", "Print Shift Receipt")}
-              >
-                <Printer className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{t("reports.printReceipt", "Print")}</span>
-              </button>
+            <button
+              onClick={() => setActiveTab("CONCESSION")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "CONCESSION"
+                  ? "bg-[#29221E] text-white shadow-xs"
+                  : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+              }`}
+            >
+              <ShoppingBag className="h-3.5 w-3.5 text-[#D96827]" />
+              <span>{t("reports.productProfitsTab", "Product Profits")}</span>
+            </button>
 
-              <button
-                onClick={() => {
-                  fetchTodayRegister();
-                  fetchAnalytics(selectedRange);
-                }}
-                disabled={loadingAnalytics}
-                className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#F7F6F3] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${loadingAnalytics ? "animate-spin text-[#D96827]" : ""}`}
-                />
-              </button>
-            </div>
+            <button
+              onClick={() => setActiveTab("TRAFFIC")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "TRAFFIC"
+                  ? "bg-[#29221E] text-white shadow-xs"
+                  : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+              }`}
+            >
+              <Clock className="h-3.5 w-3.5 text-[#D96827]" />
+              <span>{t("reports.hoursTrafficTab", "Peak Hours")}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("DRAWER")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === "DRAWER"
+                  ? "bg-[#29221E] text-white shadow-xs"
+                  : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+              }`}
+            >
+              <History className="h-3.5 w-3.5 text-[#D96827]" />
+              <span>{t("reports.shiftHistory", "Past Shifts Archive")}</span>
+            </button>
           </div>
+        </div>
 
-          {/* ================= 4 MAIN REPORT TABS (HORIZONTAL SCROLL ON MOBILE) ================= */}
-          <div className="overflow-x-auto scrollbar-none max-w-full pb-0.5">
-            <div className="flex items-center gap-1.5 w-max">
-              <button
-                onClick={() => setActiveTab("DRAWER")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "DRAWER"
-                    ? "bg-[#29221E] text-white shadow-xs"
-                    : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
-                }`}
-              >
-                <Banknote className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>{t("reports.cashDrawerTab", "Cash Drawer")}</span>
-              </button>
+        {/* ================= DATE RANGE SELECTOR BAR ================= */}
+        {activeTab !== "DRAWER" && (
+          <div className="p-3 bg-white rounded-2xl border border-[#E9D9C5] shadow-xs space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <span className="text-[11px] font-bold uppercase text-[#8B8179]">
+                {t("concession.dateRange", "Report Date Range")}:
+              </span>
 
-              <button
-                onClick={() => setActiveTab("FLEET")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "FLEET"
-                    ? "bg-[#29221E] text-white shadow-xs"
-                    : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
-                }`}
-              >
-                <Footprints className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>{t("reports.shoeDemandTab", "Shoe Demand")}</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("CONCESSION")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "CONCESSION"
-                    ? "bg-[#29221E] text-white shadow-xs"
-                    : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
-                }`}
-              >
-                <ShoppingBag className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>{t("reports.productProfitsTab", "Product Profits")}</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab("TRAFFIC")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === "TRAFFIC"
-                    ? "bg-[#29221E] text-white shadow-xs"
-                    : "bg-white text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
-                }`}
-              >
-                <Clock className="h-3.5 w-3.5 text-[#D96827]" />
-                <span>{t("reports.hoursTrafficTab", "Peak Hours")}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* ================= DATE RANGE SELECTOR BAR ================= */}
-          {activeTab !== "DRAWER" && (
-            <div className="overflow-x-auto scrollbar-none max-w-full">
-              <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#E9D9C5] shadow-xs w-max">
-                {[
-                  { key: "today", label: t("expenses.today", "Today") },
-                  { key: "yesterday", label: t("expenses.yesterday", "Yesterday") },
-                  { key: "7days", label: t("expenses.past7Days", "7 Days") },
-                  { key: "30days", label: t("expenses.thisMonth", "30 Days") },
-                  { key: "all", label: t("expenses.allTime", "All Time") },
-                ].map((item) => (
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5 max-w-full">
+                {(
+                  [
+                    { id: "today", label: lang === "am" ? "ዛሬ" : "Today" },
+                    { id: "yesterday", label: lang === "am" ? "ትናንት" : "Yesterday" },
+                    { id: "7days", label: lang === "am" ? "7 ቀናት" : "7 Days" },
+                    { id: "30days", label: lang === "am" ? "30 ቀናት" : "30 Days" },
+                    { id: "custom", label: t("reports.customRange", "Custom Range") },
+                    { id: "all", label: t("reports.allTime", "All Time") },
+                  ] as const
+                ).map((item) => (
                   <button
-                    key={item.key}
-                    onClick={() => handleRangeSelect(item.key)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      selectedRange === item.key
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleRangeSelect(item.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      selectedRange === item.id
                         ? "bg-[#D96827] text-white shadow-xs"
-                        : "text-[#8B8179] hover:text-[#29221E]"
+                        : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
                     }`}
                   >
                     {item.label}
@@ -562,382 +427,41 @@ export default function ReportsPage() {
                 ))}
               </div>
             </div>
-          )}
-        </div>
 
-        {/* ================= TAB 1: CASH DRAWER & CLOSING ================= */}
-        {activeTab === "DRAWER" && (
-          <div className="space-y-4 min-w-0">
-            {/* View Switcher: Today vs History */}
-            <div className="flex bg-white border border-[#E9D9C5] rounded-xl p-1 text-xs font-bold shadow-xs w-fit">
-              <button
-                onClick={() => setDrawerSubTab("TODAY")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  drawerSubTab === "TODAY"
-                    ? "bg-[#D96827] text-white shadow-xs"
-                    : "text-[#8B8179] hover:text-[#29221E]"
-                }`}
-              >
-                {t("dashboard.today", "Today")}
-              </button>
-              <button
-                onClick={() => setDrawerSubTab("HISTORY")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  drawerSubTab === "HISTORY"
-                    ? "bg-[#D96827] text-white shadow-xs"
-                    : "text-[#8B8179] hover:text-[#29221E]"
-                }`}
-              >
-                {t("reports.pastRegisters", "Past Shifts")}
-              </button>
-            </div>
-
-            {drawerSubTab === "TODAY" ? (
-              <div className="space-y-4 min-w-0">
-                {/* 1. Shift Status Banner */}
-                <div
-                  className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs bg-white ${
-                    registerData?.register.status === "CLOSED"
-                      ? "border-[#E9D9C5]"
-                      : "border-2 border-[#26845B]"
-                  }`}
+            {/* Custom Date Inputs */}
+            {selectedRange === "custom" && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#E9D9C5]/60 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-[#8B8179]">{t("concession.startDate", "Start")}:</span>
+                  <input
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className="px-2.5 py-1 rounded-lg border border-[#E9D9C5] bg-[#F7F6F3] text-[#29221E] text-xs focus:outline-none focus:border-[#D96827]"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-[#8B8179]">{t("concession.endDate", "End")}:</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    className="px-2.5 py-1 rounded-lg border border-[#E9D9C5] bg-[#F7F6F3] text-[#29221E] text-xs focus:outline-none focus:border-[#D96827]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleApplyCustomDate}
+                  className="px-3 py-1 rounded-lg bg-[#D96827] text-white font-bold text-xs cursor-pointer hover:bg-[#C2571A]"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`p-2.5 rounded-xl shrink-0 ${
-                        registerData?.register.status === "CLOSED"
-                          ? "bg-[#F7F6F3] text-[#8B8179]"
-                          : "bg-[#EBF5F0] text-[#26845B]"
-                      }`}
-                    >
-                      {registerData?.register.status === "CLOSED" ? (
-                        <Lock className="h-5 w-5" />
-                      ) : (
-                        <Unlock className="h-5 w-5" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-sm sm:text-base font-black text-[#29221E] truncate">
-                          {lang === "am" ? "ፈረቃ" : "Shift"}: {registerData?.summary.date}
-                        </h2>
-                        <span
-                          className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
-                            registerData?.register.status === "CLOSED"
-                              ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
-                              : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
-                          }`}
-                        >
-                          {registerData?.register.status === "CLOSED" ? t("nav.shiftClosed", "Closed") : t("nav.shiftOpen", "Open")}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#8B8179] truncate">
-                        {registerData?.register.status === "CLOSED"
-                          ? `${lang === "am" ? "የተዘጋበት ሰዓት" : "Closed at"} ${format12HourTime(registerData?.register.closedAt)}`
-                          : `${t("dashboard.float", "Float")}: ${formatETB(registerData?.register.openingCash || 0)}`}
-                      </p>
-                    </div>
-                  </div>
-
-                  {registerData?.register.status === "OPEN" ? (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => {
-                          setQuickFloat((registerData?.register.openingCash || 0).toString());
-                          setShowFloatModal(true);
-                        }}
-                        className="px-3 py-2 bg-white hover:bg-[#F7F6F3] text-[#29221E] font-bold text-xs rounded-xl border border-[#E9D9C5] transition-all cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Edit3 className="h-3.5 w-3.5 text-[#D96827]" />
-                        <span>{t("reports.editFloatButton", "Edit Float")}</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setClosingFloat((registerData?.register.openingCash || 0).toString());
-                          setShowCloseModal(true);
-                        }}
-                        className="px-4 py-2 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5 print:hidden"
-                      >
-                        <Lock className="h-3.5 w-3.5" />
-                        <span>{t("reports.closeShiftButton", "Close Shift")}</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="text-xs text-[#26845B] font-bold bg-[#EBF5F0] px-2.5 py-1 rounded-xl border border-[#26845B]/30 flex items-center gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        <span>{t("reports.reconciled", "Reconciled")}</span>
-                      </div>
-                      <button
-                        onClick={handleReopenShift}
-                        className="text-xs text-[#8B8179] hover:text-[#29221E] px-2 py-1 underline cursor-pointer print:hidden"
-                      >
-                        {t("reports.reopen", "Re-open")}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Revenue & Operations Recap Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 min-w-0">
-                  <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs min-w-0">
-                    <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
-                      <span className="uppercase font-semibold text-[10px]">{t("nav.rentals", "Rentals")}</span>
-                      <Footprints className="h-3.5 w-3.5 text-[#D96827]" />
-                    </div>
-                    <div className="text-base sm:text-xl font-black text-[#29221E] font-mono truncate">
-                      {formatETB(registerData?.summary.rentalsTotal || 0)}
-                    </div>
-                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">
-                      {registerData?.summary.rentalsCount || 0} {t("common.units", "sessions")}
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs min-w-0">
-                    <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
-                      <span className="uppercase font-semibold text-[10px]">{t("nav.pos", "Concessions")}</span>
-                      <ShoppingBag className="h-3.5 w-3.5 text-[#D96827]" />
-                    </div>
-                    <div className="text-base sm:text-xl font-black text-[#29221E] font-mono truncate">
-                      {formatETB(registerData?.summary.concessionsTotal || 0)}
-                    </div>
-                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">
-                      {registerData?.summary.concessionsCount || 0} {t("expenses.entries", "orders")}
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs min-w-0">
-                    <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
-                      <span className="uppercase font-semibold text-[10px]">{t("nav.expenses", "Expenses")}</span>
-                      <span className="text-[#D94B45] font-bold text-[10px]">OpEx</span>
-                    </div>
-                    <div className="text-base sm:text-xl font-black text-[#D94B45] font-mono truncate">
-                      -{formatETB(registerData?.summary.dailyExpensesTotal || 0)}
-                    </div>
-                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">{t("expenses.dailyExpensesDesc", "Petty cash")}</div>
-                  </div>
-
-                  <div className="p-3 rounded-2xl bg-white border border-[#26845B]/40 shadow-xs min-w-0">
-                    <div className="flex items-center justify-between text-[#8B8179] text-xs mb-1">
-                      <span className="uppercase font-semibold text-[#26845B] text-[10px]">
-                        {t("dashboard.netCashFlow", "Net Cash")}
-                      </span>
-                      <TrendingUp className="h-3.5 w-3.5 text-[#26845B]" />
-                    </div>
-                    <div className="text-base sm:text-xl font-black text-[#26845B] font-mono truncate">
-                      {formatETB(registerData?.summary.netOperatingIncome || 0)}
-                    </div>
-                    <div className="text-[10px] text-[#8B8179] mt-0.5 truncate">{t("reports.dailyExpensesTotal", "After expenses")}</div>
-                  </div>
-                </div>
-
-                {/* 3. Physical Cash Drawer Balancing */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-3 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
-                      <Banknote className="h-4 w-4 text-[#D96827]" />
-                      {t("reports.cashDrawerTab", "Cash Drawer Balancing")}
-                    </h3>
-                    <button
-                      onClick={() => {
-                        setQuickFloat((registerData?.register.openingCash || 0).toString());
-                        setShowFloatModal(true);
-                      }}
-                      className="text-xs text-[#D96827] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <Edit3 className="h-3 w-3" />
-                      <span>{t("reports.editFloatButton", "Edit Float")}</span>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs font-mono">
-                    <div>
-                      <span className="text-[#8B8179] block font-sans text-[10px]">1. {t("dashboard.float", "Float")}</span>
-                      <strong className="text-[#29221E] text-sm">
-                        {formatETB(registerData?.summary.channels.cash.openingFloat || 0)}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span className="text-[#8B8179] block font-sans text-[10px]">2. (+) {t("dashboard.cashIntake", "Cash In")}</span>
-                      <strong className="text-[#26845B] text-sm">
-                        +{formatETB(registerData?.summary.channels.cash.inflow || 0)}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span className="text-[#8B8179] block font-sans text-[10px]">3. (-) {t("dashboard.minusExpenses", "Outflow")}</span>
-                      <strong className="text-[#D94B45] text-sm">
-                        -{formatETB(registerData?.summary.channels.cash.outflow || 0)}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span className="text-[#D96827] block font-sans text-[10px] font-bold">
-                        4. (=) {t("reports.expectedCash", "Expected")}
-                      </span>
-                      <strong className="text-[#29221E] text-sm">
-                        {formatETB(registerData?.summary.channels.cash.expectedInDrawer || 0)}
-                      </strong>
-                    </div>
-                  </div>
-
-                  {registerData?.register.status === "CLOSED" && (
-                    <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <div>
-                        <span className="text-[#8B8179]">{t("reports.actualCounted", "Actual Counted:")} </span>
-                        <strong className="text-[#29221E] font-mono text-sm ml-1">
-                          {formatETB(registerData.register.actualClosingCash || 0)}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span className="text-[#8B8179]">{t("reports.difference", "Discrepancy:")} </span>
-                        <span
-                          className={`font-mono font-bold text-xs ml-1 ${
-                            (registerData.register.discrepancy || 0) === 0
-                              ? "text-[#26845B]"
-                              : (registerData.register.discrepancy || 0) > 0
-                              ? "text-[#D96827]"
-                              : "text-[#D94B45]"
-                          }`}
-                        >
-                          {(registerData.register.discrepancy || 0) === 0
-                            ? t("reports.balanced", "Balanced ✓")
-                            : (registerData.register.discrepancy || 0) > 0
-                            ? `+${formatETB(registerData.register.discrepancy || 0)} ${t("reports.surplus", "Surplus")}`
-                            : `${formatETB(registerData.register.discrepancy || 0)} ${t("reports.shortage", "Shortage")}`}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 4. Digital Reconciliation Channels */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div className="p-3.5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#D96827] flex items-center gap-1.5">
-                        <Smartphone className="h-3.5 w-3.5" />
-                        Telebirr
-                      </span>
-                      <span className="text-[10px] text-[#8B8179]">SMS check</span>
-                    </div>
-                    <div className="text-xl font-black text-[#D96827] font-mono">
-                      {formatETB(registerData?.summary.channels.telebirr.inflow || 0)}
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#29221E] flex items-center gap-1.5">
-                        <Landmark className="h-3.5 w-3.5 text-[#D96827]" />
-                        CBE Bank
-                      </span>
-                      <span className="text-[10px] text-[#8B8179]">App check</span>
-                    </div>
-                    <div className="text-xl font-black text-[#29221E] font-mono">
-                      {formatETB(registerData?.summary.channels.cbe.inflow || 0)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              /* TAB 1 SUBTAB: HISTORICAL REGISTERS */
-              <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-xs">
-                <div className="p-3.5 border-b border-[#E9D9C5] flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#29221E]">{t("reports.pastRegisters", "Past Shifts")}</h3>
-                    <p className="text-[11px] text-[#8B8179]">{lang === "am" ? "ያለፉ የሳጥን ቆጠራዎች መዝገብ" : "Historical cash drawer logs"}</p>
-                  </div>
-                  {history.length > 0 && (
-                    <button
-                      onClick={() =>
-                        exportToCSV(
-                          "Velox_Shift_Reports",
-                          [
-                            "Date",
-                            "Cash In",
-                            "Telebirr",
-                            "CBE",
-                            "Expenses",
-                            "Expected",
-                            "Counted",
-                            "Discrepancy",
-                            "Status",
-                          ],
-                          history.map((h) => [
-                            h.date,
-                            h.cashInTotal,
-                            h.telebirrTotal,
-                            h.cbeTotal,
-                            h.dailyExpensesTotal,
-                            h.expectedClosingCash,
-                            h.actualClosingCash || 0,
-                            h.discrepancy || 0,
-                            h.status,
-                          ])
-                        )
-                      }
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] transition-colors cursor-pointer"
-                    >
-                      <Download className="h-3.5 w-3.5 text-[#D96827]" />
-                      <span>{t("common.downloadCsv", "CSV")}</span>
-                    </button>
-                  )}
-                </div>
-
-                {history.length === 0 ? (
-                  <div className="p-8 text-center text-[#8B8179] text-xs">
-                    {lang === "am" ? "ምንም ያለፈ ፈረቃ አልተገኘም።" : "No past shifts found."}
-                  </div>
-                ) : (
-                  <div className="divide-y divide-[#E9D9C5]">
-                    {history.map((h) => (
-                      <div key={h._id} className="p-3 space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-sm text-[#29221E]">{h.date}</span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                              h.status === "CLOSED"
-                                ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
-                                : "bg-[#EBF5F0] text-[#26845B]"
-                            }`}
-                          >
-                            {h.status === "CLOSED" ? t("nav.shiftClosed", "Closed") : t("nav.shiftOpen", "Open")}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-1.5 p-2 rounded-xl bg-[#F7F6F3] font-mono text-[11px]">
-                          <div>{t("common.cash", "Cash")}: {formatETB(h.cashInTotal)}</div>
-                          <div>Telebirr: {formatETB(h.telebirrTotal)}</div>
-                          <div>CBE: {formatETB(h.cbeTotal)}</div>
-                          <div>OpEx: -{formatETB(h.dailyExpensesTotal)}</div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] pt-0.5">
-                          <span>{t("reports.actualCounted", "Counted")}: <strong>{formatETB(h.actualClosingCash || 0)}</strong></span>
-                          <span>
-                            {(h.discrepancy || 0) === 0 ? (
-                              <span className="text-[#26845B] font-bold">✓ {t("reports.balanced", "Balanced")}</span>
-                            ) : (h.discrepancy || 0) > 0 ? (
-                              <span className="text-[#D96827] font-bold">+{formatETB(h.discrepancy || 0)} {t("reports.surplus", "Surplus")}</span>
-                            ) : (
-                              <span className="text-[#D94B45] font-bold">{formatETB(h.discrepancy || 0)} {t("reports.shortage", "Shortage")}</span>
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  {t("reports.apply", "Apply")}
+                </button>
               </div>
             )}
           </div>
         )}
 
-        {/* ================= TAB 2: SKATE FLEET & DEMAND (MOBILE-FIRST) ================= */}
+        {/* ================= TAB 1: SHOE FLEET & DEMAND ================= */}
         {activeTab === "FLEET" && analyticsData && (
           <div className="space-y-4 min-w-0">
             {/* Out of Stock Turnaways Summary Card */}
@@ -950,9 +474,9 @@ export default function ReportsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h3 className="text-sm font-black text-[#29221E]">
-                        {t("reports.mostRentedSizes", "Shoe Size Demand")}
+                        {t("reports.mostRentedSizes", "Shoe Size Demand & Bottlenecks")}
                       </h3>
-                      <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-[#FDF0EF] text-[#D94B45]">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FDF0EF] text-[#D94B45]">
                         {analyticsData.shoeSizeReport.totalMissedCount} {t("reports.turnawaysCount", "Turnaways")}
                       </span>
                     </div>
@@ -983,7 +507,46 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            {/* Shoe Size Demand List (Mobile First, Clean Layout) */}
+            {/* Filter Bar for Shoes */}
+            <div className="p-3 bg-white rounded-2xl border border-[#E9D9C5] shadow-xs flex flex-wrap items-center justify-between gap-2.5 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase text-[#8B8179]">{t("common.size", "Size")}:</span>
+                <select
+                  value={shoeFilterSize}
+                  onChange={(e) => setShoeFilterSize(e.target.value === "ALL" ? "ALL" : Number(e.target.value))}
+                  className="px-2.5 py-1 rounded-xl border border-[#E9D9C5] bg-[#F7F6F3] text-[#29221E] font-bold"
+                >
+                  <option value="ALL">{t("common.all", "All Sizes")}</option>
+                  {analyticsData.shoeSizeReport.sizes.map((s) => (
+                    <option key={s.size} value={s.size}>
+                      #{s.size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold uppercase text-[#8B8179]">{t("shoes.type", "Type")}:</span>
+                <div className="flex items-center gap-1 bg-[#F7F6F3] p-1 rounded-xl border border-[#E9D9C5]">
+                  {(["ALL", "INLINE", "QUAD"] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setShoeFilterType(type)}
+                      className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        shoeFilterType === type
+                          ? "bg-[#D96827] text-white shadow-xs"
+                          : "text-[#8B8179] hover:text-[#29221E]"
+                      }`}
+                    >
+                      {type === "ALL" ? t("common.all", "All") : type === "INLINE" ? t("common.inline", "Inline") : t("common.quads", "Quads")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Shoe Size Demand List */}
             <div className="bg-white rounded-2xl border border-[#E9D9C5] p-3.5 sm:p-5 shadow-xs space-y-3 min-w-0">
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
@@ -991,12 +554,12 @@ export default function ReportsPage() {
                   {t("reports.mostRentedSizes", "Demand by Shoe Size")}
                 </h3>
                 <span className="text-[11px] font-mono text-[#8B8179]">
-                  {analyticsData.durationReport.totalRentals} {t("reports.sessions", "sessions")}
+                  {filteredShoeSizes.reduce((acc, s) => acc + s.rentalsCount, 0)} {t("reports.sessions", "sessions")}
                 </span>
               </div>
 
               <div className="space-y-2.5 min-w-0">
-                {analyticsData.shoeSizeReport.sizes.map((s) => {
+                {filteredShoeSizes.map((s) => {
                   const relativePct = Math.round((s.rentalsCount / maxShoeRentals) * 100);
                   const isHighDemand = relativePct >= 70;
                   const hasBottleneck = s.missedDemandCount > 0;
@@ -1009,7 +572,6 @@ export default function ReportsPage() {
                       key={s.size}
                       className="p-3 rounded-xl border border-[#E9D9C5]/80 bg-[#F7F6F3]/50 space-y-2 min-w-0"
                     >
-                      {/* Row 1: Size & Recommendation */}
                       <div className="flex items-center justify-between gap-2 min-w-0">
                         <div className="flex items-center gap-2 min-w-0 truncate">
                           <span className="text-xs sm:text-sm font-black text-[#29221E] font-mono bg-white px-2 py-0.5 rounded-lg border border-[#E9D9C5] shrink-0">
@@ -1031,7 +593,6 @@ export default function ReportsPage() {
                         </span>
                       </div>
 
-                      {/* Row 2: Turnaways Alert if any */}
                       {hasBottleneck && (
                         <div className="text-[10px] font-bold text-[#D94B45] bg-[#FDF0EF] px-2 py-1 rounded-lg border border-[#D94B45]/20 flex items-center justify-between">
                           <span>⚠️ {s.missedDemandCount} {t("reports.turnawayCustomers", "Turnaway customers")}</span>
@@ -1039,7 +600,6 @@ export default function ReportsPage() {
                         </div>
                       )}
 
-                      {/* Row 3: Numbers */}
                       <div className="flex items-center justify-between text-xs font-mono">
                         <span className="text-[#8B8179] text-[11px]">
                           {t("reports.rentalsCount", "Rentals")}: <strong className="text-[#29221E]">{s.rentalsCount}</strong>
@@ -1049,7 +609,6 @@ export default function ReportsPage() {
                         </span>
                       </div>
 
-                      {/* Row 4: Progress Bar */}
                       <div className="w-full bg-[#E9D9C5]/50 h-2 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${isHighDemand ? "bg-[#D96827]" : "bg-[#29221E]"}`}
@@ -1062,7 +621,7 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            {/* Session Duration (30m vs 60m vs Extensions) */}
+            {/* Session Duration */}
             <div className="bg-white rounded-2xl border border-[#E9D9C5] p-3.5 sm:p-5 shadow-xs space-y-3 min-w-0">
               <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-[#D96827]" />
@@ -1137,10 +696,47 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* ================= TAB 3: CONCESSION & PROFIT MARGINS ================= */}
+        {/* ================= TAB 2: CONCESSION & PRODUCT PROFIT MARGINS ================= */}
         {activeTab === "CONCESSION" && analyticsData && (
           <div className="space-y-4 min-w-0">
-            {/* Top Products */}
+            {/* Filter and Sort Bar for Products */}
+            <div className="p-3.5 bg-white rounded-2xl border border-[#E9D9C5] shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+              {/* Category Filter */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                <span className="text-[11px] font-bold uppercase text-[#8B8179]">{t("stock.category", "Category")}:</span>
+                {productCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setProductFilterCat(cat)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      productFilterCat === cat
+                        ? "bg-[#D96827] text-white shadow-xs"
+                        : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
+                    }`}
+                  >
+                    {cat === "ALL" ? t("common.all", "All") : cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sort Dropdown */}
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-3.5 w-3.5 text-[#8B8179]" />
+                <select
+                  value={productSortBy}
+                  onChange={(e) => setProductSortBy(e.target.value as ProductSortOption)}
+                  className="px-2.5 py-1 rounded-xl border border-[#E9D9C5] bg-[#F7F6F3] text-[#29221E] font-bold text-xs"
+                >
+                  <option value="MARGIN_HIGH">{t("reports.sortMarginHigh", "Highest Margin %")}</option>
+                  <option value="MARGIN_LOW">{t("reports.sortMarginLow", "Lowest Margin %")}</option>
+                  <option value="UNITS">{t("reports.sortUnitsSold", "Most Units Sold")}</option>
+                  <option value="REVENUE">{t("reports.grossRevenue", "Highest Revenue")}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Product Profit Items */}
             <div className="bg-white rounded-2xl border border-[#E9D9C5] p-3.5 sm:p-5 shadow-xs space-y-3 min-w-0">
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
@@ -1148,17 +744,17 @@ export default function ReportsPage() {
                   {t("reports.topSellingProducts", "Top Selling Items & Margins")}
                 </h3>
                 <span className="text-[11px] text-[#8B8179] font-mono">
-                  {analyticsData.topSellingProducts.length} {t("nav.stock", "Items")}
+                  {filteredProducts.length} {t("nav.stock", "Items")}
                 </span>
               </div>
 
-              {analyticsData.topSellingProducts.length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <div className="p-6 text-center text-xs text-[#8B8179]">
                   {t("reports.noConcessionSales", "No concession sales in this period.")}
                 </div>
               ) : (
                 <div className="space-y-2.5 min-w-0">
-                  {analyticsData.topSellingProducts.map((p) => {
+                  {filteredProducts.map((p) => {
                     const relativePct = Math.round((p.grossRevenue / maxProductRevenue) * 100);
 
                     return (
@@ -1171,11 +767,17 @@ export default function ReportsPage() {
                             <span className="text-xs sm:text-sm font-bold text-[#29221E] truncate">
                               {p.productName}
                             </span>
-                            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white text-[#8B8179] border border-[#E9D9C5] shrink-0">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white text-[#8B8179] border border-[#E9D9C5] shrink-0">
                               {p.category}
                             </span>
                           </div>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF5F0] text-[#26845B] font-mono shrink-0">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono shrink-0 ${
+                            p.marginPct >= 50
+                              ? "bg-[#EBF5F0] text-[#26845B]"
+                              : p.marginPct >= 30
+                              ? "bg-[#FFF4E5] text-[#D96827]"
+                              : "bg-[#FDF0EF] text-[#D94B45]"
+                          }`}>
                             {p.marginPct}% {t("reports.margin", "Margin")}
                           </span>
                         </div>
@@ -1250,7 +852,7 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* ================= TAB 4: PEAK HOURS & FINANCES ================= */}
+        {/* ================= TAB 3: PEAK HOURS & TRAFFIC FLOW ================= */}
         {activeTab === "TRAFFIC" && analyticsData && (
           <div className="space-y-4 min-w-0">
             {/* Peak Hours Flow */}
@@ -1258,7 +860,7 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                   <Flame className="h-3.5 w-3.5 text-[#D96827]" />
-                  {t("reports.hourlyFlow", "Hourly Traffic (10 AM – 9 PM)")}
+                  {t("reports.hourlyFlow", "Hourly Traffic Flow (10 AM – 9 PM)")}
                 </h3>
               </div>
 
@@ -1275,7 +877,7 @@ export default function ReportsPage() {
                         <span className="font-bold text-[#29221E] font-mono">{slot.hourLabel}</span>
                         <div className="flex items-center gap-2 font-mono">
                           {isPeak && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#FFF4E5] text-[#D96827]">
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#FFF4E5] text-[#D96827]">
                               {t("dashboard.peak", "PEAK")}
                             </span>
                           )}
@@ -1321,171 +923,119 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* ================= QUICK EDIT FLOAT MODAL ================= */}
-        {showFloatModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative text-[#29221E]">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
-                <h3 className="text-sm font-bold text-[#29221E]">{t("reports.editDrawerFloat", "Edit Drawer Float")}</h3>
-                <button onClick={() => setShowFloatModal(false)} className="p-1 text-[#8B8179] hover:text-[#29221E]">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateFloat} className="mt-4 space-y-3">
+        {/* ================= TAB 4: PAST SHIFTS ARCHIVE ================= */}
+        {activeTab === "DRAWER" && (
+          <div className="space-y-4 min-w-0">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl overflow-hidden shadow-xs">
+              <div className="p-3.5 border-b border-[#E9D9C5] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    {t("reports.floatAmount", "Float Amount (ETB)")}
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={0}
-                    value={quickFloat}
-                    onChange={(e) => setQuickFloat(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
-                  />
-                  <p className="text-[10px] text-[#8B8179] mt-1">
-                    {t("reports.floatHelp", "Change the daily opening float without hardcoded defaults.")}
-                  </p>
+                  <h3 className="text-sm font-bold text-[#29221E]">{t("reports.pastRegisters", "Past Shifts Archive")}</h3>
+                  <p className="text-[11px] text-[#8B8179]">{lang === "am" ? "ያለፉ የሳጥን ቆጠራዎች መዝገብ" : "Historical cash drawer logs"}</p>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowFloatModal(false)}
-                    className="px-3 py-2 text-xs font-semibold text-[#8B8179]"
-                  >
-                    {t("common.cancel", "Cancel")}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={updatingFloat}
-                    className="px-4 py-2 bg-[#D96827] text-white font-bold text-xs rounded-xl shadow-xs"
-                  >
-                    {updatingFloat ? t("reports.saving", "Saving...") : t("reports.saveFloat", "Save Float")}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ================= CLOSE SHIFT MODAL (FLOAT EDITABLE ON CLOSING) ================= */}
-        {showCloseModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl relative my-auto text-[#29221E]">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
-                <div className="flex items-center gap-2">
-                  <Lock className="h-5 w-5 text-[#D94B45]" />
-                  <h3 className="text-sm sm:text-base font-bold text-[#29221E]">{t("reports.closeShiftModalTitle", "Count Drawer & Close Shift")}</h3>
-                </div>
-                <button
-                  onClick={() => setShowCloseModal(false)}
-                  className="p-1 text-[#8B8179] hover:text-[#29221E]"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleCloseShift} className="mt-4 space-y-3.5">
-                {/* 1. EDITABLE FLOAT INPUT (Requirement 5) */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    {t("reports.openingFloatInput", "Drawer Opening Float (ETB)")}
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={0}
-                    value={closingFloat}
-                    onChange={(e) => setClosingFloat(e.target.value)}
-                    placeholder="Enter Float"
-                    className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
-                  />
-                  <p className="text-[10px] text-[#8B8179] mt-0.5">
-                    {t("reports.floatHelp", "Type whatever float was actually provided in the drawer.")}
-                  </p>
-                </div>
-
-                {/* 2. LIVE FORMULA RECALCULATION */}
-                <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs space-y-1 font-mono">
-                  <div className="flex justify-between text-[#8B8179]">
-                    <span>{t("reports.expectedCashInDrawer", "Expected Cash in Drawer:")}</span>
-                    <strong className="text-[#29221E] text-sm">
-                      {formatETB(liveExpectedClosingCash)}
-                    </strong>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-1 bg-[#F7F6F3] p-1 rounded-xl border border-[#E9D9C5] text-xs">
+                    {(["ALL", "BALANCED", "DISCREPANCY"] as const).map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setHistoryFilterStatus(st)}
+                        className={`px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
+                          historyFilterStatus === st
+                            ? "bg-white text-[#29221E] shadow-2xs"
+                            : "text-[#8B8179] hover:text-[#29221E]"
+                        }`}
+                      >
+                        {st === "ALL" ? t("common.all", "All") : st === "BALANCED" ? t("reports.reconciled", "Balanced") : t("reports.difference", "Discrepancy")}
+                      </button>
+                    ))}
                   </div>
-                  <p className="text-[10px] text-[#8B8179] font-sans">
-                    {t("reports.floatFormula", "Float")} ({formatETB(activeFloat)}) + {t("reports.cashIn", "Cash In")} ({formatETB(registerData?.summary.channels.cash.inflow || 0)}) - {t("reports.outflow", "Outflow")} ({formatETB(registerData?.summary.dailyExpensesTotal || 0)})
-                  </p>
-                </div>
 
-                {/* 3. ACTUAL PHYSICAL CASH COUNTED */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1">
-                    {t("reports.countedCashPrompt", "Actual Counted Cash (ETB)")}
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min={0}
-                    value={countedCash}
-                    onChange={(e) => setCountedCash(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
-                  />
+                  {filteredHistory.length > 0 && (
+                    <button
+                      onClick={() =>
+                        exportToCSV(
+                          "Velox_Shift_Reports",
+                          [
+                            "Date",
+                            "Cash In",
+                            "Telebirr",
+                            "CBE",
+                            "Expenses",
+                            "Expected",
+                            "Counted",
+                            "Discrepancy",
+                            "Status",
+                          ],
+                          filteredHistory.map((h) => [
+                            h.date,
+                            h.cashInTotal,
+                            h.telebirrTotal,
+                            h.cbeTotal,
+                            h.dailyExpensesTotal,
+                            h.expectedClosingCash,
+                            h.actualClosingCash || 0,
+                            h.discrepancy || 0,
+                            h.status,
+                          ])
+                        )
+                      }
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] transition-colors cursor-pointer"
+                    >
+                      <Download className="h-3.5 w-3.5 text-[#D96827]" />
+                      <span>{t("common.downloadCsv", "CSV")}</span>
+                    </button>
+                  )}
                 </div>
+              </div>
 
-                {/* 4. LIVE DISCREPANCY PREVIEW */}
-                <div
-                  className={`p-2.5 rounded-xl border text-xs flex items-center justify-between font-mono ${
-                    liveDiscrepancy === 0
-                      ? "bg-[#EBF5F0] border-[#26845B]/30 text-[#26845B]"
-                      : liveDiscrepancy > 0
-                      ? "bg-[#FFF4E5] border-[#E9D9C5] text-[#D96827]"
-                      : "bg-[#FDF0EF] border-[#D94B45]/30 text-[#D94B45]"
-                  }`}
-                >
-                  <span className="font-sans font-semibold">{t("reports.balanceLabel", "Balance:")}</span>
-                  <span className="font-bold text-xs">
-                    {liveDiscrepancy === 0
-                      ? `0 ETB (${t("reports.balanced", "Balanced ✓")})`
-                      : liveDiscrepancy > 0
-                      ? `+${formatETB(liveDiscrepancy)} ${t("reports.surplus", "Surplus")}`
-                      : `${formatETB(liveDiscrepancy)} ${t("reports.shortage", "Shortage")}`}
-                  </span>
+              {filteredHistory.length === 0 ? (
+                <div className="p-8 text-center text-[#8B8179] text-xs">
+                  {lang === "am" ? "ምንም ያለፈ ፈረቃ አልተገኘም።" : "No past shifts found."}
                 </div>
+              ) : (
+                <div className="divide-y divide-[#E9D9C5]">
+                  {filteredHistory.map((h) => (
+                    <div key={h._id} className="p-3.5 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm text-[#29221E]">{h.date}</span>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                            h.status === "CLOSED"
+                              ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
+                              : "bg-[#EBF5F0] text-[#26845B]"
+                          }`}
+                        >
+                          {h.status === "CLOSED" ? t("nav.shiftClosed", "Closed") : t("nav.shiftOpen", "Open")}
+                        </span>
+                      </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    {t("reports.notesOptional", "Notes (Optional)")}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={t("reports.notesPlaceholder", "e.g. Handed key to owner")}
-                    value={closeNotes}
-                    onChange={(e) => setCloseNotes(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
-                  />
-                </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-2 rounded-xl bg-[#F7F6F3] font-mono text-[11px]">
+                        <div>{t("common.cash", "Cash")}: {formatETB(h.cashInTotal)}</div>
+                        <div>Telebirr: {formatETB(h.telebirrTotal)}</div>
+                        <div>CBE: {formatETB(h.cbeTotal)}</div>
+                        <div>OpEx: -{formatETB(h.dailyExpensesTotal)}</div>
+                      </div>
 
-                <div className="pt-2 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowCloseModal(false)}
-                    className="px-3 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
-                  >
-                    {t("common.cancel", "Cancel")}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={closing}
-                    className="px-4 py-2 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
-                  >
-                    {closing ? t("reports.locking", "Locking...") : t("reports.confirmLock", "Confirm & Lock")}
-                  </button>
+                      <div className="flex items-center justify-between text-[11px] pt-0.5">
+                        <span>
+                          {t("reports.actualCounted", "Counted")}: <strong>{formatETB(h.actualClosingCash || 0)}</strong>
+                        </span>
+                        <span>
+                          {(h.discrepancy || 0) === 0 ? (
+                            <span className="text-[#26845B] font-bold">✓ {t("reports.balanced", "Balanced")}</span>
+                          ) : (h.discrepancy || 0) > 0 ? (
+                            <span className="text-[#D96827] font-bold">+{formatETB(h.discrepancy || 0)} {t("reports.surplus", "Surplus")}</span>
+                          ) : (
+                            <span className="text-[#D94B45] font-bold">{formatETB(h.discrepancy || 0)} {t("reports.shortage", "Shortage")}</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </form>
+              )}
             </div>
           </div>
         )}

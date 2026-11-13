@@ -35,6 +35,19 @@ export interface ActivityItem {
   method?: string;
 }
 
+export interface WeeklyComparisonData {
+  thisWeek: {
+    revenue: number;
+    skaters: number;
+    concessions: number;
+  };
+  priorWeek: {
+    revenue: number;
+    skaters: number;
+    concessions: number;
+  };
+}
+
 export interface DashboardClientProps {
   session: {
     name: string;
@@ -54,6 +67,7 @@ export interface DashboardClientProps {
   activities: ActivityItem[];
   maintenanceShoes: number;
   lowStockCount: number;
+  weeklyComparison?: WeeklyComparisonData;
 }
 
 export function DashboardClient({
@@ -71,8 +85,14 @@ export function DashboardClient({
   activities,
   maintenanceShoes,
   lowStockCount,
+  weeklyComparison,
 }: DashboardClientProps) {
   const { t } = useLanguage();
+
+  const getPct = (current: number, prior: number) => {
+    if (prior === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - prior) / prior) * 100);
+  };
 
   return (
     <div className="min-h-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 text-[#29221E] overflow-x-hidden">
@@ -235,6 +255,104 @@ export function DashboardClient({
         hourlyData={hourlyData}
         todayGross={todayDay.gross}
       />
+
+      {/* 3.5. WEEKLY COMPARISON CARD */}
+      {weeklyComparison && (
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9D9C5] shadow-xs space-y-3 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2 border-b border-[#E9D9C5]">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-[#FFF4E5] text-[#D96827]">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-[#29221E]">
+                  {t("reports.weeklyComparison", "Weekly Performance Comparison")}
+                </h3>
+                <p className="text-[11px] text-[#8B8179]">
+                  {t("reports.vsLastWeek", "Past 7 days vs previous 7 days")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Metric 1: Gross Revenue */}
+            <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1.5">
+              <span className="text-[10px] uppercase font-bold text-[#8B8179] block">
+                {t("dashboard.revenue", "Total Revenue")}
+              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-base sm:text-xl font-black font-mono text-[#29221E]">
+                  {formatETB(weeklyComparison.thisWeek.revenue)}
+                </span>
+                <span
+                  className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                    weeklyComparison.thisWeek.revenue >= weeklyComparison.priorWeek.revenue
+                      ? "bg-[#EBF5F0] text-[#26845B]"
+                      : "bg-[#FDF0EF] text-[#D94B45]"
+                  }`}
+                >
+                  {weeklyComparison.thisWeek.revenue >= weeklyComparison.priorWeek.revenue ? "+" : ""}
+                  {getPct(weeklyComparison.thisWeek.revenue, weeklyComparison.priorWeek.revenue)}%
+                </span>
+              </div>
+              <div className="text-[10px] text-[#8B8179] font-mono">
+                {t("reports.lastWeek", "Prior")}: {formatETB(weeklyComparison.priorWeek.revenue)}
+              </div>
+            </div>
+
+            {/* Metric 2: Skaters / Rentals */}
+            <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1.5">
+              <span className="text-[10px] uppercase font-bold text-[#8B8179] block">
+                {t("reports.skaters", "Skaters Hosted")}
+              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-base sm:text-xl font-black font-mono text-[#29221E]">
+                  {weeklyComparison.thisWeek.skaters}
+                </span>
+                <span
+                  className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                    weeklyComparison.thisWeek.skaters >= weeklyComparison.priorWeek.skaters
+                      ? "bg-[#EBF5F0] text-[#26845B]"
+                      : "bg-[#FDF0EF] text-[#D94B45]"
+                  }`}
+                >
+                  {weeklyComparison.thisWeek.skaters >= weeklyComparison.priorWeek.skaters ? "+" : ""}
+                  {getPct(weeklyComparison.thisWeek.skaters, weeklyComparison.priorWeek.skaters)}%
+                </span>
+              </div>
+              <div className="text-[10px] text-[#8B8179] font-mono">
+                {t("reports.lastWeek", "Prior")}: {weeklyComparison.priorWeek.skaters} {t("reports.sessions", "sessions")}
+              </div>
+            </div>
+
+            {/* Metric 3: Concession Sales */}
+            <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1.5">
+              <span className="text-[10px] uppercase font-bold text-[#8B8179] block">
+                {t("nav.pos", "Shop Sales")}
+              </span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-base sm:text-xl font-black font-mono text-[#D96827]">
+                  {formatETB(weeklyComparison.thisWeek.concessions)}
+                </span>
+                <span
+                  className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                    weeklyComparison.thisWeek.concessions >= weeklyComparison.priorWeek.concessions
+                      ? "bg-[#EBF5F0] text-[#26845B]"
+                      : "bg-[#FDF0EF] text-[#D94B45]"
+                  }`}
+                >
+                  {weeklyComparison.thisWeek.concessions >= weeklyComparison.priorWeek.concessions ? "+" : ""}
+                  {getPct(weeklyComparison.thisWeek.concessions, weeklyComparison.priorWeek.concessions)}%
+                </span>
+              </div>
+              <div className="text-[10px] text-[#8B8179] font-mono">
+                {t("reports.lastWeek", "Prior")}: {formatETB(weeklyComparison.priorWeek.concessions)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 4. OPERATIONAL MODULES & LIVE ACTIVITY FEED */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">

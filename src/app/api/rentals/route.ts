@@ -3,20 +3,72 @@ import { connectDB } from "@/lib/mongodb";
 import { RentalSession, Shoe, Sale } from "@/models";
 import { getSession } from "@/lib/auth";
 
-// GET /api/rentals - List active sessions (sorted by expected finish time) with attached tab totals
+// GET /api/rentals - List sessions with optional filters (todayOnly, date range, search) and attached tab totals
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || "ACTIVE";
+    const todayOnly = searchParams.get("todayOnly") === "true";
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const search = searchParams.get("search")?.trim();
+    const sortBy = searchParams.get("sortBy") || "expectedEndTime";
 
     const query: Record<string, unknown> = {};
+
     if (status !== "ALL") {
       query.status = status;
     }
 
-    // Default sort: earliest expectedEndTime first
-    const sessions = await RentalSession.find(query).sort({ expectedEndTime: 1 }).lean();
+    // Date filtering
+    if (todayOnly) {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // If active sessions are requested, include any currently active session regardless of start time,
+      // but for COMPLETED / CANCELLED or general lists, limit to today
+      if (status === "ACTIVE") {
+        query.$or = [
+          { status: "ACTIVE" },
+          { startedAt: { $gte: startOfDay, $lte: endOfDay } },
+        ];
+      } else {
+        query.startedAt = { $gte: startOfDay, $lte: endOfDay };
+      }
+    } else if (startDate && endDate) {
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      query.startedAt = { $gte: s, $lte: e };
+    } else if (startDate) {
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      query.startedAt = { $gte: s };
+    }
+
+    // Search query by customer name, phone, or shoe ID
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [
+        { customerName: searchRegex },
+        { customerPhone: searchRegex },
+        { shoeId: searchRegex },
+      ];
+    }
+
+    // Sort order: history defaults to createdAt descending, board to expectedEndTime ascending
+    const sortOption: Record<string, 1 | -1> =
+      sortBy === "createdAt"
+        ? { createdAt: -1 }
+        : sortBy === "startedAt"
+        ? { startedAt: -1 }
+        : { expectedEndTime: 1 };
+
+    const sessions = await RentalSession.find(query).sort(sortOption).lean();
 
     // Fetch attached unpaid tab snack sales for these sessions
     const sessionIds = sessions.map((s) => s._id);

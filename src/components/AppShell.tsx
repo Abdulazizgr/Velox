@@ -18,6 +18,7 @@ import {
   X,
   ChevronRight,
   FileText,
+  Banknote,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { PWAInlineButton } from "@/components/PWAInstallBanner";
@@ -60,6 +61,7 @@ export function AppShell({ user, children }: AppShellProps) {
         { href: "/inventory/shoes", label: t("nav.shoes", "Skate Shoes"), icon: Footprints },
         { href: "/inventory/stock", label: t("nav.stock", "Stock"), icon: Package },
         { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
+        { href: "/reports/daily", label: t("nav.dailyReport", "Daily Shift"), icon: Banknote },
         { href: "/reports", label: t("nav.reports", "Reports"), icon: FileText },
         { href: "/staff", label: t("nav.staff", "Staff"), icon: Users },
       ]

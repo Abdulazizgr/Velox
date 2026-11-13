@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
+import Link from "next/link";
 import { formatETB, format12HourTime, triggerVibration } from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
 import { useLanguage } from "@/lib/i18n";
@@ -24,6 +25,8 @@ import {
   History,
   QrCode,
   BellRing,
+  Pencil,
+  Ban,
 } from "lucide-react";
 
 interface ShoeSwapLog {
@@ -107,6 +110,19 @@ export default function RentalBoardPage() {
   const [returnSession, setReturnSession] = useState<RentalSessionItem | null>(null);
   const [returnPaymentMethod, setReturnPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [returnLoading, setReturnLoading] = useState(false);
+
+  // Cancel Rental Modal State
+  const [cancelSession, setCancelSession] = useState<RentalSessionItem | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Edit Rental Session Modal State
+  const [editSession, setEditSession] = useState<RentalSessionItem | null>(null);
+  const [editDuration, setEditDuration] = useState<30 | 60>(30);
+  const [editPaymentStatus, setEditPaymentStatus] = useState<"PAID" | "UNPAID">("UNPAID");
+  const [editPaymentMethod, setEditPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   // Web Audio synthesizer chime and vibration for alerts
   const playAudioCue = (type: "start" | "due" | "overdue" | "chime") => {
@@ -230,7 +246,7 @@ export default function RentalBoardPage() {
   const fetchRentals = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/rentals?status=ALL");
+      const res = await fetch("/api/rentals?status=ALL&todayOnly=true");
       if (res.ok) {
         const data = await res.json();
         setSessions(data.sessions || []);
@@ -251,6 +267,95 @@ export default function RentalBoardPage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelSession) return;
+    setCancelLoading(true);
+    try {
+      const res = await fetch(`/api/rentals/${cancelSession._id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voidAttachedTab: true }),
+      });
+      if (res.ok) {
+        showAlert({
+          title: t("common.success", "Success"),
+          message: `${cancelSession.shoeId} cancelled and released to Available`,
+          type: "success",
+        });
+        setCancelSession(null);
+        fetchRentals();
+        fetchAvailableShoes();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: t("common.error", "Error"),
+          message: err.error || "Failed to cancel rental",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: t("common.error", "Error"),
+        message: "Network error",
+        type: "error",
+      });
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const openEditModal = (session: RentalSessionItem) => {
+    setEditSession(session);
+    setEditDuration((session.baseDurationMinutes === 60 ? 60 : 30) as 30 | 60);
+    setEditPaymentStatus(session.paymentStatus || "UNPAID");
+    setEditPaymentMethod(session.paymentMethod || "CASH");
+    setEditCustomerName(session.customerName || "");
+    setEditCustomerPhone(session.customerPhone || "");
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editSession) return;
+    setEditLoading(true);
+    try {
+      const res = await fetch(`/api/rentals/${editSession._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          durationMinutes: editDuration,
+          paymentStatus: editPaymentStatus,
+          paymentMethod: editPaymentMethod,
+          customerName: editCustomerName,
+          customerPhone: editCustomerPhone,
+        }),
+      });
+      if (res.ok) {
+        showAlert({
+          title: t("common.success", "Success"),
+          message: `Rental for ${editSession.shoeId} updated`,
+          type: "success",
+        });
+        setEditSession(null);
+        fetchRentals();
+      } else {
+        const err = await res.json();
+        showAlert({
+          title: t("common.error", "Error"),
+          message: err.error || "Failed to update rental",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: t("common.error", "Error"),
+        message: "Network error",
+        type: "error",
+      });
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -651,7 +756,16 @@ export default function RentalBoardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Rental History link for past records */}
+            <Link
+              href="/rentals/history"
+              className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-[#29221E] hover:text-[#D96827] bg-white border border-[#E9D9C5] rounded-xl hover:bg-[#FFF4E5] transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <History className="h-4 w-4 text-[#D96827]" />
+              <span className="hidden sm:inline">{t("rentals.historyButton", "Rental History")}</span>
+            </Link>
+
             {/* Audio Toggle & Sound Test */}
             <button
               onClick={() => {
@@ -874,24 +988,54 @@ export default function RentalBoardPage() {
                         </div>
                       </div>
 
-                      {/* Status Tag */}
-                      <div className="shrink-0">
+                      {/* Status Tag & Card Actions */}
+                      <div className="shrink-0 flex items-center gap-1.5">
                         {!isActive ? (
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]">
-                            {t("rentals.returnedTab", "Returned")}
-                          </span>
-                        ) : timer.isOverdue ? (
-                          <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-[#D94B45] text-white animate-pulse">
-                            {t("rentals.overdueTab", "OVERDUE")} +{timer.minutes}m
-                          </span>
-                        ) : timer.isDueSoon ? (
-                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/40">
-                            {t("rentals.dueIn", "Due")} ({timer.minutes}m)
-                          </span>
+                          session.status === "CANCELLED" ? (
+                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#FDF0EF] text-[#D94B45] border border-[#D94B45]/30">
+                              {t("rentals.cancelledBadge", "CANCELLED")}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]">
+                              {t("rentals.returnedTab", "Returned")}
+                            </span>
+                          )
                         ) : (
-                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/40">
-                            {t("rentals.activeTab", "Active")}
-                          </span>
+                          <>
+                            {timer.isOverdue ? (
+                              <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-[#D94B45] text-white animate-pulse">
+                                {t("rentals.overdueTab", "OVERDUE")} +{timer.minutes}m
+                              </span>
+                            ) : timer.isDueSoon ? (
+                              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/40">
+                                {t("rentals.dueIn", "Due")} ({timer.minutes}m)
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/40">
+                                {t("rentals.activeTab", "Active")}
+                              </span>
+                            )}
+
+                            {/* Edit session */}
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(session)}
+                              className="p-1.5 rounded-lg text-[#8B8179] hover:text-[#D96827] hover:bg-[#FFF4E5] transition-colors cursor-pointer border border-[#E9D9C5]"
+                              title={t("rentals.editSession", "Edit Session")}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+
+                            {/* Cancel rental */}
+                            <button
+                              type="button"
+                              onClick={() => setCancelSession(session)}
+                              className="p-1.5 rounded-lg text-[#8B8179] hover:text-[#D94B45] hover:bg-[#FDF0EF] transition-colors cursor-pointer border border-[#E9D9C5]"
+                              title={t("rentals.cancelRental", "Cancel Rental")}
+                            >
+                              <Ban className="h-3.5 w-3.5" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -1662,6 +1806,228 @@ export default function RentalBoardPage() {
                     className="px-5 py-2.5 bg-[#26845B] hover:bg-[#1f6d4a] text-white font-bold text-xs rounded-xl shadow-md shadow-[#26845B]/20 cursor-pointer"
                   >
                     {returnLoading ? t("common.loading", "Loading...") : t("rentals.completeReturn", "Confirm Return & Payment")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 4. CANCEL RENTAL CONFIRMATION MODAL */}
+        {cancelSession && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E] space-y-3.5">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[#E9D9C5]">
+                <div className="p-2 rounded-xl bg-[#FDF0EF] text-[#D94B45]">
+                  <Ban className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#29221E]">
+                    {t("rentals.cancelModalTitle", "Cancel Rental Session?")}
+                  </h3>
+                  <p className="text-xs text-[#8B8179]">
+                    {t("rentals.cancelModalDesc", "Shoe will be released back to Available.")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs space-y-1 font-mono">
+                <div className="flex justify-between">
+                  <span className="text-[#8B8179] font-sans">Shoe:</span>
+                  <strong>{cancelSession.shoeId} (#{cancelSession.shoeSize})</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8B8179] font-sans">Customer:</span>
+                  <span>{cancelSession.customerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8B8179] font-sans">Fee:</span>
+                  <span className="text-[#D96827]">{formatETB(cancelSession.totalRentalFee)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                <button
+                  type="button"
+                  onClick={() => setCancelSession(null)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  {t("common.cancel", "Cancel")}
+                </button>
+                <button
+                  type="button"
+                  disabled={cancelLoading}
+                  onClick={handleCancelConfirm}
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                >
+                  {cancelLoading ? t("rentals.cancelling", "Cancelling...") : t("rentals.confirmCancel", "Confirm Cancel")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 5. EDIT RENTAL SESSION MODAL */}
+        {editSession && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Pencil className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#29221E]">
+                      {t("rentals.editRentalModalTitle", "Edit Rental Session")}
+                    </h3>
+                    <p className="text-xs text-[#8B8179]">
+                      {t("rentals.editRentalModalSub", "Change duration, payment status, or customer info")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditSession(null)}
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                {/* Shoe info card */}
+                <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs flex items-center justify-between font-mono">
+                  <span>Shoe: <strong>{editSession.shoeId}</strong> (#{editSession.shoeSize})</span>
+                  <span className="text-[#8B8179]">Started: {format12HourTime(editSession.startedAt)}</span>
+                </div>
+
+                {/* Duration Picker */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
+                    {t("rentals.durationTiming", "Duration")}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditDuration(30)}
+                      className={`p-3 rounded-xl border text-left font-bold text-xs cursor-pointer transition-all ${
+                        editDuration === 30
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm"
+                          : "bg-white text-[#29221E] border-[#E9D9C5]"
+                      }`}
+                    >
+                      <div className="text-sm">30 Minutes</div>
+                      <div className={`text-[11px] font-mono mt-0.5 ${editDuration === 30 ? "text-white/90" : "text-[#D96827]"}`}>
+                        {editSession.pricingType === "WEEKEND" ? "200 ETB" : "150 ETB"}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditDuration(60)}
+                      className={`p-3 rounded-xl border text-left font-bold text-xs cursor-pointer transition-all ${
+                        editDuration === 60
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm"
+                          : "bg-white text-[#29221E] border-[#E9D9C5]"
+                      }`}
+                    >
+                      <div className="text-sm">60 Minutes</div>
+                      <div className={`text-[11px] font-mono mt-0.5 ${editDuration === 60 ? "text-white/90" : "text-[#D96827]"}`}>
+                        {editSession.pricingType === "WEEKEND" ? "300 ETB" : "250 ETB"}
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Payment Status & Channel */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
+                    {t("expenses.paidVia", "Payment Status & Method")}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditPaymentStatus("UNPAID")}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        editPaymentStatus === "UNPAID"
+                          ? "bg-[#FFF4E5] border-[#D96827] text-[#D96827]"
+                          : "bg-white border-[#E9D9C5] text-[#8B8179]"
+                      }`}
+                    >
+                      {t("rentals.unpaidBadge", "UNPAID")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditPaymentStatus("PAID")}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        editPaymentStatus === "PAID"
+                          ? "bg-[#EBF5F0] border-[#26845B] text-[#26845B]"
+                          : "bg-white border-[#E9D9C5] text-[#8B8179]"
+                      }`}
+                    >
+                      {t("rentals.paidBadge", "PAID")}
+                    </button>
+                  </div>
+
+                  {editPaymentStatus === "PAID" && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => setEditPaymentMethod(method)}
+                          className={`py-1.5 px-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                            editPaymentMethod === method
+                              ? "bg-[#29221E] text-white border-[#29221E]"
+                              : "bg-white border-[#E9D9C5] text-[#8B8179]"
+                          }`}
+                        >
+                          {method === "CASH" ? t("common.cash", "Cash") : method === "TELEBIRR" ? t("common.telebirr", "Telebirr") : t("common.cbe", "CBE")}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Customer Details */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      {t("rentals.customerName", "Customer Name")}
+                    </label>
+                    <input
+                      type="text"
+                      value={editCustomerName}
+                      onChange={(e) => setEditCustomerName(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      {t("rentals.customerPhone", "Phone")}
+                    </label>
+                    <input
+                      type="text"
+                      value={editCustomerPhone}
+                      onChange={(e) => setEditCustomerPhone(e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                  <button
+                    type="button"
+                    onClick={() => setEditSession(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    {t("common.cancel", "Cancel")}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editLoading}
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                  >
+                    {editLoading ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}
                   </button>
                 </div>
               </form>
