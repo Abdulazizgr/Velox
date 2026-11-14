@@ -28,6 +28,7 @@ import {
   ArrowRight,
   Filter,
   ArrowUpDown,
+  Loader2,
 } from "lucide-react";
 import SkateLoading from "@/components/SkateLoading";
 
@@ -452,17 +453,26 @@ export default function ReportsPage() {
                 <button
                   type="button"
                   onClick={handleApplyCustomDate}
-                  className="px-3 py-1 rounded-lg bg-[#D96827] text-white font-bold text-xs cursor-pointer hover:bg-[#C2571A]"
+                  disabled={loadingAnalytics}
+                  className="px-3.5 py-1.5 rounded-lg bg-[#D96827] text-white font-bold text-xs cursor-pointer hover:bg-[#C2571A] disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  {t("reports.apply", "Apply")}
+                  {loadingAnalytics && <Loader2 className="h-3 w-3 animate-spin" />}
+                  <span>{t("reports.apply", "Apply")}</span>
                 </button>
               </div>
             )}
           </div>
         )}
 
+        {/* Loading State during tab switches and date filter updates */}
+        {loadingAnalytics && (
+          <div className="py-20 flex flex-col items-center justify-center gap-3">
+            <SkateLoading size="lg" text={t("reports.loadingMetrics", "Loading metrics...")} />
+          </div>
+        )}
+
         {/* ================= TAB 1: SHOE FLEET & DEMAND ================= */}
-        {activeTab === "FLEET" && analyticsData && (
+        {!loadingAnalytics && activeTab === "FLEET" && analyticsData && (
           <div className="space-y-4 min-w-0">
             {/* Out of Stock Turnaways Summary Card */}
             <div className="p-3.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs min-w-0">
@@ -697,7 +707,7 @@ export default function ReportsPage() {
         )}
 
         {/* ================= TAB 2: CONCESSION & PRODUCT PROFIT MARGINS ================= */}
-        {activeTab === "CONCESSION" && analyticsData && (
+        {!loadingAnalytics && activeTab === "CONCESSION" && analyticsData && (
           <div className="space-y-4 min-w-0">
             {/* Filter and Sort Bar for Products */}
             <div className="p-3.5 bg-white rounded-2xl border border-[#E9D9C5] shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -789,10 +799,16 @@ export default function ReportsPage() {
                           <div>{t("reports.profit", "Profit")}: <strong className="text-[#26845B]">+{formatETB(p.grossProfit)}</strong></div>
                         </div>
 
-                        <div className="w-full bg-[#E9D9C5]/50 h-1.5 rounded-full overflow-hidden">
+                        <div className="w-full bg-[#E9D9C5]/50 h-2 rounded-full overflow-hidden">
                           <div
-                            className="bg-[#D96827] h-full"
-                            style={{ width: `${Math.max(relativePct, 3)}%` }}
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              p.marginPct >= 50
+                                ? "bg-[#26845B]"
+                                : p.marginPct >= 25
+                                ? "bg-[#D96827]"
+                                : "bg-[#D94B45]"
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(3, p.marginPct))}%` }}
                           />
                         </div>
                       </div>
@@ -811,11 +827,17 @@ export default function ReportsPage() {
                 </span>
               </div>
 
+              {/* Combined Progress Bar for Revenue Split */}
+              <div className="h-2.5 w-full rounded-full overflow-hidden flex bg-[#E9D9C5]/40 border border-[#E9D9C5]">
+                <div style={{ width: `${analyticsData.tabVsWalkin.tabPercentage}%` }} className="bg-[#D96827] h-full" />
+                <div style={{ width: `${analyticsData.tabVsWalkin.walkinPercentage}%` }} className="bg-[#29221E] h-full" />
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="font-bold text-[#29221E]">{t("reports.skaterTab", "Skater Tab")}</span>
-                    <span className="font-mono text-[#D96827]">{analyticsData.tabVsWalkin.tabPercentage}%</span>
+                    <span className="font-mono text-[#D96827] font-bold">{analyticsData.tabVsWalkin.tabPercentage}%</span>
                   </div>
                   <div className="text-base font-black font-mono">{formatETB(analyticsData.tabVsWalkin.tabRevenue)}</div>
                 </div>
@@ -823,7 +845,7 @@ export default function ReportsPage() {
                 <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="font-bold text-[#29221E]">{t("reports.walkinCounter", "Walk-in Counter")}</span>
-                    <span className="font-mono text-[#29221E]">{analyticsData.tabVsWalkin.walkinPercentage}%</span>
+                    <span className="font-mono text-[#29221E] font-bold">{analyticsData.tabVsWalkin.walkinPercentage}%</span>
                   </div>
                   <div className="text-base font-black font-mono">{formatETB(analyticsData.tabVsWalkin.walkinRevenue)}</div>
                 </div>
@@ -853,20 +875,25 @@ export default function ReportsPage() {
         )}
 
         {/* ================= TAB 3: PEAK HOURS & TRAFFIC FLOW ================= */}
-        {activeTab === "TRAFFIC" && analyticsData && (
+        {!loadingAnalytics && activeTab === "TRAFFIC" && analyticsData && (
           <div className="space-y-4 min-w-0">
             {/* Peak Hours Flow */}
             <div className="bg-white rounded-2xl border border-[#E9D9C5] p-3.5 sm:p-5 shadow-xs space-y-3 min-w-0">
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                   <Flame className="h-3.5 w-3.5 text-[#D96827]" />
-                  {t("reports.hourlyFlow", "Hourly Traffic Flow (10 AM – 9 PM)")}
+                  {t("reports.hourlyFlow", "Hourly Traffic Flow (9 AM – 10 PM)")}
                 </h3>
               </div>
 
-              <div className="space-y-2 min-w-0">
-                {analyticsData.hourlyTraffic.map((slot) => {
-                  const isPeak = slot.trafficLevel === "PEAK";
+              {analyticsData.hourlyTraffic.every((slot) => slot.skaters === 0) ? (
+                <div className="p-8 text-center text-xs text-[#8B8179] bg-[#F7F6F3]/50 rounded-xl border border-dashed border-[#E9D9C5]">
+                  {t("reports.noTrafficPeriod", "No skater traffic recorded for this period.")}
+                </div>
+              ) : (
+                <div className="space-y-2 min-w-0">
+                  {analyticsData.hourlyTraffic.map((slot) => {
+                    const isPeak = slot.trafficLevel === "PEAK";
 
                   return (
                     <div
@@ -895,7 +922,8 @@ export default function ReportsPage() {
                   );
                 })}
               </div>
-            </div>
+            )}
+          </div>
 
             {/* Financial Summary */}
             <div className="p-3.5 sm:p-5 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs space-y-3 min-w-0">

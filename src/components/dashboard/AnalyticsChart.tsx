@@ -238,7 +238,7 @@ export function AnalyticsChart({
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-[#26845B]" />
-                        <span>{t("dashboard.cafeShare", "Snacks")}: {formatETB(d.concessions)}</span>
+                        <span>{t("dashboard.shopShare", "Shop")}: {formatETB(d.concessions)}</span>
                       </span>
                     </div>
 

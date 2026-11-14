@@ -2,8 +2,8 @@ import SkateLoading from "@/components/SkateLoading";
 
 export default function Loading() {
   return (
-    <div className="min-h-[70vh] flex items-center justify-center">
-      <SkateLoading label="Velox Skate" size="md" />
+    <div className="min-h-[70vh] flex flex-col items-center justify-center p-6">
+      <SkateLoading size="lg" />
     </div>
   );
 }

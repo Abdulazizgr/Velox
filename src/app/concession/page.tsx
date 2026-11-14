@@ -25,6 +25,7 @@ import {
   ArrowRight,
   Clock,
   Pencil,
+  Loader2,
 } from "lucide-react";
 
 interface ProductItem {
@@ -867,11 +868,14 @@ export default function ConcessionPage() {
                     disabled={
                       submitting || cart.length === 0 || (saleType === "TAB" && !selectedSkaterId)
                     }
-                    className="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#D96827]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[#D96827] hover:bg-[#C2571A] text-white"
+                    className="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-[#D96827]/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-[#D96827] hover:bg-[#C2571A] text-white flex items-center justify-center gap-1.5"
                   >
-                    {submitting
-                      ? t("common.loading", "Recording...")
-                      : `${t("concession.checkoutButton", "Charge & Complete")} (${formatETB(totalAmount)})`}
+                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <span>
+                      {submitting
+                        ? t("common.loading", "Recording...")
+                        : `${t("concession.checkoutButton", "Charge & Complete")} (${formatETB(totalAmount)})`}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1433,9 +1437,10 @@ export default function ConcessionPage() {
                   <button
                     type="submit"
                     disabled={editSaleSubmitting}
-                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
-                    {editSaleSubmitting ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}
+                    {editSaleSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{editSaleSubmitting ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}</span>
                   </button>
                 </div>
               </form>

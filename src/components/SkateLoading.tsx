@@ -4,13 +4,16 @@ import React from "react";
 
 interface SkateLoadingProps {
   label?: string;
+  text?: string;
   size?: "sm" | "md" | "lg" | "fullscreen";
 }
 
 export function SkateLoading({
   label = "Gliding in...",
+  text,
   size = "md",
 }: SkateLoadingProps) {
+  const displayText = text || label;
   const isFullscreen = size === "fullscreen";
 
   const content = (
@@ -80,10 +83,10 @@ export function SkateLoading({
       </div>
 
       {/* Label */}
-      {label && (
+      {displayText && (
         <div className="space-y-1">
           <p className="text-xs font-bold text-[#29221E] tracking-wide uppercase font-sans animate-pulse">
-            {label}
+            {displayText}
           </p>
           <div className="flex items-center justify-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-[#D96827] animate-bounce [animation-delay:0ms]" />

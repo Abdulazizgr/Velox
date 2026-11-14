@@ -16,7 +16,8 @@ import {
   HourData,
 } from "@/components/dashboard/AnalyticsChart";
 import { DashboardClient, ActivityItem } from "@/components/dashboard/DashboardClient";
-import { startOfDay, endOfDay, subDays, format, getHours } from "date-fns";
+import { startOfDay, endOfDay, subDays, format } from "date-fns";
+import { getEthiopiaDayBounds, getEthiopiaHour } from "@/lib/dateUtils";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -84,12 +85,11 @@ export default async function DashboardPage() {
 
   // 3. Today's Specific Calculations
   const todayDay = sevenDaysData[sevenDaysData.length - 1];
-  const todayStart = startOfDay(now);
-  const todayEnd = endOfDay(now);
+  const { start: todayStart, end: todayEnd } = getEthiopiaDayBounds(now);
 
   const todayRentals = await RentalSession.find({
     startedAt: { $gte: todayStart, $lte: todayEnd },
-    paymentStatus: "PAID",
+    status: { $ne: "CANCELLED" },
   }).lean();
 
   const todaySales = await Sale.find({
@@ -100,11 +100,13 @@ export default async function DashboardPage() {
   // Payment Channels today
   const channelData: ChannelData = { cash: 0, telebirr: 0, cbe: 0, total: 0 };
   todayRentals.forEach((r) => {
-    const fee = r.totalRentalFee || 0;
-    channelData.total += fee;
-    if (r.paymentMethod === "TELEBIRR") channelData.telebirr += fee;
-    else if (r.paymentMethod === "CBE") channelData.cbe += fee;
-    else channelData.cash += fee;
+    if (r.paymentStatus === "PAID") {
+      const fee = r.totalRentalFee || 0;
+      channelData.total += fee;
+      if (r.paymentMethod === "TELEBIRR") channelData.telebirr += fee;
+      else if (r.paymentMethod === "CBE") channelData.cbe += fee;
+      else channelData.cash += fee;
+    }
   });
   todaySales.forEach((s) => {
     const amt = s.totalAmount || 0;
@@ -114,18 +116,18 @@ export default async function DashboardPage() {
     else channelData.cash += amt;
   });
 
-  // Hourly Traffic today (10:00 to 21:00)
+  // Hourly Traffic today in East Africa Time (9:00 to 22:00)
   const hourlyData: HourData[] = [];
   const hoursMap: Record<number, number> = {};
-  for (let h = 10; h <= 21; h++) {
+  for (let h = 9; h <= 22; h++) {
     hoursMap[h] = 0;
   }
   todayRentals.forEach((r) => {
-    const h = getHours(r.startedAt);
+    const h = getEthiopiaHour(r.startedAt);
     if (hoursMap[h] !== undefined) hoursMap[h]++;
   });
 
-  for (let h = 10; h <= 21; h++) {
+  for (let h = 9; h <= 22; h++) {
     const period = h < 12 ? "AM" : "PM";
     const hour12 = h % 12 === 0 ? 12 : h % 12;
     hourlyData.push({

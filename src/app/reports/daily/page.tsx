@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Calendar,
   BarChart3,
+  Loader2,
 } from "lucide-react";
 import SkateLoading from "@/components/SkateLoading";
 
@@ -745,9 +746,10 @@ export default function DailyReportPage() {
                   <button
                     type="submit"
                     disabled={closing}
-                    className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
-                    {closing ? t("reports.locking", "Locking Shift...") : t("reports.confirmLock", "Confirm & Lock Shift")}
+                    {closing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{closing ? t("reports.locking", "Locking Shift...") : t("reports.confirmLock", "Confirm & Lock Shift")}</span>
                   </button>
                 </div>
               </form>

@@ -12,6 +12,7 @@ import {
 } from "@/models";
 import { getSession } from "@/lib/auth";
 import { startOfDay, endOfDay, subDays } from "date-fns";
+import { getEthiopiaDayBounds, getEthiopiaPastDaysBounds, getEthiopiaHour } from "@/lib/dateUtils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,32 +29,40 @@ export async function GET(req: NextRequest) {
 
     const now = new Date();
     let rangeStart: Date;
-    let rangeEnd: Date = endOfDay(now);
+    let rangeEnd: Date;
+
+    const todayBounds = getEthiopiaDayBounds(now);
 
     if (startDate && endDate) {
-      rangeStart = startOfDay(new Date(startDate));
-      rangeEnd = endOfDay(new Date(endDate));
+      rangeStart = getEthiopiaDayBounds(new Date(startDate)).start;
+      rangeEnd = getEthiopiaDayBounds(new Date(endDate)).end;
     } else if (startDate) {
-      rangeStart = startOfDay(new Date(startDate));
-      rangeEnd = endOfDay(new Date(startDate));
+      const b = getEthiopiaDayBounds(new Date(startDate));
+      rangeStart = b.start;
+      rangeEnd = b.end;
     } else if (range === "today") {
-      rangeStart = startOfDay(now);
+      rangeStart = todayBounds.start;
+      rangeEnd = todayBounds.end;
     } else if (range === "yesterday") {
-      rangeStart = startOfDay(subDays(now, 1));
-      rangeEnd = endOfDay(subDays(now, 1));
+      const yb = getEthiopiaPastDaysBounds(1);
+      rangeStart = yb.start;
+      rangeEnd = yb.end;
     } else if (range === "30days") {
-      rangeStart = startOfDay(subDays(now, 29));
+      rangeStart = getEthiopiaPastDaysBounds(29).start;
+      rangeEnd = todayBounds.end;
     } else if (range === "all") {
       rangeStart = new Date(0);
+      rangeEnd = todayBounds.end;
     } else {
       // Default: 7days
-      rangeStart = startOfDay(subDays(now, 6));
+      rangeStart = getEthiopiaPastDaysBounds(6).start;
+      rangeEnd = todayBounds.end;
     }
 
-    // 1. Fetch Rentals in Range
+    // 1. Fetch Rentals in Range (Exclude cancelled)
     const rentals = await RentalSession.find({
       startedAt: { $gte: rangeStart, $lte: rangeEnd },
-      paymentStatus: "PAID",
+      status: { $ne: "CANCELLED" },
     }).lean();
 
     // 2. Fetch Sales in Range
@@ -240,13 +249,15 @@ export async function GET(req: NextRequest) {
     });
 
     const totalSalesCount = sales.length || 1;
+    const totalConcessionRevenue = tabRevenue + walkinRevenue;
+    const totalRevForPct = totalConcessionRevenue > 0 ? totalConcessionRevenue : 1;
     const tabVsWalkin = {
       tabSalesCount,
       tabRevenue,
-      tabPercentage: Math.round((tabSalesCount / totalSalesCount) * 100),
+      tabPercentage: totalConcessionRevenue > 0 ? Math.round((tabRevenue / totalRevForPct) * 100) : 0,
       walkinSalesCount,
       walkinRevenue,
-      walkinPercentage: Math.round((walkinSalesCount / totalSalesCount) * 100),
+      walkinPercentage: totalConcessionRevenue > 0 ? Math.round((walkinRevenue / totalRevForPct) * 100) : 0,
       attachmentRatePct: rentals.length > 0 ? Math.round((tabSalesCount / rentals.length) * 100) : 0,
     };
 
@@ -329,14 +340,14 @@ export async function GET(req: NextRequest) {
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayRegister = await DailyRegister.findOne({ date: todayStr });
 
-    // --- COMPUTATION 7: PEAK HOURS & CUSTOMER TRAFFIC ---
+    // --- COMPUTATION 7: PEAK HOURS & CUSTOMER TRAFFIC (9 AM to 10 PM in East Africa Time) ---
     const hoursMap: Record<number, { skaters: number; revenue: number }> = {};
-    for (let h = 10; h <= 21; h++) {
+    for (let h = 9; h <= 22; h++) {
       hoursMap[h] = { skaters: 0, revenue: 0 };
     }
 
     rentals.forEach((r) => {
-      const h = new Date(r.startedAt).getHours();
+      const h = getEthiopiaHour(r.startedAt);
       if (hoursMap[h]) {
         hoursMap[h].skaters++;
         hoursMap[h].revenue += r.totalRentalFee || 0;
@@ -349,7 +360,7 @@ export async function GET(req: NextRequest) {
       const data = hoursMap[h];
       const period = h < 12 ? "AM" : "PM";
       const hour12 = h % 12 === 0 ? 12 : h % 12;
-      const pct = Math.round((data.skaters / maxHourlySkaters) * 100);
+      const pct = maxHourlySkaters > 0 && data.skaters > 0 ? Math.round((data.skaters / maxHourlySkaters) * 100) : 0;
       return {
         hour: h,
         hourLabel: `${hour12}:00 ${period}`,

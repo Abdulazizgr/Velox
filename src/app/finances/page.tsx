@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { formatETB, exportToCSV, format12HourDateTime } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
 import {
@@ -25,6 +26,7 @@ import {
   AlertTriangle,
   ChevronDown,
   Edit3,
+  Loader2,
 } from "lucide-react";
 
 interface ExpenseItem {
@@ -487,6 +489,21 @@ export default function ExpensesPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Tab switchers: Expenses Log vs Financial Report */}
+            {isOwner && (
+              <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-[#E9D9C5] shadow-2xs mr-1">
+                <span className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#D96827] text-white shadow-xs">
+                  {t("finances.expensesLogTab", "Expenses Log")}
+                </span>
+                <Link
+                  href="/finances/report"
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#8B8179] hover:text-[#29221E] transition-all"
+                >
+                  {t("finances.financialReportTab", "Financial Report & P&L")}
+                </Link>
+              </div>
+            )}
+
             <button
               onClick={fetchExpenses}
               disabled={loading}
@@ -1262,9 +1279,10 @@ export default function ExpensesPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D94B45]/20 cursor-pointer"
+                    className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D94B45]/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
-                    {submitting ? t("common.loading", "Saving...") : t("expenses.recordExpense", "Record Expense")}
+                    {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{submitting ? t("common.loading", "Saving...") : t("expenses.recordExpense", "Record Expense")}</span>
                   </button>
                 </div>
               </form>
@@ -1577,9 +1595,10 @@ export default function ExpensesPage() {
                   type="button"
                   disabled={deleting}
                   onClick={handleDeleteExpense}
-                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
-                  {deleting ? t("common.loading", "Deleting...") : t("common.confirm", "Confirm Delete")}
+                  {deleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{deleting ? t("common.loading", "Deleting...") : t("common.confirm", "Confirm Delete")}</span>
                 </button>
               </div>
             </div>

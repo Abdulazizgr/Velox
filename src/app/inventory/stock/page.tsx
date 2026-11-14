@@ -550,7 +550,7 @@ export default function StockInventoryPage() {
               </h1>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#8B8179]">
-              {t("stock.subtitle", "Manage cafe snacks, drinks, and inventory counts")}
+              {t("stock.subtitle", "Manage shop snacks, drinks, and inventory counts")}
             </p>
           </div>
 

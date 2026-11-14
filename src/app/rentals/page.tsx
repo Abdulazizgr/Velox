@@ -27,6 +27,7 @@ import {
   BellRing,
   Pencil,
   Ban,
+  Loader2,
 } from "lucide-react";
 
 interface ShoeSwapLog {
@@ -1662,9 +1663,10 @@ export default function RentalBoardPage() {
                   <button
                     type="submit"
                     disabled={swapLoading || !swapNewShoeId}
-                    className="px-4 py-2 bg-[#D96827] hover:bg-[#C2571A] text-white font-semibold text-xs rounded-xl shadow-sm disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 bg-[#D96827] hover:bg-[#C2571A] text-white font-semibold text-xs rounded-xl shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    {swapLoading ? t("common.loading", "Loading...") : t("rentals.confirmSwap", "Confirm Shoe Change")}
+                    {swapLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{swapLoading ? t("common.loading", "Loading...") : t("rentals.confirmSwap", "Confirm Shoe Change")}</span>
                   </button>
                 </div>
               </form>
@@ -1728,7 +1730,7 @@ export default function RentalBoardPage() {
 
                     {returnSession.tabTotal && returnSession.tabTotal > 0 ? (
                       <div className="flex justify-between items-center text-[#D96827] font-semibold">
-                        <span>{t("rentals.snacksBill", "Snacks / Cafe Bill")}:</span>
+                        <span>{t("rentals.snacksBill", "Shop Bill")}:</span>
                         <span className="font-mono font-bold">+{formatETB(returnSession.tabTotal)}</span>
                       </div>
                     ) : null}
@@ -1803,9 +1805,10 @@ export default function RentalBoardPage() {
                   <button
                     type="submit"
                     disabled={returnLoading}
-                    className="px-5 py-2.5 bg-[#26845B] hover:bg-[#1f6d4a] text-white font-bold text-xs rounded-xl shadow-md shadow-[#26845B]/20 cursor-pointer"
+                    className="px-5 py-2.5 bg-[#26845B] hover:bg-[#1f6d4a] text-white font-bold text-xs rounded-xl shadow-md shadow-[#26845B]/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
-                    {returnLoading ? t("common.loading", "Loading...") : t("rentals.completeReturn", "Confirm Return & Payment")}
+                    {returnLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{returnLoading ? t("common.loading", "Loading...") : t("rentals.completeReturn", "Confirm Return & Payment")}</span>
                   </button>
                 </div>
               </form>
@@ -1858,9 +1861,10 @@ export default function RentalBoardPage() {
                   type="button"
                   disabled={cancelLoading}
                   onClick={handleCancelConfirm}
-                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                  className="px-5 py-2.5 bg-[#D94B45] hover:bg-[#c23e38] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
-                  {cancelLoading ? t("rentals.cancelling", "Cancelling...") : t("rentals.confirmCancel", "Confirm Cancel")}
+                  {cancelLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{cancelLoading ? t("rentals.cancelling", "Cancelling...") : t("rentals.confirmCancel", "Confirm Cancel")}</span>
                 </button>
               </div>
             </div>
@@ -2025,9 +2029,10 @@ export default function RentalBoardPage() {
                   <button
                     type="submit"
                     disabled={editLoading}
-                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
-                    {editLoading ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}
+                    {editLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>{editLoading ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}</span>
                   </button>
                 </div>
               </form>
