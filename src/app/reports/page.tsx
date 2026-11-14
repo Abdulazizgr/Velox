@@ -882,7 +882,7 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
                 <h3 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
                   <Flame className="h-3.5 w-3.5 text-[#D96827]" />
-                  {t("reports.hourlyFlow", "Hourly Traffic Flow (9 AM – 10 PM)")}
+                  {t("reports.hourlyFlow", "Hourly Traffic Flow (7 AM – 10 PM)")}
                 </h3>
               </div>
 
@@ -990,23 +990,31 @@ export default function ReportsPage() {
                             "Cash In",
                             "Telebirr",
                             "CBE",
-                            "Expenses",
-                            "Expected",
-                            "Counted",
+                            "Total Revenue",
+                            "Expenses (OpEx)",
+                            "Net Income",
+                            "Expected In Drawer",
+                            "Counted Cash",
                             "Discrepancy",
                             "Status",
                           ],
-                          filteredHistory.map((h) => [
-                            h.date,
-                            h.cashInTotal,
-                            h.telebirrTotal,
-                            h.cbeTotal,
-                            h.dailyExpensesTotal,
-                            h.expectedClosingCash,
-                            h.actualClosingCash || 0,
-                            h.discrepancy || 0,
-                            h.status,
-                          ])
+                          filteredHistory.map((h) => {
+                            const totalRev = (h.cashInTotal || 0) + (h.telebirrTotal || 0) + (h.cbeTotal || 0);
+                            const shiftNetIncome = totalRev - (h.dailyExpensesTotal || 0);
+                            return [
+                              h.date,
+                              h.cashInTotal,
+                              h.telebirrTotal,
+                              h.cbeTotal,
+                              totalRev,
+                              h.dailyExpensesTotal,
+                              shiftNetIncome,
+                              h.expectedClosingCash,
+                              h.actualClosingCash || 0,
+                              h.discrepancy || 0,
+                              h.status,
+                            ];
+                          })
                         )
                       }
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-[#E9D9C5] text-xs font-semibold text-[#29221E] hover:text-[#D96827] transition-colors cursor-pointer"
@@ -1024,44 +1032,62 @@ export default function ReportsPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-[#E9D9C5]">
-                  {filteredHistory.map((h) => (
-                    <div key={h._id} className="p-3.5 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-[#29221E]">{h.date}</span>
-                        <span
-                          className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                            h.status === "CLOSED"
-                              ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
-                              : "bg-[#EBF5F0] text-[#26845B]"
-                          }`}
-                        >
-                          {h.status === "CLOSED" ? t("nav.shiftClosed", "Closed") : t("nav.shiftOpen", "Open")}
-                        </span>
-                      </div>
+                  {filteredHistory.map((h) => {
+                    const totalRev = (h.cashInTotal || 0) + (h.telebirrTotal || 0) + (h.cbeTotal || 0);
+                    const shiftNetIncome = totalRev - (h.dailyExpensesTotal || 0);
+                    return (
+                      <div key={h._id} className="p-3.5 space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm text-[#29221E]">{h.date}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                              h.status === "CLOSED"
+                                ? "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
+                                : "bg-[#EBF5F0] text-[#26845B]"
+                            }`}
+                          >
+                            {h.status === "CLOSED" ? t("nav.shiftClosed", "Closed") : t("nav.shiftOpen", "Open")}
+                          </span>
+                        </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-2 rounded-xl bg-[#F7F6F3] font-mono text-[11px]">
-                        <div>{t("common.cash", "Cash")}: {formatETB(h.cashInTotal)}</div>
-                        <div>Telebirr: {formatETB(h.telebirrTotal)}</div>
-                        <div>CBE: {formatETB(h.cbeTotal)}</div>
-                        <div>OpEx: -{formatETB(h.dailyExpensesTotal)}</div>
-                      </div>
+                        {/* Revenue Channels Breakdown */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-2 rounded-xl bg-[#F7F6F3] font-mono text-[11px]">
+                          <div>{t("common.cash", "Cash")}: {formatETB(h.cashInTotal)}</div>
+                          <div>Telebirr: {formatETB(h.telebirrTotal)}</div>
+                          <div>CBE: {formatETB(h.cbeTotal)}</div>
+                          <div>OpEx: -{formatETB(h.dailyExpensesTotal)}</div>
+                        </div>
 
-                      <div className="flex items-center justify-between text-[11px] pt-0.5">
-                        <span>
-                          {t("reports.actualCounted", "Counted")}: <strong>{formatETB(h.actualClosingCash || 0)}</strong>
-                        </span>
-                        <span>
-                          {(h.discrepancy || 0) === 0 ? (
-                            <span className="text-[#26845B] font-bold">✓ {t("reports.balanced", "Balanced")}</span>
-                          ) : (h.discrepancy || 0) > 0 ? (
-                            <span className="text-[#D96827] font-bold">+{formatETB(h.discrepancy || 0)} {t("reports.surplus", "Surplus")}</span>
-                          ) : (
-                            <span className="text-[#D94B45] font-bold">{formatETB(h.discrepancy || 0)} {t("reports.shortage", "Shortage")}</span>
-                          )}
-                        </span>
+                        {/* Shift Net Income Highlight */}
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-[#EBF5F0] border border-[#26845B]/30">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <TrendingUp className="h-3.5 w-3.5 text-[#26845B] shrink-0" />
+                            <span className="text-[11px] font-bold text-[#26845B] uppercase tracking-wide">
+                              {t("finances.netIncome", "Net Income")}
+                            </span>
+                          </div>
+                          <span className="font-mono font-black text-xs sm:text-sm text-[#26845B]">
+                            {shiftNetIncome >= 0 ? `+${formatETB(shiftNetIncome)}` : `-${formatETB(Math.abs(shiftNetIncome))}`}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] pt-0.5">
+                          <span>
+                            {t("reports.actualCounted", "Counted")}: <strong>{formatETB(h.actualClosingCash || 0)}</strong>
+                          </span>
+                          <span>
+                            {(h.discrepancy || 0) === 0 ? (
+                              <span className="text-[#26845B] font-bold">✓ {t("reports.balanced", "Balanced")}</span>
+                            ) : (h.discrepancy || 0) > 0 ? (
+                              <span className="text-[#D96827] font-bold">+{formatETB(h.discrepancy || 0)} {t("reports.surplus", "Surplus")}</span>
+                            ) : (
+                              <span className="text-[#D94B45] font-bold">{formatETB(h.discrepancy || 0)} {t("reports.shortage", "Shortage")}</span>
+                            )}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

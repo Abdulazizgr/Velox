@@ -340,9 +340,9 @@ export async function GET(req: NextRequest) {
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayRegister = await DailyRegister.findOne({ date: todayStr });
 
-    // --- COMPUTATION 7: PEAK HOURS & CUSTOMER TRAFFIC (9 AM to 10 PM in East Africa Time) ---
+    // --- COMPUTATION 7: PEAK HOURS & CUSTOMER TRAFFIC (7 AM to 10 PM in East Africa Time) ---
     const hoursMap: Record<number, { skaters: number; revenue: number }> = {};
-    for (let h = 9; h <= 22; h++) {
+    for (let h = 7; h <= 22; h++) {
       hoursMap[h] = { skaters: 0, revenue: 0 };
     }
 

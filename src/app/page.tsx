@@ -116,10 +116,10 @@ export default async function DashboardPage() {
     else channelData.cash += amt;
   });
 
-  // Hourly Traffic today in East Africa Time (9:00 to 22:00)
+  // Hourly Traffic today in East Africa Time (7:00 to 22:00)
   const hourlyData: HourData[] = [];
   const hoursMap: Record<number, number> = {};
-  for (let h = 9; h <= 22; h++) {
+  for (let h = 7; h <= 22; h++) {
     hoursMap[h] = 0;
   }
   todayRentals.forEach((r) => {
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
     if (hoursMap[h] !== undefined) hoursMap[h]++;
   });
 
-  for (let h = 9; h <= 22; h++) {
+  for (let h = 7; h <= 22; h++) {
     const period = h < 12 ? "AM" : "PM";
     const hour12 = h % 12 === 0 ? 12 : h % 12;
     hourlyData.push({

@@ -52,3 +52,4 @@ export function formatEthiopiaHour(hour: number): { label12: string; period: "AM
     period,
   };
 }
+

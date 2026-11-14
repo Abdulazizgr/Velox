@@ -95,9 +95,9 @@ export function DashboardClient({
   };
 
   return (
-    <div className="min-h-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 text-[#29221E] overflow-x-hidden">
+    <div className="w-full min-h-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 text-[#29221E] overflow-x-hidden">
       {/* 1. TOP WELCOME BANNER (Mobile-First) */}
-      <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 min-w-0">
+      <div className="w-full p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-white border border-[#E9D9C5] shadow-xs relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 min-w-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-2xl overflow-hidden border border-[#E9D9C5] shadow-xs shrink-0 bg-black">
             <Image
@@ -138,62 +138,62 @@ export function DashboardClient({
       </div>
 
       {/* 2. TOP 4 KPI CARDS (Mobile 2x2 grid, Desktop 4-column) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 min-w-0 max-w-full">
+      <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 min-w-0 max-w-full">
         {/* Card 1: Revenue */}
-        <div className="p-2.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
-          <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#26845B] truncate">
+        <div className="w-full min-w-0 p-2 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between overflow-hidden">
+          <div className="min-w-0">
+            <div className="flex items-center justify-between text-[#8B8179] mb-1 gap-1 min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#26845B] truncate min-w-0">
                 {t("dashboard.revenue", "Revenue")}
               </span>
               <div className="p-1 rounded-lg bg-[#EBF5F0] text-[#26845B] shrink-0">
                 <TrendingUp className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="text-base sm:text-2xl font-black text-[#26845B] font-mono truncate">
+            <div className="text-sm sm:text-2xl font-black text-[#26845B] font-mono truncate">
               {formatETB(todayDay.gross)}
             </div>
             <div className="mt-0.5 text-[10px] text-[#8B8179] truncate">
               {t("dashboard.skatesShare", "Skates")}: {formatETB(todayDay.rentals)}
             </div>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179] min-w-0">
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179] min-w-0 gap-1">
             <span className="truncate">{t("dashboard.shopShare", "Shop")}:</span>
             <span className="font-bold text-[#29221E] font-mono truncate ml-1">{formatETB(todayDay.concessions)}</span>
           </div>
         </div>
 
         {/* Card 2: Net Income */}
-        <div className="p-2.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
-          <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate">
+        <div className="w-full min-w-0 p-2 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between overflow-hidden">
+          <div className="min-w-0">
+            <div className="flex items-center justify-between text-[#8B8179] mb-1 gap-1 min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate min-w-0">
                 {t("finances.netIncome", "Net Income")}
               </span>
               <div className="p-1 rounded-lg bg-[#FFF4E5] text-[#D96827] shrink-0">
                 <Wallet className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="text-base sm:text-2xl font-black text-[#29221E] font-mono truncate">
+            <div className="text-sm sm:text-2xl font-black text-[#29221E] font-mono truncate">
               {formatETB(todayDay.net)}
             </div>
             <div className="mt-0.5 text-[10px] text-[#8B8179] truncate">
               {t("dashboard.expensesLabel", "Expenses")}: -{formatETB(todayDay.expenses)}
             </div>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179] min-w-0">
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179] min-w-0 gap-1">
             <span className="truncate">{t("dashboard.margin", "Margin")}:</span>
-            <span className="font-bold text-[#26845B] font-mono ml-1">
+            <span className="font-bold text-[#26845B] font-mono shrink-0 ml-1">
               {todayDay.gross > 0 ? `${Math.round((todayDay.net / todayDay.gross) * 100)}%` : "0%"}
             </span>
           </div>
         </div>
 
         {/* Card 3: Floor Occupancy */}
-        <div className="p-2.5 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
-          <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#29221E] truncate">
+        <div className="w-full min-w-0 p-2 sm:p-4 rounded-2xl bg-white border border-[#E9D9C5] shadow-xs flex flex-col justify-between overflow-hidden">
+          <div className="min-w-0">
+            <div className="flex items-center justify-between text-[#8B8179] mb-1 gap-1 min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#29221E] truncate min-w-0">
                 {t("dashboard.occupancy", "Occupancy")}
               </span>
               <div className="p-1 rounded-lg bg-[#F7F6F3] text-[#29221E] shrink-0">
@@ -201,7 +201,7 @@ export function DashboardClient({
               </div>
             </div>
             <div className="flex items-baseline gap-1 truncate min-w-0">
-              <span className="text-base sm:text-2xl font-black text-[#29221E] font-mono shrink-0">
+              <span className="text-sm sm:text-2xl font-black text-[#29221E] font-mono shrink-0">
                 {rentedShoes}
               </span>
               <span className="text-[10px] text-[#8B8179] truncate">
@@ -215,31 +215,31 @@ export function DashboardClient({
               />
             </div>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179] min-w-0">
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5]/60 flex items-center justify-between text-[10px] text-[#8B8179] min-w-0 gap-1">
             <span className="truncate">{t("dashboard.load", "Load")}:</span>
-            <span className="font-bold text-[#D96827] font-mono ml-1">{occupancyPct}%</span>
+            <span className="font-bold text-[#D96827] font-mono shrink-0 ml-1">{occupancyPct}%</span>
           </div>
         </div>
 
         {/* Card 4: Drawer Expected */}
-        <div className="p-2.5 sm:p-4 rounded-2xl bg-[#FFF4E5]/70 border border-[#E9D9C5] shadow-xs flex flex-col justify-between min-w-0 overflow-hidden">
-          <div>
-            <div className="flex items-center justify-between text-[#8B8179] mb-1">
-              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate">
+        <div className="w-full min-w-0 p-2 sm:p-4 rounded-2xl bg-[#FFF4E5]/70 border border-[#E9D9C5] shadow-xs flex flex-col justify-between overflow-hidden">
+          <div className="min-w-0">
+            <div className="flex items-center justify-between text-[#8B8179] mb-1 gap-1 min-w-0">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate min-w-0">
                 {t("dashboard.inDrawer", "In Drawer")}
               </span>
               <div className="p-1 rounded-lg bg-[#D96827] text-white shrink-0">
                 <Banknote className="h-3.5 w-3.5" />
               </div>
             </div>
-            <div className="text-base sm:text-2xl font-black text-[#D96827] font-mono truncate">
+            <div className="text-sm sm:text-2xl font-black text-[#D96827] font-mono truncate">
               {formatETB(expectedInDrawer)}
             </div>
             <div className="mt-0.5 text-[10px] text-[#8B8179] truncate">
               {t("dashboard.cashIntake", "Cash In")}: {formatETB(channelData.cash)}
             </div>
           </div>
-          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5] flex items-center justify-between text-[10px] text-[#8B8179] min-w-0">
+          <div className="mt-2 pt-1.5 border-t border-[#E9D9C5] flex items-center justify-between text-[10px] text-[#8B8179] min-w-0 gap-1">
             <span className="truncate">{t("dashboard.float", "Float")}:</span>
             <span className="font-bold text-[#29221E] font-mono truncate ml-1">
               {formatETB(openingFloat)}

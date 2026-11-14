@@ -19,6 +19,7 @@ import {
   ChevronRight,
   FileText,
   Banknote,
+  TrendingUp,
 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { PWAInlineButton } from "@/components/PWAInstallBanner";
@@ -61,6 +62,7 @@ export function AppShell({ user, children }: AppShellProps) {
         { href: "/inventory/shoes", label: t("nav.shoes", "Skate Shoes"), icon: Footprints },
         { href: "/inventory/stock", label: t("nav.stock", "Stock"), icon: Package },
         { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
+        { href: "/finances/report", label: t("nav.financialReport", "Financial Report"), icon: TrendingUp },
         { href: "/reports/daily", label: t("nav.dailyReport", "Daily Shift"), icon: Banknote },
         { href: "/reports", label: t("nav.reports", "Reports"), icon: FileText },
         { href: "/staff", label: t("nav.staff", "Staff"), icon: Users },
@@ -91,7 +93,7 @@ export function AppShell({ user, children }: AppShellProps) {
       ];
 
   return (
-    <div className="min-h-screen bg-[#F7F6F3] text-[#29221E] flex flex-col md:flex-row max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-[#F7F6F3] text-[#29221E] flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
       {/* 1. DESKTOP SIDEBAR (Visible md and up) */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50 bg-[#29221E] text-white border-r border-[#433832] shadow-xl">
         {/* Brand Header */}
@@ -226,7 +228,7 @@ export function AppShell({ user, children }: AppShellProps) {
       </header>
 
       {/* 3. MAIN CONTENT CONTAINER */}
-      <div className="flex-1 md:pl-64 flex flex-col min-w-0 max-w-full overflow-x-hidden pb-24 md:pb-6 bg-[#F7F6F3]">
+      <div className="flex-1 md:pl-64 flex flex-col w-full min-w-0 max-w-full overflow-x-hidden pb-24 md:pb-6 bg-[#F7F6F3]">
         {children}
       </div>
 
