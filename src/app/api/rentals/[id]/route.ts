@@ -22,6 +22,7 @@ export async function PATCH(
       customerName,
       customerPhone,
       notes,
+      startTime,
     } = body;
 
     await connectDB();
@@ -46,17 +47,42 @@ export async function PATCH(
       session.basePrice = basePrice;
       session.totalRentalFee = basePrice + (session.extensionPrice || 0);
 
-      // Recalculate totalMinutes and expectedEndTime
+      // Recalculate totalMinutes
       const extensionMinutes = Array.isArray(session.extensions)
         ? session.extensions.reduce((acc: number, ext: { addedMinutes?: number }) => acc + (ext.addedMinutes || 0), 0)
         : 0;
       const gracePeriod = session.gracePeriodMinutes || 5;
       const totalMinutes = newDuration + gracePeriod + extensionMinutes;
       session.totalMinutes = totalMinutes;
-
-      const startTime = new Date(session.startedAt).getTime();
-      session.expectedEndTime = new Date(startTime + totalMinutes * 60 * 1000);
     }
+
+    // 2. Start Time Update
+    if (startTime && typeof startTime === "string" && startTime.trim()) {
+      const trimmed = startTime.trim();
+      let customDate: Date | null = null;
+      if (trimmed.includes(":") && !trimmed.includes("T")) {
+        const [hoursStr, minutesStr] = trimmed.split(":");
+        const hours = parseInt(hoursStr, 10);
+        const minutes = parseInt(minutesStr, 10);
+        if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+          customDate = new Date(session.startedAt || new Date());
+          customDate.setHours(hours, minutes, 0, 0);
+        }
+      } else {
+        const parsed = new Date(trimmed);
+        if (!isNaN(parsed.getTime())) {
+          customDate = parsed;
+        }
+      }
+
+      if (customDate) {
+        session.startedAt = customDate;
+      }
+    }
+
+    // Always keep expectedEndTime synchronized with startedAt and totalMinutes
+    const startTimeMs = new Date(session.startedAt).getTime();
+    session.expectedEndTime = new Date(startTimeMs + (session.totalMinutes || 35) * 60 * 1000);
 
     // 2. Payment Status & Method Update
     if (paymentStatus) {

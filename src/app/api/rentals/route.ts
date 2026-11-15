@@ -120,6 +120,7 @@ export async function POST(req: NextRequest) {
       paymentStatus = "UNPAID", // "PAID" | "UNPAID"
       paymentMethod,           // "CASH" | "TELEBIRR" | "CBE"
       notes = "",
+      startTime,               // optional custom start time (e.g. "14:30" or ISO string)
     } = body;
 
     if (!shoeId || !durationMinutes) {
@@ -154,7 +155,28 @@ export async function POST(req: NextRequest) {
 
     // 2. Pricing & Timing Calculations
     const now = new Date();
-    const isWeekend = [0, 6].includes(now.getDay()); // 0 = Sunday, 6 = Saturday
+    let sessionStart = now;
+
+    if (startTime && typeof startTime === "string" && startTime.trim()) {
+      const trimmed = startTime.trim();
+      if (trimmed.includes(":") && !trimmed.includes("T")) {
+        const [hoursStr, minutesStr] = trimmed.split(":");
+        const hours = parseInt(hoursStr, 10);
+        const minutes = parseInt(minutesStr, 10);
+        if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+          const customDate = new Date();
+          customDate.setHours(hours, minutes, 0, 0);
+          sessionStart = customDate;
+        }
+      } else {
+        const parsed = new Date(trimmed);
+        if (!isNaN(parsed.getTime())) {
+          sessionStart = parsed;
+        }
+      }
+    }
+
+    const isWeekend = [0, 6].includes(sessionStart.getDay()); // 0 = Sunday, 6 = Saturday
     const baseDuration = Number(durationMinutes);
     const gracePeriodMinutes = 5; // Automatic +5 min buffer
     const totalMinutes = baseDuration + gracePeriodMinutes;
@@ -166,7 +188,7 @@ export async function POST(req: NextRequest) {
       basePrice = isWeekend ? 300 : 250;
     }
 
-    const expectedEndTime = new Date(now.getTime() + totalMinutes * 60 * 1000);
+    const expectedEndTime = new Date(sessionStart.getTime() + totalMinutes * 60 * 1000);
 
     // 3. Create Rental Session
     const rental = await RentalSession.create({
@@ -180,7 +202,7 @@ export async function POST(req: NextRequest) {
       baseDurationMinutes: baseDuration,
       gracePeriodMinutes,
       totalMinutes,
-      startedAt: now,
+      startedAt: sessionStart,
       expectedEndTime,
       basePrice,
       extensionPrice: 0,

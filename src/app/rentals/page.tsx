@@ -98,6 +98,7 @@ export default function RentalBoardPage() {
   const [selectedType, setSelectedType] = useState<"INLINE" | "QUAD">("QUAD");
   const [selectedShoeId, setSelectedShoeId] = useState<string>("");
   const [duration, setDuration] = useState<30 | 60>(30);
+  const [customStartTime, setCustomStartTime] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentOption, setPaymentOption] = useState<"UNPAID" | "PAID">("UNPAID");
@@ -128,6 +129,7 @@ export default function RentalBoardPage() {
   const [editPaymentMethod, setEditPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [editCustomerName, setEditCustomerName] = useState("");
   const [editCustomerPhone, setEditCustomerPhone] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
   const [editLoading, setEditLoading] = useState(false);
 
   // Web Audio synthesizer chime and vibration for alerts
@@ -324,6 +326,14 @@ export default function RentalBoardPage() {
     setEditPaymentMethod(session.paymentMethod || "CASH");
     setEditCustomerName(session.customerName || "");
     setEditCustomerPhone(session.customerPhone || "");
+    try {
+      const d = new Date(session.startedAt);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      setEditStartTime(`${hh}:${mm}`);
+    } catch {
+      setEditStartTime("");
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -340,6 +350,7 @@ export default function RentalBoardPage() {
           paymentMethod: editPaymentMethod,
           customerName: editCustomerName,
           customerPhone: editCustomerPhone,
+          startTime: editStartTime.trim() || undefined,
         }),
       });
       if (res.ok) {
@@ -518,12 +529,14 @@ export default function RentalBoardPage() {
           customerPhone: customerPhone.trim(),
           paymentStatus: paymentOption,
           paymentMethod: paymentOption === "PAID" ? paymentMethod : undefined,
+          startTime: customStartTime.trim() || undefined,
         }),
       });
 
       if (res.ok) {
         playAudioCue("start");
         setShowNewModal(false);
+        setCustomStartTime("");
         setCustomerName("");
         setCustomerPhone("");
         fetchRentals();
@@ -827,6 +840,7 @@ export default function RentalBoardPage() {
             <button
               onClick={() => {
                 setSelectedType("QUAD");
+                setCustomStartTime("");
                 setShowNewModal(true);
               }}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D96827] hover:bg-[#C2571A] rounded-xl transition-all shadow-md shadow-[#D96827]/20 cursor-pointer"
@@ -1554,38 +1568,94 @@ export default function RentalBoardPage() {
                   </div>
                 </div>
 
-                {/* Step 5: Customer Details */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      {t("rentals.customerName", "Customer Name")}
+                {/* Step 5: Start Time */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider">
+                      {t("rentals.startTimeLabel", "5. Start Time")}
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Kidus"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
-                    />
+                    <span className="text-[10px] text-[#8B8179] font-medium font-mono">
+                      {customStartTime ? `Custom: ${customStartTime}` : "Default: Now"}
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      {t("rentals.customerPhone", "Phone (Optional)")}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="09..."
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] font-mono"
-                    />
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCustomStartTime("")}
+                      className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                        !customStartTime
+                          ? "bg-[#D96827] text-white shadow-xs"
+                          : "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5] hover:text-[#29221E]"
+                      }`}
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>{t("rentals.startTimeNow", "Now")}</span>
+                    </button>
+                    <div className="relative flex-1">
+                      <input
+                        type="time"
+                        value={customStartTime}
+                        onChange={(e) => setCustomStartTime(e.target.value)}
+                        className={`w-full px-3 py-2 bg-white border rounded-xl text-xs sm:text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 ${
+                          customStartTime ? "border-[#D96827] text-[#29221E]" : "border-[#E9D9C5] text-[#8B8179]"
+                        }`}
+                        placeholder="HH:MM"
+                      />
+                    </div>
+                    {customStartTime && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomStartTime("")}
+                        className="p-2 text-xs font-bold text-[#8B8179] hover:text-[#D94B45] cursor-pointer"
+                        title="Reset to Now"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[#8B8179] mt-1">
+                    {t("rentals.startTimeDesc", "Leave as 'Now' or enter a custom start time if skater started earlier.")}
+                  </p>
+                </div>
+
+                {/* Step 6: Customer Details */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
+                    {t("rentals.customerInfo", "6. Customer Details")}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("rentals.customerName", "Customer Name")}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Kidus"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("rentals.customerPhone", "Phone (Optional)")}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="09..."
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Step 6: Payment Timing */}
+                {/* Step 7: Payment Timing */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    {t("rentals.paymentSettlement", "6. Payment")}
+                    {t("rentals.paymentSettlement", "7. Payment")}
                   </label>
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <button
@@ -2005,6 +2075,22 @@ export default function RentalBoardPage() {
                       </div>
                     </button>
                   </div>
+                </div>
+
+                {/* Start Time Editor */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5 flex items-center justify-between">
+                    <span>{t("rentals.startTimeLabel", "Start Time")}</span>
+                    <span className="text-[10px] text-[#8B8179] font-mono">
+                      Current: {format12HourTime(editSession.startedAt)}
+                    </span>
+                  </label>
+                  <input
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs sm:text-sm font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827]"
+                  />
                 </div>
 
                 {/* Payment Status & Channel */}
