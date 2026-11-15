@@ -124,6 +124,17 @@ export default function StockInventoryPage() {
   };
 
   useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (!res.authenticated || res.user?.role !== "OWNER") {
+          window.location.href = "/rentals";
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);

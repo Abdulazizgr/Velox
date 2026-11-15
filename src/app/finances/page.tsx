@@ -174,13 +174,11 @@ export default function ExpensesPage() {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((res) => {
-        if (res.authenticated) {
-          const owner = res.user?.role === "OWNER";
-          setIsOwner(owner);
-          if (!owner) {
-            setFundFilter("DAILY_CASH");
-          }
+        if (!res.authenticated || res.user?.role !== "OWNER") {
+          window.location.href = "/rentals";
+          return;
         }
+        setIsOwner(true);
       })
       .catch(() => {});
   }, []);

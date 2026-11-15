@@ -70,9 +70,6 @@ export function AppShell({ user, children }: AppShellProps) {
     : [
         { href: "/rentals", label: t("nav.rentals", "Rentals"), icon: Timer },
         { href: "/concession", label: t("nav.pos", "Shop"), icon: ShoppingBag },
-        { href: "/inventory/shoes", label: t("nav.shoes", "Skate Shoes"), icon: Footprints },
-        { href: "/inventory/stock", label: t("nav.stock", "Stock"), icon: Package },
-        { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
       ];
 
   // Mobile bottom quick links
@@ -87,9 +84,6 @@ export function AppShell({ user, children }: AppShellProps) {
     : [
         { href: "/rentals", label: t("nav.rentals", "Rentals"), icon: Timer },
         { href: "/concession", label: t("nav.pos", "Shop"), icon: ShoppingBag },
-        { href: "/inventory/shoes", label: t("nav.shoes", "Shoes"), icon: Footprints },
-        { href: "/inventory/stock", label: t("nav.stock", "Stock"), icon: Package },
-        { href: "/finances", label: t("nav.expenses", "Expenses"), icon: Wallet },
       ];
 
   return (

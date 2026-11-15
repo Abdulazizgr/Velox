@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (sessionUser.role === "STAFF" && fundSource === "CAPITAL") {
+    if (sessionUser.role !== "OWNER") {
       return NextResponse.json(
-        { error: "Staff members can only record Daily Petty Cash expenses." },
+        { error: "Forbidden: Expenses are restricted to owners." },
         { status: 403 }
       );
     }
@@ -135,13 +135,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
-    if (sessionUser.role === "STAFF" && expense.fundSource === "CAPITAL") {
-      return NextResponse.json({ error: "Unauthorized to delete capital expenses" }, { status: 403 });
-    }
-
-    // If staff, prevent editing capital expenses
-    if (sessionUser.role === "STAFF" && expense.fundSource === "CAPITAL") {
-      return NextResponse.json({ error: "Unauthorized to edit capital expenses" }, { status: 403 });
+    if (sessionUser.role !== "OWNER") {
+      return NextResponse.json({ error: "Forbidden: Only owners can edit expenses" }, { status: 403 });
     }
 
     const oldAmount = expense.amount;
@@ -201,8 +196,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 });
     }
 
-    if (sessionUser.role === "STAFF" && expense.fundSource === "CAPITAL") {
-      return NextResponse.json({ error: "Unauthorized to delete capital expenses" }, { status: 403 });
+    if (sessionUser.role !== "OWNER") {
+      return NextResponse.json({ error: "Forbidden: Only owners can edit expenses" }, { status: 403 });
     }
 
     // If it was a capital expense, restore balance

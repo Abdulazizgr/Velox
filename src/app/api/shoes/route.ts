@@ -20,6 +20,9 @@ export async function POST(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (session.role !== "OWNER") {
+      return NextResponse.json({ error: "Forbidden: Only owners can add shoes" }, { status: 403 });
+    }
 
     const body = await req.json();
     const { shoeId, size, type, notes } = body;

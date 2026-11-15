@@ -10,6 +10,9 @@ export async function GET(req: NextRequest) {
     if (!sessionUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    if (sessionUser.role !== "OWNER") {
+      return NextResponse.json({ error: "Forbidden: Finances are restricted to owners." }, { status: 403 });
+    }
 
     await connectDB();
 
@@ -78,13 +81,9 @@ export async function GET(req: NextRequest) {
     const totalBoth = dailyTotal + capitalTotal;
     const totalCount = dailyCount + capitalCount;
 
-    const isStaff = sessionUser.role === "STAFF";
-
     // 3. Filter for specific category / fundSource view if requested
     let filteredList = periodExpenses;
-    if (isStaff) {
-      filteredList = filteredList.filter((e) => e.fundSource === "DAILY_CASH");
-    } else if (fundSourceParam && fundSourceParam !== "ALL") {
+    if (fundSourceParam && fundSourceParam !== "ALL") {
       filteredList = filteredList.filter((e) => e.fundSource === fundSourceParam);
     }
     if (categoryParam && categoryParam !== "ALL") {
@@ -95,18 +94,16 @@ export async function GET(req: NextRequest) {
       summary: {
         dailyTotal,
         dailyCount,
-        capitalTotal: isStaff ? 0 : capitalTotal,
-        capitalCount: isStaff ? 0 : capitalCount,
-        totalBoth: isStaff ? dailyTotal : totalBoth,
-        totalCount: isStaff ? dailyCount : totalCount,
+        capitalTotal,
+        capitalCount,
+        totalBoth,
+        totalCount,
       },
-      capital: isStaff
-        ? null
-        : {
-            totalCapital: capital.totalCapital,
-            remainingBalance: capital.remainingBalance,
-            lastUpdated: capital.lastUpdated,
-          },
+      capital: {
+        totalCapital: capital.totalCapital,
+        remainingBalance: capital.remainingBalance,
+        lastUpdated: capital.lastUpdated,
+      },
       expenses: filteredList,
       query: {
         preset,
