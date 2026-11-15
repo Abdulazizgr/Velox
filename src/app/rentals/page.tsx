@@ -1010,7 +1010,7 @@ export default function RentalBoardPage() {
                             {t("common.size", "Size")} #{session.shoeSize}
                           </span>
                           {session.isExtended && (
-                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30">
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30 whitespace-nowrap">
                               {session.extendedType === "EXTENDED_SMALL" ? "EXT-S" : session.extendedType === "EXTENDED_LARGE" ? "EXT-L" : "EXT-M"}
                             </span>
                           )}

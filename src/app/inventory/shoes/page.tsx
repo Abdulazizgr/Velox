@@ -734,30 +734,25 @@ export default function ShoesInventoryPage() {
                 >
                   <div className="space-y-1.5">
                     {/* Top Row: Size + Status Badge */}
-                    <div className="flex items-start justify-between gap-1">
+                    <div className="flex items-start justify-between gap-1.5">
                       <div>
                         {shoe.isExtended ? (
                           <div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-base sm:text-lg font-black text-[#D96827]">
-                                {shoe.extendedType === "EXTENDED_SMALL"
-                                  ? "EXT-S"
-                                  : shoe.extendedType === "EXTENDED_MEDIUM"
-                                  ? "EXT-M"
-                                  : "EXT-L"}
-                              </span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-md font-bold bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30">
-                                {t("shoes.extended", "Extended")}
-                              </span>
-                            </div>
-                            <div className="text-[10px] font-bold text-[#8B8179]">
+                            <span className="text-lg sm:text-xl font-black text-[#D96827] whitespace-nowrap tracking-tight block">
+                              {shoe.extendedType === "EXTENDED_SMALL"
+                                ? "EXT-S"
+                                : shoe.extendedType === "EXTENDED_MEDIUM"
+                                ? "EXT-M"
+                                : "EXT-L"}
+                            </span>
+                            <div className="text-[10px] font-bold text-[#8B8179] font-mono tracking-tight">
                               {shoe.coveredSizes && shoe.coveredSizes.length > 0
                                 ? `[${shoe.coveredSizes.join(", ")}]`
                                 : `#${shoe.size}`}
                             </div>
                           </div>
                         ) : (
-                          <span className="text-xl font-black text-[#29221E]">#{shoe.size}</span>
+                          <span className="text-xl font-black text-[#29221E] whitespace-nowrap">#{shoe.size}</span>
                         )}
                       </div>
                       <span
@@ -786,8 +781,8 @@ export default function ShoesInventoryPage() {
                       {shoe.shoeId}
                     </div>
 
-                    {/* Skate Type Pill */}
-                    <div className="pt-0.5">
+                    {/* Skate Type & Extended Badges */}
+                    <div className="pt-0.5 flex items-center gap-1.5 flex-wrap">
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-md font-bold inline-block ${
                           shoeType === "QUAD"
@@ -797,6 +792,11 @@ export default function ShoesInventoryPage() {
                       >
                         {shoeType === "QUAD" ? t("common.quads", "Quads") : t("common.inlineSkates", "Inline Skates")}
                       </span>
+                      {shoe.isExtended && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30 whitespace-nowrap inline-block">
+                          {t("shoes.extended", "Extended")}
+                        </span>
+                      )}
                     </div>
 
                     {shoe.notes && (
