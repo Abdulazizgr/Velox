@@ -13,7 +13,7 @@ export interface IMissedDemand extends Document {
 const MissedDemandSchema = new Schema<IMissedDemand>(
   {
     shoeSize: { type: Number, required: true, index: true },
-    skateType: { type: String, enum: ["INLINE", "QUAD"], default: "INLINE" },
+    skateType: { type: String, enum: ["INLINE", "QUAD"], default: "QUAD" },
     date: { type: Date, default: Date.now, index: true },
     recordedByStaffId: { type: String },
     notes: { type: String, default: "" },

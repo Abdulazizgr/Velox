@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
     const rental = await RentalSession.create({
       shoeId: shoe.shoeId,
       shoeSize: shoe.size,
-      skateType: shoe.type || "INLINE",
+      skateType: shoe.type || "QUAD",
       isExtended: shoe.isExtended || false,
       extendedType: shoe.extendedType,
       customerName: customerName.trim() || "Skater",

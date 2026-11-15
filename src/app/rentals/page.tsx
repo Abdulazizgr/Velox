@@ -95,7 +95,7 @@ export default function RentalBoardPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [availableShoes, setAvailableShoes] = useState<ShoeOption[]>([]);
   const [selectedSize, setSelectedSize] = useState<number>(40);
-  const [selectedType, setSelectedType] = useState<"INLINE" | "QUAD">("INLINE");
+  const [selectedType, setSelectedType] = useState<"INLINE" | "QUAD">("QUAD");
   const [selectedShoeId, setSelectedShoeId] = useState<string>("");
   const [duration, setDuration] = useState<30 | 60>(30);
   const [customerName, setCustomerName] = useState("");
@@ -394,15 +394,15 @@ export default function RentalBoardPage() {
     };
   }, [availableShoes, selectedSize]);
 
-  // If a size number only has one type or only one available type, auto-switch to it
+  // If a size number only has one type or only one available type, auto-switch to it; otherwise prefer QUAD default
   useEffect(() => {
-    if (availableTypesForSelectedSize.onlyQuad) {
-      setSelectedType("QUAD");
-    } else if (availableTypesForSelectedSize.onlyInline) {
+    if (availableTypesForSelectedSize.onlyInline) {
       setSelectedType("INLINE");
-    } else if (availableTypesForSelectedSize.inlineAvail === 0 && availableTypesForSelectedSize.quadAvail > 0) {
+    } else if (availableTypesForSelectedSize.onlyQuad) {
       setSelectedType("QUAD");
-    } else if (availableTypesForSelectedSize.quadAvail === 0 && availableTypesForSelectedSize.inlineAvail > 0) {
+    } else if (availableTypesForSelectedSize.quadAvail > 0) {
+      setSelectedType("QUAD");
+    } else if (availableTypesForSelectedSize.inlineAvail > 0 && availableTypesForSelectedSize.quadAvail === 0) {
       setSelectedType("INLINE");
     }
   }, [
@@ -817,7 +817,10 @@ export default function RentalBoardPage() {
             </button>
 
             <button
-              onClick={() => setShowNewModal(true)}
+              onClick={() => {
+                setSelectedType("QUAD");
+                setShowNewModal(true);
+              }}
               className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-[#D96827] hover:bg-[#C2571A] rounded-xl transition-all shadow-md shadow-[#D96827]/20 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
@@ -1286,6 +1289,39 @@ export default function RentalBoardPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
+                    {/* Quads Button (Default) */}
+                    <button
+                      type="button"
+                      disabled={!availableTypesForSelectedSize.hasQuad}
+                      onClick={() => setSelectedType("QUAD")}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                        selectedType === "QUAD"
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
+                          : availableTypesForSelectedSize.hasQuad
+                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
+                          : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold leading-tight">{t("common.quads", "Quads")}</div>
+                          <div
+                            className={`text-[10px] mt-0.5 ${
+                              selectedType === "QUAD" ? "text-white/80" : "text-[#8B8179]"
+                            }`}
+                          >
+                            {availableTypesForSelectedSize.hasQuad
+                              ? `${availableTypesForSelectedSize.quadAvail} ${t("common.available", "available")}`
+                              : "0"}
+                          </div>
+                        </div>
+                      </div>
+                      {selectedType === "QUAD" && (
+                        <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
+                      )}
+                    </button>
+
                     {/* Inline Skates Button */}
                     <button
                       type="button"
@@ -1315,39 +1351,6 @@ export default function RentalBoardPage() {
                         </div>
                       </div>
                       {selectedType === "INLINE" && (
-                        <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                      )}
-                    </button>
-
-                    {/* Quads Button */}
-                    <button
-                      type="button"
-                      disabled={!availableTypesForSelectedSize.hasQuad}
-                      onClick={() => setSelectedType("QUAD")}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                        selectedType === "QUAD"
-                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
-                          : availableTypesForSelectedSize.hasQuad
-                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
-                          : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 shrink-0" />
-                        <div>
-                          <div className="text-xs font-bold leading-tight">{t("common.quads", "Quads")}</div>
-                          <div
-                            className={`text-[10px] mt-0.5 ${
-                              selectedType === "QUAD" ? "text-white/80" : "text-[#8B8179]"
-                            }`}
-                          >
-                            {availableTypesForSelectedSize.hasQuad
-                              ? `${availableTypesForSelectedSize.quadAvail} ${t("common.available", "available")}`
-                              : "0"}
-                          </div>
-                        </div>
-                      </div>
-                      {selectedType === "QUAD" && (
                         <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
                       )}
                     </button>

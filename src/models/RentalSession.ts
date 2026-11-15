@@ -61,7 +61,7 @@ const RentalSessionSchema = new Schema<IRentalSession>(
     skateType: {
       type: String,
       enum: ["INLINE", "QUAD"],
-      default: "INLINE",
+      default: "QUAD",
     },
     isExtended: {
       type: Boolean,
