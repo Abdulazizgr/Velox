@@ -53,8 +53,11 @@ export async function GET(req: NextRequest) {
     let capital = await CapitalFund.findOne();
     if (!capital) {
       capital = await CapitalFund.create({
-        totalCapital: 50000,
-        remainingBalance: 50000,
+        initialCapital: 0,
+        totalInjectedCapital: 0,
+        totalCapital: 0,
+        remainingBalance: 0,
+        deposits: [],
         lastUpdated: new Date(),
       });
     }

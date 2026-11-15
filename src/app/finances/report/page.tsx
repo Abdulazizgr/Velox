@@ -378,14 +378,9 @@ export default function FinancialReportPage() {
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate">
                     {t("finances.capitalBalance", "General Capital")}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowCapitalModal(true)}
-                    className="p-1 px-2 rounded-lg bg-[#D96827] text-white text-[10px] font-bold shrink-0 hover:bg-[#C2571A] transition-colors cursor-pointer shadow-xs flex items-center gap-1"
-                  >
-                    <Plus className="h-3 w-3" />
-                    <span>{t("finances.addCapital", "+ Add")}</span>
-                  </button>
+                  <div className="p-1 rounded-lg bg-[#FFF4E5] text-[#D96827] shrink-0">
+                    <Building className="h-3.5 w-3.5" />
+                  </div>
                 </div>
                 <div className="text-lg sm:text-2xl font-black text-[#D96827] font-mono truncate">
                   {formatETB(data.generalCapital.currentGeneralCapital)}

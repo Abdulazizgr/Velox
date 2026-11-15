@@ -161,8 +161,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const baseCapital = capitalDoc.totalInjectedCapital || capitalDoc.totalCapital || 0;
-    const initialCapital = capitalDoc.initialCapital || 0;
+    const baseCapital = capitalDoc.totalInjectedCapital ?? capitalDoc.totalCapital ?? 0;
+    const initialCapital = capitalDoc.initialCapital ?? 0;
     const otherInjectionsTotal = Math.max(0, baseCapital - initialCapital);
     const currentGeneralCapital = baseCapital + allTimeNetIncome - allTimeCapEx;
 

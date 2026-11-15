@@ -133,25 +133,16 @@ export async function seedDatabase(clearFirst = true) {
   await Product.insertMany(sampleProducts);
   console.log(`✅ Seeded ${sampleProducts.length} snack & beverage items.`);
 
-  // 4. Seed General Capital Fund
+  // 4. Seed General Capital Fund (starts at 0 so owner sets initial capital)
   await CapitalFund.create({
-    initialCapital: 50000,
-    totalInjectedCapital: 50000,
-    totalCapital: 50000,
-    remainingBalance: 50000,
-    deposits: [
-      {
-        amount: 50000,
-        source: "INITIAL",
-        sourceLabel: "Initial Business Capital",
-        notes: "Opening seed capital",
-        date: new Date(),
-        depositedByName: "System Seed",
-      },
-    ],
+    initialCapital: 0,
+    totalInjectedCapital: 0,
+    totalCapital: 0,
+    remainingBalance: 0,
+    deposits: [],
     lastUpdated: new Date(),
   });
-  console.log("✅ Initialized General Capital Fund: 50,000 ETB");
+  console.log("✅ Initialized General Capital Fund: 0 ETB (Pending Owner Input)");
 
   // 5. Seed Daily Shift Register for Today
   const todayStr = format(new Date(), "yyyy-MM-dd");
