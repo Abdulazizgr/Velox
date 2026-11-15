@@ -135,8 +135,20 @@ export async function seedDatabase(clearFirst = true) {
 
   // 4. Seed General Capital Fund
   await CapitalFund.create({
+    initialCapital: 50000,
+    totalInjectedCapital: 50000,
     totalCapital: 50000,
     remainingBalance: 50000,
+    deposits: [
+      {
+        amount: 50000,
+        source: "INITIAL",
+        sourceLabel: "Initial Business Capital",
+        notes: "Opening seed capital",
+        date: new Date(),
+        depositedByName: "System Seed",
+      },
+    ],
     lastUpdated: new Date(),
   });
   console.log("✅ Initialized General Capital Fund: 50,000 ETB");

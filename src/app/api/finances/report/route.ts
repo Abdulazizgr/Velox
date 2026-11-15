@@ -152,13 +152,18 @@ export async function GET(req: NextRequest) {
     let capitalDoc = await CapitalFund.findOne();
     if (!capitalDoc) {
       capitalDoc = await CapitalFund.create({
-        totalCapital: 50000,
-        remainingBalance: 50000,
+        initialCapital: 0,
+        totalInjectedCapital: 0,
+        totalCapital: 0,
+        remainingBalance: 0,
+        deposits: [],
         lastUpdated: new Date(),
       });
     }
 
-    const baseCapital = capitalDoc.totalCapital || 0;
+    const baseCapital = capitalDoc.totalInjectedCapital || capitalDoc.totalCapital || 0;
+    const initialCapital = capitalDoc.initialCapital || 0;
+    const otherInjectionsTotal = Math.max(0, baseCapital - initialCapital);
     const currentGeneralCapital = baseCapital + allTimeNetIncome - allTimeCapEx;
 
     // 5. Daily Ledger (Day-by-Day Breakdown for the period)
@@ -243,6 +248,9 @@ export async function GET(req: NextRequest) {
       },
       generalCapital: {
         baseCapital,
+        initialCapital,
+        otherInjectionsTotal,
+        deposits: capitalDoc.deposits || [],
         allTimeGross,
         allTimeDailyOpEx,
         allTimeNetIncome,

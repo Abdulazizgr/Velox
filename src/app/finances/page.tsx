@@ -115,6 +115,9 @@ export default function ExpensesPage() {
   // Capital Top-up Modal
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [topupAmount, setTopupAmount] = useState("");
+  const [topupSource, setTopupSource] = useState<"INITIAL" | "OWNER_EQUITY" | "LOAN" | "PARTNER" | "OTHER">("OWNER_EQUITY");
+  const [topupDate, setTopupDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [topupNotes, setTopupNotes] = useState("");
   const [topupLoading, setTopupLoading] = useState(false);
 
   // Delete Confirmation Modal
@@ -368,12 +371,18 @@ export default function ExpensesPage() {
       const res = await fetch("/api/finances/capital", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Number(topupAmount) }),
+        body: JSON.stringify({
+          amount: Number(topupAmount),
+          source: topupSource,
+          date: topupDate,
+          notes: topupNotes.trim(),
+        }),
       });
 
       if (res.ok) {
         setShowTopupModal(false);
         setTopupAmount("");
+        setTopupNotes("");
         showPopup("Capital Deposited", `Added ${formatETB(Number(topupAmount))} to General Capital!`);
         fetchExpenses();
       } else {
@@ -1498,7 +1507,7 @@ export default function ExpensesPage() {
         {/* MODAL 3: CAPITAL TOP-UP */}
         {showTopupModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-sm w-full p-5 shadow-2xl relative my-auto text-[#29221E]">
+            <div className="bg-white border border-[#E9D9C5] rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E] space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-[#D96827]" />
@@ -1506,16 +1515,33 @@ export default function ExpensesPage() {
                 </div>
                 <button
                   onClick={() => setShowTopupModal(false)}
-                  className="p-1 text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg hover:bg-[#F7F6F3] cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleTopupCapital} className="mt-4 space-y-3.5">
+              <form onSubmit={handleTopupCapital} className="space-y-3.5">
                 <p className="text-xs text-[#8B8179] leading-relaxed">
-                  {t("expenses.topUpModalSub", "Inject additional capital reserves for purchasing new skates, paying facility rent, or large stock replenishments.")}
+                  {t("finances.capitalModalSub", "Set initial business capital or inject funds from loans, partners, or other sources.")}
                 </p>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    {t("finances.capitalSource", "Capital Source")}
+                  </label>
+                  <select
+                    value={topupSource}
+                    onChange={(e) => setTopupSource(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  >
+                    <option value="INITIAL">{t("finances.sourceInitial", "Initial Business Capital")}</option>
+                    <option value="OWNER_EQUITY">{t("finances.sourceOwner", "Owner Investment / Equity")}</option>
+                    <option value="LOAN">{t("finances.sourceLoan", "Bank / Commercial Loan")}</option>
+                    <option value="PARTNER">{t("finances.sourcePartner", "Partner Contribution")}</option>
+                    <option value="OTHER">{t("finances.sourceOther", "Other External Source")}</option>
+                  </select>
+                </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
@@ -1525,10 +1551,37 @@ export default function ExpensesPage() {
                     type="number"
                     required
                     min={1}
+                    step="any"
                     placeholder="e.g. 20000"
                     value={topupAmount}
                     onChange={(e) => setTopupAmount(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={topupDate}
+                    onChange={(e) => setTopupDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                    Notes / Reference (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Bank loan reference, partner name..."
+                    value={topupNotes}
+                    onChange={(e) => setTopupNotes(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs focus:outline-none focus:ring-2 focus:ring-[#D96827]"
                   />
                 </div>
 
@@ -1543,9 +1596,9 @@ export default function ExpensesPage() {
                   <button
                     type="submit"
                     disabled={topupLoading}
-                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 cursor-pointer"
+                    className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 disabled:opacity-50 cursor-pointer"
                   >
-                    {topupLoading ? t("common.loading", "Saving...") : t("expenses.depositCapital", "Deposit Capital")}
+                    {topupLoading ? t("common.loading", "Saving...") : t("finances.addCapital", "Add / Inject Capital")}
                   </button>
                 </div>
               </form>

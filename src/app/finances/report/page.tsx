@@ -19,6 +19,9 @@ import {
   ArrowUpDown,
   Building,
   Loader2,
+  Plus,
+  Trash2,
+  X,
 } from "lucide-react";
 import SkateLoading from "@/components/SkateLoading";
 
@@ -36,8 +39,21 @@ interface FinancialSummary {
   totalExpenses: number;
 }
 
+interface CapitalDepositItem {
+  _id: string;
+  amount: number;
+  source: string;
+  sourceLabel: string;
+  notes?: string;
+  date: string;
+  depositedByName?: string;
+}
+
 interface GeneralCapital {
   baseCapital: number;
+  initialCapital?: number;
+  otherInjectionsTotal?: number;
+  deposits?: CapitalDepositItem[];
   allTimeGross: number;
   allTimeDailyOpEx: number;
   allTimeNetIncome: number;
@@ -84,6 +100,14 @@ export default function FinancialReportPage() {
   const [preset, setPreset] = useState<PresetOption>("WEEK");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+
+  // Capital Injection Modal State
+  const [showCapitalModal, setShowCapitalModal] = useState(false);
+  const [capitalAmount, setCapitalAmount] = useState("");
+  const [capitalSource, setCapitalSource] = useState<"INITIAL" | "OWNER_EQUITY" | "LOAN" | "PARTNER" | "OTHER">("INITIAL");
+  const [capitalDate, setCapitalDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [capitalNotes, setCapitalNotes] = useState("");
+  const [capitalSubmitting, setCapitalSubmitting] = useState(false);
 
   const fetchReport = async (p: PresetOption = preset, start?: string, end?: string) => {
     setLoading(true);
@@ -157,6 +181,54 @@ export default function FinancialReportPage() {
       row.capitalExpenses,
     ]);
     exportToCSV(`Velox_Financial_Report_${preset}`, headers, rows);
+  };
+
+  const handleAddCapital = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!capitalAmount || Number(capitalAmount) <= 0) return;
+    setCapitalSubmitting(true);
+    try {
+      const res = await fetch("/api/finances/capital", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(capitalAmount),
+          source: capitalSource,
+          notes: capitalNotes.trim(),
+          date: capitalDate,
+        }),
+      });
+      if (res.ok) {
+        setShowCapitalModal(false);
+        setCapitalAmount("");
+        setCapitalNotes("");
+        fetchReport();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to add capital");
+      }
+    } catch {
+      alert("Network error");
+    } finally {
+      setCapitalSubmitting(false);
+    }
+  };
+
+  const handleDeleteCapitalDeposit = async (id: string) => {
+    if (!confirm(t("finances.deleteDepositConfirm", "Are you sure you want to remove this capital injection?"))) return;
+    try {
+      const res = await fetch(`/api/finances/capital?depositId=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        fetchReport();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to delete");
+      }
+    } catch {
+      alert("Network error");
+    }
   };
 
   return (
@@ -306,9 +378,14 @@ export default function FinancialReportPage() {
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#D96827] truncate">
                     {t("finances.capitalBalance", "General Capital")}
                   </span>
-                  <div className="p-1 rounded-lg bg-[#D96827] text-white shrink-0">
-                    <Building className="h-3.5 w-3.5" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCapitalModal(true)}
+                    className="p-1 px-2 rounded-lg bg-[#D96827] text-white text-[10px] font-bold shrink-0 hover:bg-[#C2571A] transition-colors cursor-pointer shadow-xs flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>{t("finances.addCapital", "+ Add")}</span>
+                  </button>
                 </div>
                 <div className="text-lg sm:text-2xl font-black text-[#D96827] font-mono truncate">
                   {formatETB(data.generalCapital.currentGeneralCapital)}
@@ -318,8 +395,8 @@ export default function FinancialReportPage() {
                 </div>
               </div>
               <div className="mt-2 pt-1.5 border-t border-[#D96827]/20 flex items-center justify-between text-[10px] text-[#8B8179]">
-                <span>All-Time Net:</span>
-                <span className="font-bold text-[#29221E] font-mono">{formatETB(data.generalCapital.allTimeNetIncome)}</span>
+                <span>Base Injected: <strong className="text-[#29221E] font-mono">{formatETB(data.generalCapital.baseCapital || 0)}</strong></span>
+                <span className="font-bold text-[#29221E] font-mono">Net: {formatETB(data.generalCapital.allTimeNetIncome)}</span>
               </div>
             </div>
 
@@ -445,6 +522,104 @@ export default function FinancialReportPage() {
             </div>
           </div>
 
+          {/* Base Capital & Injections Breakdown Card */}
+          <div className="bg-white rounded-2xl border border-[#E9D9C5] p-3.5 sm:p-5 shadow-xs space-y-3.5 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-[#E9D9C5]">
+              <div>
+                <h2 className="text-xs font-bold text-[#29221E] uppercase tracking-wider flex items-center gap-1.5">
+                  <Building className="h-4 w-4 text-[#D96827]" />
+                  <span>{t("finances.capitalInjectionsHistory", "Capital Injections & Funding Sources")}</span>
+                </h2>
+                <p className="text-[11px] text-[#8B8179] mt-0.5">
+                  Initial business capital plus any additional funding injected from loans, partners, or owner equity.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCapitalModal(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>{t("finances.addCapital", "+ Add Capital / Injections")}</span>
+              </button>
+            </div>
+
+            {/* Injections Summary Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="p-3 rounded-xl bg-[#FAF9F6] border border-[#E9D9C5]">
+                <span className="text-[10px] font-bold text-[#8B8179] uppercase block">{t("finances.sourceInitial", "Initial Capital")}</span>
+                <span className="text-base font-black text-[#29221E] font-mono">{formatETB(data.generalCapital.initialCapital || 0)}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-[#FAF9F6] border border-[#E9D9C5]">
+                <span className="text-[10px] font-bold text-[#8B8179] uppercase block">{t("finances.sourceOther", "Other Injections (Loans/Partners)")}</span>
+                <span className="text-base font-black text-[#29221E] font-mono">{formatETB(data.generalCapital.otherInjectionsTotal || 0)}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#D96827]/40">
+                <span className="text-[10px] font-bold text-[#D96827] uppercase block">{t("finances.injectedTotal", "Total Injected Capital")}</span>
+                <span className="text-base font-black text-[#D96827] font-mono">{formatETB(data.generalCapital.baseCapital || 0)}</span>
+              </div>
+            </div>
+
+            {/* List of Capital Injections */}
+            {(!data.generalCapital.deposits || data.generalCapital.deposits.length === 0) ? (
+              <div className="text-center py-4 text-xs text-[#8B8179]">
+                {t("finances.noInjections", "No capital deposits or injections recorded yet.")}
+              </div>
+            ) : (
+              <div className="overflow-x-auto -mx-1 sm:mx-0">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#E9D9C5] text-[#8B8179] text-[10px] uppercase">
+                      <th className="py-2 px-2.5 font-bold">Date</th>
+                      <th className="py-2 px-2.5 font-bold">Source / Type</th>
+                      <th className="py-2 px-2.5 font-bold">Notes</th>
+                      <th className="py-2 px-2.5 font-bold text-right">Amount</th>
+                      <th className="py-2 px-2.5 font-bold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E9D9C5]/60 font-mono">
+                    {data.generalCapital.deposits.map((dep) => (
+                      <tr key={dep._id} className="hover:bg-[#FAF9F6] transition-colors">
+                        <td className="py-2 px-2.5 whitespace-nowrap text-[#8B8179] font-sans text-[11px]">
+                          {new Date(dep.date).toLocaleDateString()}
+                        </td>
+                        <td className="py-2 px-2.5 font-sans font-bold text-[#29221E]">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase ${
+                            dep.source === "INITIAL"
+                              ? "bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30"
+                              : dep.source === "LOAN"
+                              ? "bg-[#EDE9FE] text-[#6D28D9] border border-[#DDD6FE]"
+                              : dep.source === "OWNER_EQUITY"
+                              ? "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
+                              : "bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]"
+                          }`}>
+                            {dep.sourceLabel || dep.source}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2.5 text-[11px] text-[#8B8179] font-sans truncate max-w-[200px]">
+                          {dep.notes || "—"}
+                        </td>
+                        <td className="py-2 px-2.5 text-right font-black text-[#26845B]">
+                          +{formatETB(dep.amount)}
+                        </td>
+                        <td className="py-2 px-2.5 text-right font-sans">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCapitalDeposit(dep._id)}
+                            className="p-1 text-[#8B8179] hover:text-[#D94B45] rounded-lg hover:bg-[#FDF0EF] transition-colors cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
           {/* Daily Net Income Ledger (Day-by-Day Performance Table) */}
           <div className="bg-white rounded-2xl border border-[#E9D9C5] p-3.5 sm:p-5 shadow-xs space-y-3 min-w-0">
             <div className="flex items-center justify-between pb-2 border-b border-[#E9D9C5]">
@@ -536,6 +711,111 @@ export default function FinancialReportPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Capital Injection / Initial Capital Modal */}
+      {showCapitalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 border border-[#E9D9C5] shadow-2xl relative space-y-4 text-[#29221E]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
+              <div className="flex items-center gap-2">
+                <Building className="h-5 w-5 text-[#D96827]" />
+                <h3 className="text-sm font-bold text-[#29221E]">
+                  {t("finances.capitalModalTitle", "Add Capital & Injections")}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCapitalModal(false)}
+                className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg hover:bg-[#F7F6F3] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#8B8179] leading-relaxed">
+              {t("finances.capitalModalSub", "Set initial business capital or inject funds from loans, partners, or other sources.")}
+            </p>
+
+            <form onSubmit={handleAddCapital} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                  {t("finances.capitalSource", "Capital Source")}
+                </label>
+                <select
+                  value={capitalSource}
+                  onChange={(e) => setCapitalSource(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                >
+                  <option value="INITIAL">{t("finances.sourceInitial", "Initial Business Capital")}</option>
+                  <option value="OWNER_EQUITY">{t("finances.sourceOwner", "Owner Investment / Equity")}</option>
+                  <option value="LOAN">{t("finances.sourceLoan", "Bank / Commercial Loan")}</option>
+                  <option value="PARTNER">{t("finances.sourcePartner", "Partner Contribution")}</option>
+                  <option value="OTHER">{t("finances.sourceOther", "Other External Source")}</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                  Amount (ETB)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  step="any"
+                  placeholder="e.g. 50000"
+                  value={capitalAmount}
+                  onChange={(e) => setCapitalAmount(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-sm font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={capitalDate}
+                  onChange={(e) => setCapitalDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                  Notes / Reference (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Seed investment, Commercial bank loan #12..."
+                  value={capitalNotes}
+                  onChange={(e) => setCapitalNotes(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#E9D9C5]">
+                <button
+                  type="button"
+                  onClick={() => setShowCapitalModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                >
+                  {t("common.cancel", "Cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={capitalSubmitting}
+                  className="px-5 py-2.5 bg-[#D96827] hover:bg-[#C2571A] text-white font-bold text-xs rounded-xl shadow-md shadow-[#D96827]/20 disabled:opacity-50 cursor-pointer"
+                >
+                  {capitalSubmitting ? t("common.loading", "Saving...") : t("finances.addCapital", "Add / Inject Capital")}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
