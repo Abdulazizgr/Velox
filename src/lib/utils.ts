@@ -50,13 +50,14 @@ export function exportToCSV(
 }
 
 /**
- * Format date/time strictly in 12-hour format with AM/PM (e.g., 2:45 PM)
+ * Format date/time strictly in 12-hour format with AM/PM locked to Ethiopia Time (e.g., 2:45 PM)
  */
 export function format12HourTime(date: Date | string | number | null | undefined): string {
   if (!date) return "";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "";
   return d.toLocaleTimeString("en-US", {
+    timeZone: "Africa/Addis_Ababa",
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -64,13 +65,14 @@ export function format12HourTime(date: Date | string | number | null | undefined
 }
 
 /**
- * Format date/time with month, day and 12-hour format (e.g., Nov 6, 2:45 PM)
+ * Format date/time with month, day and 12-hour format locked to Ethiopia Time (e.g., Nov 6, 2:45 PM)
  */
 export function format12HourDateTime(date: Date | string | number | null | undefined): string {
   if (!date) return "";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "";
   return d.toLocaleString("en-US", {
+    timeZone: "Africa/Addis_Ababa",
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -78,6 +80,8 @@ export function format12HourDateTime(date: Date | string | number | null | undef
     hour12: true,
   });
 }
+
+export { formatEthiopiaTime24, formatTimeString12 } from "./dateUtils";
 
 /**
  * Trigger mobile haptic vibration if supported by device/browser

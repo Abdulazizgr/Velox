@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { RentalSession, Shoe, Sale } from "@/models";
 import { getSession } from "@/lib/auth";
+import { parseEthiopiaTimeString } from "@/lib/dateUtils";
 
 // GET /api/rentals - List sessions with optional filters (todayOnly, date range, search) and attached tab totals
 export async function GET(req: NextRequest) {
@@ -153,26 +154,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Pricing & Timing Calculations
+    // 2. Pricing & Timing Calculations (Locked to Ethiopia Time EAT UTC+3)
     const now = new Date();
     let sessionStart = now;
 
-    if (startTime && typeof startTime === "string" && startTime.trim()) {
-      const trimmed = startTime.trim();
-      if (trimmed.includes(":") && !trimmed.includes("T")) {
-        const [hoursStr, minutesStr] = trimmed.split(":");
-        const hours = parseInt(hoursStr, 10);
-        const minutes = parseInt(minutesStr, 10);
-        if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
-          const customDate = new Date();
-          customDate.setHours(hours, minutes, 0, 0);
-          sessionStart = customDate;
-        }
-      } else {
-        const parsed = new Date(trimmed);
-        if (!isNaN(parsed.getTime())) {
-          sessionStart = parsed;
-        }
+    if (startTime) {
+      const parsedStart = parseEthiopiaTimeString(startTime, now);
+      if (parsedStart) {
+        sessionStart = parsedStart;
       }
     }
 

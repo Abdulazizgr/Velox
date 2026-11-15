@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { RentalSession } from "@/models";
 import { getSession } from "@/lib/auth";
+import { parseEthiopiaTimeString } from "@/lib/dateUtils";
 
 export async function PATCH(
   req: NextRequest,
@@ -56,27 +57,11 @@ export async function PATCH(
       session.totalMinutes = totalMinutes;
     }
 
-    // 2. Start Time Update
-    if (startTime && typeof startTime === "string" && startTime.trim()) {
-      const trimmed = startTime.trim();
-      let customDate: Date | null = null;
-      if (trimmed.includes(":") && !trimmed.includes("T")) {
-        const [hoursStr, minutesStr] = trimmed.split(":");
-        const hours = parseInt(hoursStr, 10);
-        const minutes = parseInt(minutesStr, 10);
-        if (!isNaN(hours) && !isNaN(minutes) && hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
-          customDate = new Date(session.startedAt || new Date());
-          customDate.setHours(hours, minutes, 0, 0);
-        }
-      } else {
-        const parsed = new Date(trimmed);
-        if (!isNaN(parsed.getTime())) {
-          customDate = parsed;
-        }
-      }
-
-      if (customDate) {
-        session.startedAt = customDate;
+    // 2. Start Time Update (Locked to Ethiopia Time EAT UTC+3)
+    if (startTime) {
+      const parsedStart = parseEthiopiaTimeString(startTime, session.startedAt || new Date());
+      if (parsedStart) {
+        session.startedAt = parsedStart;
       }
     }
 

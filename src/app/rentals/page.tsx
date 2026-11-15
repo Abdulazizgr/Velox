@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
-import { formatETB, format12HourTime, triggerVibration } from "@/lib/utils";
+import {
+  formatETB,
+  format12HourTime,
+  triggerVibration,
+  formatEthiopiaTime24,
+  formatTimeString12,
+} from "@/lib/utils";
 import { useAlertModal } from "@/components/ModalAlertProvider";
 import { useLanguage } from "@/lib/i18n";
 import {
@@ -326,14 +332,7 @@ export default function RentalBoardPage() {
     setEditPaymentMethod(session.paymentMethod || "CASH");
     setEditCustomerName(session.customerName || "");
     setEditCustomerPhone(session.customerPhone || "");
-    try {
-      const d = new Date(session.startedAt);
-      const hh = String(d.getHours()).padStart(2, "0");
-      const mm = String(d.getMinutes()).padStart(2, "0");
-      setEditStartTime(`${hh}:${mm}`);
-    } catch {
-      setEditStartTime("");
-    }
+    setEditStartTime(formatEthiopiaTime24(session.startedAt));
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -1575,7 +1574,9 @@ export default function RentalBoardPage() {
                       {t("rentals.startTimeLabel", "5. Start Time")}
                     </label>
                     <span className="text-[10px] text-[#8B8179] font-medium font-mono">
-                      {customStartTime ? `Custom: ${customStartTime}` : "Default: Now"}
+                      {customStartTime
+                        ? `Custom: ${formatTimeString12(customStartTime)} (${customStartTime})`
+                        : `Default: Now (${format12HourTime(new Date())})`}
                     </span>
                   </div>
 
@@ -2082,7 +2083,9 @@ export default function RentalBoardPage() {
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5 flex items-center justify-between">
                     <span>{t("rentals.startTimeLabel", "Start Time")}</span>
                     <span className="text-[10px] text-[#8B8179] font-mono">
-                      Current: {format12HourTime(editSession.startedAt)}
+                      {editStartTime
+                        ? `${formatTimeString12(editStartTime)} (${editStartTime})`
+                        : `Current: ${format12HourTime(editSession.startedAt)}`}
                     </span>
                   </label>
                   <input
