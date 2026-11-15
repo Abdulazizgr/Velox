@@ -116,7 +116,7 @@ export default function LoginPage() {
                 <input
                   type="tel"
                   required
-                  placeholder="0911000000"
+                  placeholder="0938087847"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] placeholder-[#8B8179] focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] text-sm transition-all"

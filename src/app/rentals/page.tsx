@@ -132,14 +132,18 @@ export default function RentalBoardPage() {
 
   // Web Audio synthesizer chime and vibration for alerts
   const playAudioCue = (type: "start" | "due" | "overdue" | "chime") => {
+    // If sound is muted, neither audio nor vibration should trigger
+    if (!soundEnabled) {
+      triggerVibration(0);
+      return;
+    }
+
     // Mobile haptic vibration alerts (supported on Android/Chrome/PWA)
     if (type === "overdue") {
       triggerVibration([300, 100, 300, 100, 500]);
     } else if (type === "due") {
       triggerVibration([200, 100, 200]);
     }
-
-    if (!soundEnabled) return;
     try {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
@@ -789,7 +793,11 @@ export default function RentalBoardPage() {
               onClick={() => {
                 const nextState = !soundEnabled;
                 setSoundEnabled(nextState);
-                if (nextState) playAudioCue("chime");
+                if (nextState) {
+                  playAudioCue("chime");
+                } else {
+                  triggerVibration(0); // Immediately cancel any active vibration when muted
+                }
               }}
               title={soundEnabled ? t("rentals.soundOn", "Sound ON") : t("rentals.muted", "Muted")}
               className={`p-2.5 rounded-xl border text-xs transition-colors cursor-pointer flex items-center gap-1.5 ${
