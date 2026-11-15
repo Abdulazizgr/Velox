@@ -34,6 +34,7 @@ import {
   Pencil,
   Ban,
   Loader2,
+  Minus,
 } from "lucide-react";
 
 interface ShoeSwapLog {
@@ -137,6 +138,13 @@ export default function RentalBoardPage() {
   const [editCustomerPhone, setEditCustomerPhone] = useState("");
   const [editStartTime, setEditStartTime] = useState("");
   const [editLoading, setEditLoading] = useState(false);
+
+  // Time Adjust & Extend Modal State
+  const [timeAdjustSession, setTimeAdjustSession] = useState<RentalSessionItem | null>(null);
+  const [adjustMinutes, setAdjustMinutes] = useState<number>(30);
+  const [adjustPaymentOption, setAdjustPaymentOption] = useState<"PAID" | "UNPAID">("PAID");
+  const [adjustPaymentMethod, setAdjustPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
+  const [adjustSubmitting, setAdjustSubmitting] = useState(false);
 
   // Web Audio synthesizer chime and vibration for alerts
   const playAudioCue = (type: "start" | "due" | "overdue" | "chime") => {
@@ -559,52 +567,97 @@ export default function RentalBoardPage() {
     }
   };
 
-  // Handle Extend Minutes (+30 or +60 min / 1 hr)
+  // Time Adjustment & Extension Handlers
+  const openTimeAdjustModal = (session: RentalSessionItem, initialDelta: number = 30) => {
+    setTimeAdjustSession(session);
+    setAdjustMinutes(initialDelta);
+    setAdjustPaymentOption(session.paymentStatus === "PAID" ? "PAID" : "UNPAID");
+    setAdjustPaymentMethod(session.paymentMethod || "CASH");
+  };
+
+  const calculateAdjustFee = (session: RentalSessionItem | null, deltaMinutes: number) => {
+    if (!session || deltaMinutes === 0) return 0;
+    const isWeekend = session.pricingType === "WEEKEND";
+    const absMin = Math.abs(deltaMinutes);
+    let fee = 0;
+    if (absMin === 30) {
+      fee = isWeekend ? 200 : 150;
+    } else if (absMin === 60) {
+      fee = isWeekend ? 300 : 250;
+    } else if (absMin === 15) {
+      fee = isWeekend ? 100 : 75;
+    } else {
+      const base30 = isWeekend ? 200 : 150;
+      fee = Math.round((absMin / 30) * base30);
+    }
+    return deltaMinutes < 0 ? -fee : fee;
+  };
+
+  const calculateAdjustedEndTime = (session: RentalSessionItem | null, deltaMinutes: number) => {
+    if (!session) return new Date();
+    const currentEndMs = new Date(session.expectedEndTime).getTime();
+    const nowMs = Date.now();
+    if (deltaMinutes > 0) {
+      // If overdue, start fresh from now so overdue time is not deducted!
+      if (nowMs > currentEndMs) {
+        return new Date(nowMs + deltaMinutes * 60 * 1000);
+      }
+      return new Date(currentEndMs + deltaMinutes * 60 * 1000);
+    } else {
+      const startMs = new Date(session.startedAt).getTime();
+      const minEndMs = startMs + 15 * 60 * 1000;
+      const targetEndMs = currentEndMs + deltaMinutes * 60 * 1000;
+      return new Date(Math.max(minEndMs, targetEndMs));
+    }
+  };
+
+  const handleTimeAdjustSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!timeAdjustSession || adjustMinutes === 0) return;
+    setAdjustSubmitting(true);
+    try {
+      const res = await fetch(`/api/rentals/${timeAdjustSession._id}/extend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          addedMinutes: adjustMinutes,
+          paymentStatus: adjustMinutes > 0 ? adjustPaymentOption : "PAID",
+          paymentMethod: adjustPaymentMethod,
+        }),
+      });
+
+      if (res.ok) {
+        playAudioCue("chime");
+        const data = await res.json();
+        showAlert({
+          title: t("common.success", "Success"),
+          message: data.message || "Rental time updated successfully.",
+          type: "success",
+        });
+        setTimeAdjustSession(null);
+        fetchRentals();
+        fetchAvailableShoes();
+      } else {
+        const data = await res.json();
+        showAlert({
+          title: t("common.error", "Error"),
+          message: data.error || "Failed to adjust rental time.",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Network Error",
+        message: "Failed to communicate with the server. Please check connection.",
+        type: "error",
+      });
+    } finally {
+      setAdjustSubmitting(false);
+    }
+  };
+
   const handleExtend = (session: RentalSessionItem, addedMinutes: number) => {
-    const fee =
-      addedMinutes === 30
-        ? session.pricingType === "WEEKEND"
-          ? 200
-          : 150
-        : session.pricingType === "WEEKEND"
-        ? 300
-        : 250;
-    const durationLabel = addedMinutes === 30 ? "30 minutes" : "1 hour (60 minutes)";
-
-    showConfirm({
-      title: `Extend Session (+${addedMinutes === 30 ? "30m" : "1h"})`,
-      message: `Add +${durationLabel} for ${fee} ETB to shoe ${session.shoeId} (${session.customerName})?\n\nThis will add +${durationLabel} to their countdown timer and append ${fee} ETB to their rental fee.`,
-      confirmText: `Add +${addedMinutes === 30 ? "30m" : "1h"} (${fee} ETB)`,
-      cancelText: "Cancel",
-      type: "warning",
-      onConfirm: async () => {
-        try {
-          const res = await fetch(`/api/rentals/${session._id}/extend`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ addedMinutes }),
-          });
-
-          if (res.ok) {
-            playAudioCue("chime");
-            fetchRentals();
-          } else {
-            const data = await res.json();
-            showAlert({
-              title: "Extension Failed",
-              message: data.error || "Failed to extend session",
-              type: "error",
-            });
-          }
-        } catch {
-          showAlert({
-            title: "Network Error",
-            message: "Error communicating with server while extending session.",
-            type: "error",
-          });
-        }
-      },
-    });
+    openTimeAdjustModal(session, addedMinutes);
   };
 
   // Handle Swap Shoe
@@ -1194,21 +1247,21 @@ export default function RentalBoardPage() {
                       </button>
 
                       <button
-                        onClick={() => handleExtend(session, 30)}
-                        className="py-2 px-1 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#D96827] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
-                        title={t("rentals.extend30", "+30 Min")}
+                        onClick={() => openTimeAdjustModal(session, -30)}
+                        className="py-2 px-1 rounded-xl bg-[#FFF0E6] hover:bg-[#FCD8C2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#C2571A] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
+                        title={t("rentals.decrease30", "-30m")}
                       >
-                        <Plus className="h-3 w-3 text-[#D96827]" />
-                        <span>{t("rentals.extend30", "+30m")}</span>
+                        <Minus className="h-3 w-3 text-[#C2571A]" />
+                        <span>{t("rentals.decrease30", "-30m")}</span>
                       </button>
 
                       <button
-                        onClick={() => handleExtend(session, 60)}
-                        className="py-2 px-1 rounded-xl bg-[#FFF0E6] hover:bg-[#FCD8C2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#C2571A] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
-                        title={t("rentals.extend60", "+1 Hour")}
+                        onClick={() => openTimeAdjustModal(session, 30)}
+                        className="py-2 px-1 rounded-xl bg-[#FFF4E5] hover:bg-[#FCEAD2] border border-[#E9D9C5] text-[11px] sm:text-xs font-bold text-[#D96827] transition-colors flex items-center justify-center gap-0.5 sm:gap-1 cursor-pointer"
+                        title={t("rentals.extend30", "+30m")}
                       >
-                        <Plus className="h-3 w-3 text-[#C2571A]" />
-                        <span>{t("rentals.extend60", "+1h")}</span>
+                        <Plus className="h-3 w-3 text-[#D96827]" />
+                        <span>{t("rentals.extend30", "+30m")}</span>
                       </button>
 
                       <button
@@ -2099,7 +2152,7 @@ export default function RentalBoardPage() {
                 {/* Payment Status & Channel */}
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
-                    {t("expenses.paidVia", "Payment Status & Method")}
+                    {t("rentals.paymentChannel", "Payment Channel")}
                   </label>
                   <div className="grid grid-cols-2 gap-2 mb-2">
                     <button
@@ -2187,6 +2240,205 @@ export default function RentalBoardPage() {
                   >
                     {editLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     <span>{editLoading ? t("common.loading", "Saving...") : t("common.saveChanges", "Save Changes")}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 6. ADJUST / EXTEND RENTAL TIME MODAL */}
+        {timeAdjustSession && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E] space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-[#FFF4E5] text-[#D96827]">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#29221E]">
+                      {t("rentals.adjustTimeModalTitle", "Add or Decrease Rental Time")}
+                    </h3>
+                    <p className="text-xs text-[#8B8179]">
+                      {t("rentals.adjustTimeModalSub", "Extend session duration or reduce time, and select the payment channel.")}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTimeAdjustSession(null)}
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleTimeAdjustSubmit} className="space-y-4">
+                {/* Skater & Shoe Info Banner */}
+                <div className="p-2.5 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs flex items-center justify-between font-mono">
+                  <span>Shoe: <strong>{timeAdjustSession.shoeId}</strong> (#{timeAdjustSession.shoeSize})</span>
+                  <span>{timeAdjustSession.customerName || "Skater"}</span>
+                </div>
+
+                {/* Overdue Fresh-Start Warning (Requirement #3) */}
+                {(() => {
+                  const currentEndMs = new Date(timeAdjustSession.expectedEndTime).getTime();
+                  const isOverdue = now > currentEndMs;
+                  if (!isOverdue || adjustMinutes <= 0) return null;
+
+                  const overdueMinutes = Math.max(1, Math.round((now - currentEndMs) / 60000));
+                  return (
+                    <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#D96827]/40 text-xs text-[#29221E] space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-[#D96827]">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <span>{t("rentals.overdueBy", "Overdue by")} {overdueMinutes} min</span>
+                      </div>
+                      <p className="text-[11px] text-[#8B8179] leading-relaxed">
+                        {t("rentals.freshStartNotice", "Overdue skater: Additional time starts fresh from NOW so overdue minutes are not deducted.")}
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                {/* Duration Presets (Requirement #2: Increase & Decrease) */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
+                    {t("rentals.timeAction", "Select Time Adjustment")}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { min: -30, label: "-30m", isSub: true },
+                      { min: -15, label: "-15m", isSub: true },
+                      { min: 30, label: "+30m", isSub: false },
+                      { min: 60, label: "+1h", isSub: false },
+                    ].map((item) => {
+                      const isSelected = adjustMinutes === item.min;
+                      const fee = calculateAdjustFee(timeAdjustSession, item.min);
+                      return (
+                        <button
+                          key={item.min}
+                          type="button"
+                          onClick={() => setAdjustMinutes(item.min)}
+                          className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                            isSelected
+                              ? item.isSub
+                                ? "bg-[#C2571A] text-white border-[#C2571A] shadow-sm font-bold"
+                                : "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
+                              : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
+                          }`}
+                        >
+                          <div className="text-xs font-bold">{item.label}</div>
+                          <div className={`text-[10px] font-mono mt-0.5 ${isSelected ? "text-white/90" : item.isSub ? "text-[#C2571A]" : "text-[#D96827]"}`}>
+                            {fee > 0 ? `+${fee}` : fee < 0 ? `${fee}` : "0"} ETB
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Live Preview Box */}
+                {(() => {
+                  const fee = calculateAdjustFee(timeAdjustSession, adjustMinutes);
+                  const newEnd = calculateAdjustedEndTime(timeAdjustSession, adjustMinutes);
+                  return (
+                    <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs space-y-1.5 font-mono">
+                      <div className="flex justify-between items-center text-[#8B8179] font-sans">
+                        <span>{t("rentals.currentDue", "Current Due")}:</span>
+                        <strong className="font-mono text-[#29221E]">{format12HourTime(timeAdjustSession.expectedEndTime)}</strong>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#8B8179] font-sans">{t("rentals.newDueTime", "New Due Time")}:</span>
+                        <strong className="font-bold text-[#26845B] text-sm">{format12HourTime(newEnd)}</strong>
+                      </div>
+                      <div className="flex justify-between items-center border-t border-[#E9D9C5] pt-1.5">
+                        <span className="text-[#8B8179] font-sans">{t("rentals.feeAdjustment", "Fee Adjustment")}:</span>
+                        <strong className={`font-bold ${fee > 0 ? "text-[#D96827]" : fee < 0 ? "text-[#C2571A]" : "text-[#29221E]"}`}>
+                          {fee > 0 ? `+${formatETB(fee)}` : fee < 0 ? `${formatETB(fee)}` : "0 ETB"}
+                        </strong>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Payment Channel Selector (Requirement #1) */}
+                {adjustMinutes > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
+                      {t("rentals.paymentChannel", "Payment Channel")}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setAdjustPaymentOption("PAID")}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          adjustPaymentOption === "PAID"
+                            ? "bg-[#EBF5F0] border-[#26845B] text-[#26845B]"
+                            : "bg-white border-[#E9D9C5] text-[#8B8179]"
+                        }`}
+                      >
+                        {t("rentals.payNow", "Pay Now")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdjustPaymentOption("UNPAID")}
+                        className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          adjustPaymentOption === "UNPAID"
+                            ? "bg-[#FFF4E5] border-[#D96827] text-[#D96827]"
+                            : "bg-white border-[#E9D9C5] text-[#8B8179]"
+                        }`}
+                      >
+                        {t("rentals.payOnReturn", "Pay on Return")}
+                      </button>
+                    </div>
+
+                    {adjustPaymentOption === "PAID" && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {(["CASH", "TELEBIRR", "CBE"] as const).map((method) => (
+                          <button
+                            key={method}
+                            type="button"
+                            onClick={() => setAdjustPaymentMethod(method)}
+                            className={`py-2 px-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${
+                              adjustPaymentMethod === method
+                                ? "bg-[#D96827] text-white border-[#D96827] shadow-sm"
+                                : "bg-[#F7F6F3] border-[#E9D9C5] text-[#29221E] hover:border-[#D96827]"
+                            }`}
+                          >
+                            {method === "CASH" ? t("common.cash", "Cash") : method === "TELEBIRR" ? t("common.telebirr", "Telebirr") : t("common.cbe", "CBE")}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Footer Actions */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                  <button
+                    type="button"
+                    onClick={() => setTimeAdjustSession(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    {t("common.cancel", "Cancel")}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={adjustSubmitting || adjustMinutes === 0}
+                    className={`px-5 py-2.5 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                      adjustMinutes < 0 ? "bg-[#C2571A] hover:bg-[#a94812]" : "bg-[#D96827] hover:bg-[#C2571A]"
+                    }`}
+                  >
+                    {adjustSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>
+                      {adjustSubmitting
+                        ? t("common.loading", "Updating...")
+                        : adjustMinutes > 0
+                        ? `Confirm +${adjustMinutes}m`
+                        : `Confirm ${adjustMinutes}m`}
+                    </span>
                   </button>
                 </div>
               </form>

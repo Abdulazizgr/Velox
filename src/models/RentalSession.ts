@@ -15,6 +15,8 @@ export interface IShoeSwapLog {
 export interface ISessionExtensionLog {
   addedMinutes: number;
   additionalFee: number;
+  paymentStatus?: "PAID" | "UNPAID";
+  paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
   requestedAt: Date;
 }
 
@@ -149,6 +151,8 @@ const RentalSessionSchema = new Schema<IRentalSession>(
       {
         addedMinutes: Number,
         additionalFee: Number,
+        paymentStatus: { type: String, enum: ["PAID", "UNPAID"] },
+        paymentMethod: { type: String, enum: ["CASH", "TELEBIRR", "CBE"] },
         requestedAt: { type: Date, default: Date.now },
       },
     ],

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { RentalSession } from "@/models";
 import { getSession } from "@/lib/auth";
+import { format12HourTime } from "@/lib/utils";
 
 export async function POST(
   req: NextRequest,
@@ -15,12 +16,16 @@ export async function POST(
 
     const { id } = await params;
     const body = await req.json();
-    const { addedMinutes = 30 } = body;
+    const {
+      addedMinutes = 30,
+      paymentStatus = "PAID", // "PAID" | "UNPAID"
+      paymentMethod = "CASH", // "CASH" | "TELEBIRR" | "CBE"
+    } = body;
 
     const minutesToAdd = Number(addedMinutes);
-    if (![30, 60].includes(minutesToAdd)) {
+    if (isNaN(minutesToAdd) || minutesToAdd === 0) {
       return NextResponse.json(
-        { error: "Can only extend by 30 or 60 minutes" },
+        { error: "A valid positive or negative minute duration is required." },
         { status: 400 }
       );
     }
@@ -41,42 +46,99 @@ export async function POST(
       );
     }
 
-    // Determine extension fee based on the session's pricing type
+    // Determine extension/reduction fee based on the session's pricing type
     const isWeekend = session.pricingType === "WEEKEND";
     let additionalFee = 0;
-    if (minutesToAdd === 30) {
+    const absMin = Math.abs(minutesToAdd);
+
+    if (absMin === 30) {
       additionalFee = isWeekend ? 200 : 150;
-    } else {
+    } else if (absMin === 60) {
       additionalFee = isWeekend ? 300 : 250;
+    } else if (absMin === 15) {
+      additionalFee = isWeekend ? 100 : 75;
+    } else {
+      const base30 = isWeekend ? 200 : 150;
+      additionalFee = Math.round((absMin / 30) * base30);
     }
 
-    // Extend expectedEndTime from current expectedEndTime
-    const newEndTime = new Date(
-      new Date(session.expectedEndTime).getTime() + minutesToAdd * 60 * 1000
-    );
+    if (minutesToAdd < 0) {
+      additionalFee = -additionalFee;
+    }
+
+    const now = new Date();
+    const nowMs = now.getTime();
+    const currentEndMs = new Date(session.expectedEndTime).getTime();
+    let newEndTime: Date;
+
+    // Requirement #3: If adding time and skater is currently OVERDUE,
+    // start the additional time fresh from NOW so overdue time is NOT deducted!
+    if (minutesToAdd > 0) {
+      if (nowMs > currentEndMs) {
+        // Skater is overdue: grant full minutesToAdd starting from NOW
+        newEndTime = new Date(nowMs + minutesToAdd * 60 * 1000);
+        const overdueMinutes = Math.max(0, Math.round((nowMs - currentEndMs) / 60000));
+        session.totalMinutes = (session.totalMinutes || 35) + minutesToAdd + overdueMinutes;
+      } else {
+        // Skater still has time left: append to current expectedEndTime
+        newEndTime = new Date(currentEndMs + minutesToAdd * 60 * 1000);
+        session.totalMinutes = (session.totalMinutes || 35) + minutesToAdd;
+      }
+
+      // Update fees
+      session.extensionPrice = (session.extensionPrice || 0) + additionalFee;
+      session.totalRentalFee = (session.totalRentalFee || session.basePrice) + additionalFee;
+
+      // Requirement #1: Update payment status and payment channel
+      if (paymentStatus === "PAID") {
+        session.paymentStatus = "PAID";
+        session.paymentMethod = ["CASH", "TELEBIRR", "CBE"].includes(paymentMethod)
+          ? paymentMethod
+          : "CASH";
+      } else {
+        session.paymentStatus = "UNPAID";
+      }
+
+      session.extensions.push({
+        addedMinutes: minutesToAdd,
+        additionalFee,
+        paymentStatus: paymentStatus === "PAID" ? "PAID" : "UNPAID",
+        paymentMethod: paymentStatus === "PAID" ? session.paymentMethod : undefined,
+        requestedAt: now,
+      });
+    } else {
+      // Requirement #2: Decreasing time (minus)
+      const startMs = new Date(session.startedAt).getTime();
+      const minEndMs = startMs + 15 * 60 * 1000;
+      const targetEndMs = currentEndMs + minutesToAdd * 60 * 1000;
+      newEndTime = new Date(Math.max(minEndMs, targetEndMs));
+
+      const newTotalMin = Math.round((newEndTime.getTime() - startMs) / 60000);
+      session.totalMinutes = Math.max(15, newTotalMin);
+
+      if (session.extensionPrice > 0) {
+        session.extensionPrice = Math.max(0, session.extensionPrice + additionalFee);
+      }
+      session.totalRentalFee = Math.max(session.basePrice, (session.totalRentalFee || session.basePrice) + additionalFee);
+
+      session.extensions.push({
+        addedMinutes: minutesToAdd,
+        additionalFee,
+        paymentStatus: "PAID",
+        requestedAt: now,
+      });
+    }
 
     session.expectedEndTime = newEndTime;
-    session.totalMinutes += minutesToAdd;
-    session.extensionPrice += additionalFee;
-    session.totalRentalFee += additionalFee;
-
-    // If session was previously paid, mark as UNPAID for the extension delta unless prepaid
-    if (session.paymentStatus === "PAID") {
-      // Mark unpaid for the extension balance
-      session.paymentStatus = "UNPAID";
-    }
-
-    session.extensions.push({
-      addedMinutes: minutesToAdd,
-      additionalFee,
-      requestedAt: new Date(),
-    });
-
     await session.save();
+
+    const formattedFinish = format12HourTime(newEndTime);
 
     return NextResponse.json({
       success: true,
-      message: `Session extended by +${minutesToAdd} minutes. New finish time: ${newEndTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`,
+      message: minutesToAdd > 0
+        ? `Added +${minutesToAdd}m. New finish time: ${formattedFinish} (${paymentStatus === "PAID" ? `Paid via ${session.paymentMethod}` : "Pay on Return"})`
+        : `Decreased by ${minutesToAdd}m. New finish time: ${formattedFinish}`,
       session,
     });
   } catch (error) {
