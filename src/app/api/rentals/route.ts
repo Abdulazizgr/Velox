@@ -173,6 +173,8 @@ export async function POST(req: NextRequest) {
       shoeId: shoe.shoeId,
       shoeSize: shoe.size,
       skateType: shoe.type || "INLINE",
+      isExtended: shoe.isExtended || false,
+      extendedType: shoe.extendedType,
       customerName: customerName.trim() || "Skater",
       customerPhone: customerPhone.trim(),
       baseDurationMinutes: baseDuration,

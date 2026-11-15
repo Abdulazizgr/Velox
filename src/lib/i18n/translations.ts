@@ -315,6 +315,16 @@ export const translations: Record<Language, Translations> = {
     "shoes.rentedLocked": "Rented (Active)",
     "shoes.viewOnBoard": "View Rental",
     "shoes.rentedLockedNotice": "This shoe is currently out with an active rental session. Status cannot be changed manually here.",
+    "shoes.extended": "Extended",
+    "shoes.extendedSmall": "Extended Small",
+    "shoes.extendedMedium": "Extended Medium",
+    "shoes.extendedLarge": "Extended Large",
+    "shoes.allExtended": "All Extended",
+    "shoes.sizeMode": "Size Mode",
+    "shoes.standardSize": "Single Size",
+    "shoes.extendedSize": "Extended (Multi-Size)",
+    "shoes.coveredSizes": "Covered Sizes",
+    "shoes.extendedTypeLabel": "Extended Size Tier",
 
     // Stock Inventory
     "stock.title": "Stock & Products",
@@ -862,6 +872,16 @@ export const translations: Record<Language, Translations> = {
     "shoes.rentedLocked": "የተከራየ (በጨዋታ ላይ)",
     "shoes.viewOnBoard": "ኪራዩን እይ",
     "shoes.rentedLockedNotice": "ይህ ጫማ በአሁኑ ጊዜ የተከራየ ነው። ሁኔታውን ከዚህ በእጅ መቀየር አይቻልም።",
+    "shoes.extended": "የተራዘመ",
+    "shoes.extendedSmall": "የተራዘመ ትንሽ",
+    "shoes.extendedMedium": "የተራዘመ መካከለኛ",
+    "shoes.extendedLarge": "የተራዘመ ትልቅ",
+    "shoes.allExtended": "ሁሉም የተራዘመ",
+    "shoes.sizeMode": "የቁጥር አይነት",
+    "shoes.standardSize": "ነጠላ ቁጥር",
+    "shoes.extendedSize": "የተራዘመ (ብዙ ቁጥሮች)",
+    "shoes.coveredSizes": "የሚሸፍናቸው ቁጥሮች",
+    "shoes.extendedTypeLabel": "የተራዘመ ቁጥር ደረጃ",
 
     // Stock Inventory
     "stock.title": "የእቃዎች ክምችት",

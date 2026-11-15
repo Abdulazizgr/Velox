@@ -2,10 +2,14 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type ShoeStatus = "AVAILABLE" | "RENTED" | "MAINTENANCE" | "RETIRED";
 export type SkateType = "INLINE" | "QUAD";
+export type ExtendedSizeType = "EXTENDED_SMALL" | "EXTENDED_MEDIUM" | "EXTENDED_LARGE";
 
 export interface IShoe extends Document {
   shoeId: string; // Unique asset tag, e.g. "SK-40-01"
-  size: number;   // Normal commercial shoe size, e.g. 40
+  size: number;   // Normal commercial shoe size or primary base size, e.g. 40
+  isExtended?: boolean; // True if adjustable multi-size skate
+  extendedType?: ExtendedSizeType; // "EXTENDED_SMALL" | "EXTENDED_MEDIUM" | "EXTENDED_LARGE"
+  coveredSizes?: number[]; // Array of covered sizes, e.g. [35, 36, 37]
   type: SkateType; // "INLINE" (Inline Skates) | "QUAD" (Quads)
   status: ShoeStatus;
   notes?: string;
@@ -26,6 +30,20 @@ const ShoeSchema = new Schema<IShoe>(
       type: Number,
       required: true,
       index: true,
+    },
+    isExtended: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    extendedType: {
+      type: String,
+      enum: ["EXTENDED_SMALL", "EXTENDED_MEDIUM", "EXTENDED_LARGE"],
+      index: true,
+    },
+    coveredSizes: {
+      type: [Number],
+      default: [],
     },
     type: {
       type: String,

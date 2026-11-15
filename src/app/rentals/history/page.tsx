@@ -28,6 +28,8 @@ interface RentalHistoryItem {
   shoeId: string;
   shoeSize: number;
   skateType?: "INLINE" | "QUAD";
+  isExtended?: boolean;
+  extendedType?: "EXTENDED_SMALL" | "EXTENDED_MEDIUM" | "EXTENDED_LARGE";
   customerName: string;
   customerPhone?: string;
   baseDurationMinutes: number;
@@ -407,6 +409,11 @@ export default function RentalHistoryPage() {
                         <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
                           #{session.shoeSize}
                         </span>
+                        {session.isExtended && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30">
+                            {session.extendedType === "EXTENDED_SMALL" ? "EXT-S" : session.extendedType === "EXTENDED_LARGE" ? "EXT-L" : "EXT-M"}
+                          </span>
+                        )}
                         <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#F7F6F3] text-[#8B8179]">
                           {session.skateType || "INLINE"}
                         </span>
@@ -488,6 +495,11 @@ export default function RentalHistoryPage() {
                           <span className="text-[10px] px-1 rounded bg-[#FFF4E5] text-[#D96827]">
                             #{session.shoeSize}
                           </span>
+                          {session.isExtended && (
+                            <span className="text-[9px] px-1 rounded bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30 font-sans font-bold">
+                              {session.extendedType === "EXTENDED_SMALL" ? "EXT-S" : session.extendedType === "EXTENDED_LARGE" ? "EXT-L" : "EXT-M"}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 font-sans">

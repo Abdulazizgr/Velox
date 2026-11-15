@@ -79,6 +79,9 @@ export async function POST(
 
     session.shoeId = newShoe.shoeId;
     session.shoeSize = newShoe.size;
+    session.skateType = newShoe.type || "INLINE";
+    session.isExtended = newShoe.isExtended || false;
+    session.extendedType = newShoe.extendedType;
     await session.save();
 
     return NextResponse.json({

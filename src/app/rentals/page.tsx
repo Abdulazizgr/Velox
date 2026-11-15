@@ -57,6 +57,8 @@ interface RentalSessionItem {
   paymentStatus: "PAID" | "UNPAID";
   paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
   skateType?: "INLINE" | "QUAD";
+  isExtended?: boolean;
+  extendedType?: "EXTENDED_SMALL" | "EXTENDED_MEDIUM" | "EXTENDED_LARGE";
   shoeSwaps?: ShoeSwapLog[];
   tabTotal?: number;
   tabItemsCount?: number;
@@ -68,6 +70,9 @@ interface ShoeOption {
   size: number;
   type?: "INLINE" | "QUAD";
   status: string;
+  isExtended?: boolean;
+  extendedType?: "EXTENDED_SMALL" | "EXTENDED_MEDIUM" | "EXTENDED_LARGE";
+  coveredSizes?: number[];
 }
 
 export default function RentalBoardPage() {
@@ -367,7 +372,9 @@ export default function RentalBoardPage() {
 
   // Check available skate types (Inline vs Quads) for the currently selected size
   const availableTypesForSelectedSize = useMemo(() => {
-    const shoesForSize = availableShoes.filter((s) => s.size === selectedSize);
+    const shoesForSize = availableShoes.filter(
+      (s) => s.size === selectedSize || Boolean(s.isExtended && s.coveredSizes?.includes(selectedSize))
+    );
     const inlineShoes = shoesForSize.filter((s) => (s.type || "INLINE") === "INLINE");
     const quadShoes = shoesForSize.filter((s) => s.type === "QUAD");
 
@@ -410,7 +417,7 @@ export default function RentalBoardPage() {
   const shoesForSelectedSizeAndType = useMemo(() => {
     return availableShoes.filter(
       (s) =>
-        s.size === selectedSize &&
+        (s.size === selectedSize || Boolean(s.isExtended && s.coveredSizes?.includes(selectedSize))) &&
         (s.type || "INLINE") === selectedType &&
         s.status === "AVAILABLE"
     );
@@ -422,9 +429,12 @@ export default function RentalBoardPage() {
       .filter((s) => {
         const shoeObj = availableShoes.find((sh) => sh.shoeId === s.shoeId);
         const sessionType = shoeObj?.type || s.skateType || "INLINE";
+        const matchesSize =
+          s.shoeSize === selectedSize ||
+          Boolean(shoeObj?.isExtended && shoeObj.coveredSizes?.includes(selectedSize));
         return (
           s.status === "ACTIVE" &&
-          s.shoeSize === selectedSize &&
+          matchesSize &&
           sessionType === selectedType
         );
       })
@@ -736,9 +746,16 @@ export default function RentalBoardPage() {
   ).length;
   const completedTodayCount = sessions.filter((s) => s.status === "COMPLETED").length;
 
-  const distinctSizes = Array.from(new Set(availableShoes.map((s) => s.size))).sort(
-    (a, b) => a - b
-  );
+  const distinctSizes = useMemo(() => {
+    const sizeSet = new Set<number>();
+    availableShoes.forEach((s) => {
+      if (s.size) sizeSet.add(s.size);
+      if (s.isExtended && Array.isArray(s.coveredSizes)) {
+        s.coveredSizes.forEach((cs) => sizeSet.add(cs));
+      }
+    });
+    return Array.from(sizeSet).sort((a, b) => a - b);
+  }, [availableShoes]);
 
   return (
     <div className="min-h-screen bg-[#F7F6F3] text-[#29221E]">
@@ -968,6 +985,11 @@ export default function RentalBoardPage() {
                           <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
                             {t("common.size", "Size")} #{session.shoeSize}
                           </span>
+                          {session.isExtended && (
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30">
+                              {session.extendedType === "EXTENDED_SMALL" ? "EXT-S" : session.extendedType === "EXTENDED_LARGE" ? "EXT-L" : "EXT-M"}
+                            </span>
+                          )}
                           <span
                             className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                               (session.skateType || "INLINE") === "QUAD"
@@ -1219,8 +1241,13 @@ export default function RentalBoardPage() {
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
                     {distinctSizes.map((size) => {
                       const avail = availableShoes.filter(
-                        (s) => s.size === size && s.status === "AVAILABLE"
+                        (s) =>
+                          (s.size === size || Boolean(s.isExtended && s.coveredSizes?.includes(size))) &&
+                          s.status === "AVAILABLE"
                       ).length;
+                      const hasExtended = availableShoes.some(
+                        (s) => s.isExtended && s.coveredSizes?.includes(size) && s.status === "AVAILABLE"
+                      );
                       const isSelected = selectedSize === size;
                       return (
                         <button
@@ -1239,6 +1266,11 @@ export default function RentalBoardPage() {
                           <span className="text-[10px] font-normal opacity-80">
                             {avail > 0 ? `${avail} ${t("rentals.left", "left")}` : `0 ${t("rentals.left", "left")}`}
                           </span>
+                          {hasExtended && (
+                            <span className="text-[8px] px-1 bg-[#D96827]/20 text-[#D96827] rounded font-bold uppercase mt-0.5">
+                              Ext
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -1449,7 +1481,18 @@ export default function RentalBoardPage() {
                     >
                       {shoesForSelectedSizeAndType.map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} ({t("common.size", "Size")} #{s.size} • {s.type === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")})
+                          {s.shoeId} (
+                          {s.isExtended
+                            ? `${t("shoes.extended", "Extended")} ${
+                                s.extendedType === "EXTENDED_SMALL"
+                                  ? "S [31-34]"
+                                  : s.extendedType === "EXTENDED_LARGE"
+                                  ? "L [39-42]"
+                                  : "M [35-38]"
+                              }`
+                            : `${t("common.size", "Size")} #${s.size}`}
+                          {" • "}
+                          {s.type === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")})
                         </option>
                       ))}
                     </select>
@@ -1634,7 +1677,18 @@ export default function RentalBoardPage() {
                       .filter((s) => s.status === "AVAILABLE" && s.shoeId !== swapSession.shoeId)
                       .map((s) => (
                         <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} ({t("common.size", "Size")} #{s.size} • {s.type === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")})
+                          {s.shoeId} (
+                          {s.isExtended
+                            ? `${t("shoes.extended", "Extended")} ${
+                                s.extendedType === "EXTENDED_SMALL"
+                                  ? "S"
+                                  : s.extendedType === "EXTENDED_LARGE"
+                                  ? "L"
+                                  : "M"
+                              } [${s.coveredSizes?.join(", ")}]`
+                            : `${t("common.size", "Size")} #${s.size}`}
+                          {" • "}
+                          {s.type === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")})
                         </option>
                       ))}
                   </select>

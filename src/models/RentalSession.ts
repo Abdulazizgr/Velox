@@ -22,6 +22,8 @@ export interface IRentalSession extends Document {
   shoeId: string; // Current assigned Shoe ID
   shoeSize: number;
   skateType?: "INLINE" | "QUAD";
+  isExtended?: boolean;
+  extendedType?: "EXTENDED_SMALL" | "EXTENDED_MEDIUM" | "EXTENDED_LARGE";
   customerName?: string;
   customerPhone?: string;
   baseDurationMinutes: number; // 30 or 60
@@ -60,6 +62,14 @@ const RentalSessionSchema = new Schema<IRentalSession>(
       type: String,
       enum: ["INLINE", "QUAD"],
       default: "INLINE",
+    },
+    isExtended: {
+      type: Boolean,
+      default: false,
+    },
+    extendedType: {
+      type: String,
+      enum: ["EXTENDED_SMALL", "EXTENDED_MEDIUM", "EXTENDED_LARGE"],
     },
     customerName: {
       type: String,

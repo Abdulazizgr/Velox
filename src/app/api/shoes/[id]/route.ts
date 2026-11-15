@@ -18,7 +18,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await req.json();
-    const { shoeId, size, type, status, notes, forceRelease } = body;
+    const { shoeId, size, type, status, notes, forceRelease, isExtended, extendedType, coveredSizes } = body;
 
     await connectDB();
     const shoe = await Shoe.findById(id);
@@ -54,6 +54,22 @@ export async function PATCH(
     }
     if (typeof notes === "string") {
       shoe.notes = notes.trim();
+    }
+    if (isExtended !== undefined) {
+      shoe.isExtended = Boolean(isExtended);
+      if (shoe.isExtended) {
+        if (extendedType && ["EXTENDED_SMALL", "EXTENDED_MEDIUM", "EXTENDED_LARGE"].includes(extendedType)) {
+          shoe.extendedType = extendedType;
+        }
+        if (Array.isArray(coveredSizes)) {
+          shoe.coveredSizes = Array.from(
+            new Set(coveredSizes.map((n: any) => Number(n)).filter((n) => !isNaN(n) && n > 0))
+          ).sort((a, b) => a - b);
+        }
+      } else {
+        shoe.extendedType = undefined;
+        shoe.coveredSizes = [];
+      }
     }
 
     await shoe.save();

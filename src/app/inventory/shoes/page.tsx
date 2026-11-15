@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { ShoeStatus, SkateType } from "@/models/Shoe";
+import { ShoeStatus, SkateType, ExtendedSizeType } from "@/models/Shoe";
 import { useAlertModal } from "@/components/ModalAlertProvider";
 import { useLanguage } from "@/lib/i18n";
 import {
@@ -20,12 +20,16 @@ import {
   Sparkles,
   Pencil,
   Trash2,
+  Layers,
 } from "lucide-react";
 
 interface ShoeItem {
   _id: string;
   shoeId: string;
   size: number;
+  isExtended?: boolean;
+  extendedType?: ExtendedSizeType;
+  coveredSizes?: number[];
   type?: SkateType;
   status: ShoeStatus;
   notes?: string;
@@ -47,6 +51,9 @@ export default function ShoesInventoryPage() {
 
   // Add shoe modal
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newIsExtended, setNewIsExtended] = useState(false);
+  const [newExtendedType, setNewExtendedType] = useState<ExtendedSizeType>("EXTENDED_MEDIUM");
+  const [newCoveredSizesStr, setNewCoveredSizesStr] = useState("35, 36, 37, 38");
   const [newShoeId, setNewShoeId] = useState("");
   const [newSize, setNewSize] = useState("40");
   const [newType, setNewType] = useState<SkateType>("INLINE");
@@ -55,6 +62,9 @@ export default function ShoesInventoryPage() {
 
   // Edit shoe modal
   const [editingShoe, setEditingShoe] = useState<ShoeItem | null>(null);
+  const [editIsExtended, setEditIsExtended] = useState(false);
+  const [editExtendedType, setEditExtendedType] = useState<ExtendedSizeType>("EXTENDED_MEDIUM");
+  const [editCoveredSizesStr, setEditCoveredSizesStr] = useState("35, 36, 37, 38");
   const [editShoeId, setEditShoeId] = useState("");
   const [editSize, setEditSize] = useState("40");
   const [editType, setEditType] = useState<SkateType>("INLINE");
@@ -109,12 +119,23 @@ export default function ShoesInventoryPage() {
 
     setSubmitting(true);
     try {
+      const coveredSizes = newIsExtended
+        ? newCoveredSizesStr
+            .split(/[\s,]+/)
+            .map((n) => Number(n.trim()))
+            .filter((n) => !isNaN(n) && n > 0)
+        : [];
+      const baseSize = newIsExtended ? (coveredSizes[0] || 35) : Number(newSize);
+
       const res = await fetch("/api/shoes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shoeId: newShoeId.trim().toUpperCase(),
-          size: Number(newSize),
+          size: baseSize,
+          isExtended: newIsExtended,
+          extendedType: newIsExtended ? newExtendedType : undefined,
+          coveredSizes: newIsExtended ? coveredSizes : undefined,
           type: newType,
           notes: newNotes.trim(),
         }),
@@ -126,7 +147,9 @@ export default function ShoesInventoryPage() {
         setNewNotes("");
         showAlert({
           title: t("common.success", "Success"),
-          message: `${newShoeId.toUpperCase()} (#${newSize})`,
+          message: newIsExtended
+            ? `${newShoeId.toUpperCase()} (${t("shoes.extended", "Extended")} ${newCoveredSizesStr})`
+            : `${newShoeId.toUpperCase()} (#${newSize})`,
           type: "success",
         });
         fetchShoes();
@@ -178,6 +201,9 @@ export default function ShoesInventoryPage() {
     setEditType(shoe.type || "INLINE");
     setEditStatus(shoe.status);
     setEditNotes(shoe.notes || "");
+    setEditIsExtended(Boolean(shoe.isExtended));
+    setEditExtendedType(shoe.extendedType || "EXTENDED_MEDIUM");
+    setEditCoveredSizesStr(shoe.coveredSizes && shoe.coveredSizes.length > 0 ? shoe.coveredSizes.join(", ") : "");
   };
 
   const handleEditShoe = async (e: React.FormEvent) => {
@@ -185,12 +211,23 @@ export default function ShoesInventoryPage() {
     if (!editingShoe || !editShoeId.trim()) return;
     setEditSubmitting(true);
     try {
+      const coveredSizes = editIsExtended
+        ? editCoveredSizesStr
+            .split(/[\s,]+/)
+            .map((n) => Number(n.trim()))
+            .filter((n) => !isNaN(n) && n > 0)
+        : [];
+      const baseSize = editIsExtended ? (coveredSizes[0] || Number(editSize) || 35) : Number(editSize);
+
       const res = await fetch(`/api/shoes/${editingShoe._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shoeId: editShoeId.trim().toUpperCase(),
-          size: Number(editSize),
+          size: baseSize,
+          isExtended: editIsExtended,
+          extendedType: editIsExtended ? editExtendedType : undefined,
+          coveredSizes: editIsExtended ? coveredSizes : undefined,
           type: editType,
           status: editStatus,
           notes: editNotes.trim(),
@@ -260,7 +297,24 @@ export default function ShoesInventoryPage() {
   // Filtered shoes
   const filteredShoes = useMemo(() => {
     return shoes.filter((shoe) => {
-      const matchesSize = selectedSize === "ALL" || shoe.size.toString() === selectedSize;
+      let matchesSize = true;
+      if (selectedSize === "ALL") {
+        matchesSize = true;
+      } else if (selectedSize === "EXTENDED_ALL") {
+        matchesSize = Boolean(shoe.isExtended);
+      } else if (selectedSize === "EXTENDED_SMALL") {
+        matchesSize = Boolean(shoe.isExtended && shoe.extendedType === "EXTENDED_SMALL");
+      } else if (selectedSize === "EXTENDED_MEDIUM") {
+        matchesSize = Boolean(shoe.isExtended && shoe.extendedType === "EXTENDED_MEDIUM");
+      } else if (selectedSize === "EXTENDED_LARGE") {
+        matchesSize = Boolean(shoe.isExtended && shoe.extendedType === "EXTENDED_LARGE");
+      } else {
+        const targetNum = Number(selectedSize);
+        matchesSize =
+          shoe.size.toString() === selectedSize ||
+          Boolean(shoe.isExtended && shoe.coveredSizes && shoe.coveredSizes.includes(targetNum));
+      }
+
       const matchesStatus = selectedStatus === "ALL" || shoe.status === selectedStatus;
       const shoeType = shoe.type || "INLINE";
       const matchesType = selectedType === "ALL" || shoeType === selectedType;
@@ -270,7 +324,10 @@ export default function ShoesInventoryPage() {
         q === "" ||
         shoe.shoeId.toLowerCase().includes(q) ||
         shoe.size.toString().includes(q) ||
-        (shoe.notes && shoe.notes.toLowerCase().includes(q));
+        Boolean(shoe.isExtended && "extended".includes(q)) ||
+        Boolean(shoe.extendedType && shoe.extendedType.toLowerCase().includes(q)) ||
+        Boolean(shoe.coveredSizes && shoe.coveredSizes.some((cs) => cs.toString().includes(q))) ||
+        Boolean(shoe.notes && shoe.notes.toLowerCase().includes(q));
 
       return matchesSize && matchesStatus && matchesType && matchesQuery;
     });
@@ -280,10 +337,16 @@ export default function ShoesInventoryPage() {
   const rentedCount = shoes.filter((s) => s.status === "RENTED").length;
   const maintenanceCount = shoes.filter((s) => s.status === "MAINTENANCE").length;
 
-  const allSizes = useMemo(
-    () => Array.from(new Set(shoes.map((s) => s.size))).sort((a, b) => a - b),
-    [shoes]
-  );
+  const allSizes = useMemo(() => {
+    const sizeSet = new Set<number>();
+    shoes.forEach((s) => {
+      if (s.size) sizeSet.add(s.size);
+      if (s.isExtended && Array.isArray(s.coveredSizes)) {
+        s.coveredSizes.forEach((cs) => sizeSet.add(cs));
+      }
+    });
+    return Array.from(sizeSet).sort((a, b) => a - b);
+  }, [shoes]);
 
   const activeFiltersCount =
     (selectedSize !== "ALL" ? 1 : 0) +
@@ -521,9 +584,9 @@ export default function ShoesInventoryPage() {
                 </div>
               </div>
 
-              {/* Row 2: Shoe Size Pills */}
-              <div className="pt-2 border-t border-[#E9D9C5]/50">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+              {/* Row 2: Shoe Size Pills (Extended + Number sizes) */}
+              <div className="pt-2 border-t border-[#E9D9C5]/50 space-y-1.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 scrollbar-thin">
                   <span className="text-xs text-[#8B8179] font-semibold mr-1 whitespace-nowrap">
                     {t("shoes.sizes", "Sizes:")}
                   </span>
@@ -540,24 +603,78 @@ export default function ShoesInventoryPage() {
                     {t("common.all", "All")} ({shoes.length})
                   </button>
 
+                  {/* Extended Size Pills */}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSize(selectedSize === "EXTENDED_SMALL" ? "ALL" : "EXTENDED_SMALL")}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      selectedSize === "EXTENDED_SMALL"
+                        ? "bg-[#D96827] text-white font-bold shadow-2xs"
+                        : "bg-[#FFF4E5] text-[#D96827] hover:bg-[#FCEAD2] border border-[#D96827]/40"
+                    }`}
+                  >
+                    <span>{t("shoes.extendedSmall", "Ext Small (31-34)")}</span>
+                    <span className="text-[10px] opacity-80">
+                      ({shoes.filter((s) => s.isExtended && s.extendedType === "EXTENDED_SMALL" && s.status === "AVAILABLE").length}/
+                      {shoes.filter((s) => s.isExtended && s.extendedType === "EXTENDED_SMALL").length})
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSize(selectedSize === "EXTENDED_MEDIUM" ? "ALL" : "EXTENDED_MEDIUM")}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      selectedSize === "EXTENDED_MEDIUM"
+                        ? "bg-[#D96827] text-white font-bold shadow-2xs"
+                        : "bg-[#FFF4E5] text-[#D96827] hover:bg-[#FCEAD2] border border-[#D96827]/40"
+                    }`}
+                  >
+                    <span>{t("shoes.extendedMedium", "Ext Medium (35-38)")}</span>
+                    <span className="text-[10px] opacity-80">
+                      ({shoes.filter((s) => s.isExtended && s.extendedType === "EXTENDED_MEDIUM" && s.status === "AVAILABLE").length}/
+                      {shoes.filter((s) => s.isExtended && s.extendedType === "EXTENDED_MEDIUM").length})
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSize(selectedSize === "EXTENDED_LARGE" ? "ALL" : "EXTENDED_LARGE")}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                      selectedSize === "EXTENDED_LARGE"
+                        ? "bg-[#D96827] text-white font-bold shadow-2xs"
+                        : "bg-[#FFF4E5] text-[#D96827] hover:bg-[#FCEAD2] border border-[#D96827]/40"
+                    }`}
+                  >
+                    <span>{t("shoes.extendedLarge", "Ext Large (39-42)")}</span>
+                    <span className="text-[10px] opacity-80">
+                      ({shoes.filter((s) => s.isExtended && s.extendedType === "EXTENDED_LARGE" && s.status === "AVAILABLE").length}/
+                      {shoes.filter((s) => s.isExtended && s.extendedType === "EXTENDED_LARGE").length})
+                    </span>
+                  </button>
+
+                  {/* Standard number sizes */}
                   {allSizes.map((size) => {
-                    const totalForSize = shoes.filter((s) => s.size === size).length;
+                    const totalForSize = shoes.filter(
+                      (s) => s.size === size || (s.isExtended && s.coveredSizes?.includes(size))
+                    ).length;
                     const availForSize = shoes.filter(
-                      (s) => s.size === size && s.status === "AVAILABLE"
+                      (s) =>
+                        (s.size === size || (s.isExtended && s.coveredSizes?.includes(size))) &&
+                        s.status === "AVAILABLE"
                     ).length;
 
                     return (
                       <button
                         key={size}
                         type="button"
-                        onClick={() => setSelectedSize(size.toString())}
+                        onClick={() => setSelectedSize(selectedSize === size.toString() ? "ALL" : size.toString())}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
                           selectedSize === size.toString()
                             ? "bg-[#D96827] text-white font-bold shadow-2xs"
                             : "bg-[#F7F6F3] text-[#8B8179] hover:text-[#29221E] border border-[#E9D9C5]"
                         }`}
                       >
-                        {t("common.size", "Size")} #{size} ({availForSize}/{totalForSize})
+                        #{size} ({availForSize}/{totalForSize})
                       </button>
                     );
                   })}
@@ -617,10 +734,34 @@ export default function ShoesInventoryPage() {
                 >
                   <div className="space-y-1.5">
                     {/* Top Row: Size + Status Badge */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-black text-[#29221E]">#{shoe.size}</span>
+                    <div className="flex items-start justify-between gap-1">
+                      <div>
+                        {shoe.isExtended ? (
+                          <div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-base sm:text-lg font-black text-[#D96827]">
+                                {shoe.extendedType === "EXTENDED_SMALL"
+                                  ? "EXT-S"
+                                  : shoe.extendedType === "EXTENDED_MEDIUM"
+                                  ? "EXT-M"
+                                  : "EXT-L"}
+                              </span>
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-md font-bold bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30">
+                                {t("shoes.extended", "Extended")}
+                              </span>
+                            </div>
+                            <div className="text-[10px] font-bold text-[#8B8179]">
+                              {shoe.coveredSizes && shoe.coveredSizes.length > 0
+                                ? `[${shoe.coveredSizes.join(", ")}]`
+                                : `#${shoe.size}`}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xl font-black text-[#29221E]">#{shoe.size}</span>
+                        )}
+                      </div>
                       <span
-                        className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase border ${
+                        className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase border shrink-0 ${
                           shoe.status === "AVAILABLE"
                             ? "bg-[#EBF5F0] text-[#26845B] border-[#26845B]/30"
                             : shoe.status === "RENTED"
@@ -772,29 +913,123 @@ export default function ShoesInventoryPage() {
                   </div>
                 </div>
 
-                {/* Shoe Size */}
+                {/* Size Mode Toggle: Single Size vs Extended (Multi-Size) */}
                 <div>
-                  <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                    {t("shoes.shoeSizeLabel", "Shoe Size")}
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1.5 uppercase tracking-wider">
+                    {t("shoes.sizeMode", "Size Mode")}
                   </label>
-                  <input
-                    type="number"
-                    required
-                    min={26}
-                    max={52}
-                    value={newSize}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setNewSize(val);
-                      if (val) {
-                        const sameSize = shoes.filter((s) => s.size === Number(val));
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewIsExtended(false);
+                        const sameSize = shoes.filter((s) => !s.isExtended && s.size === Number(newSize));
                         const nextNum = String(sameSize.length + 1).padStart(2, "0");
-                        setNewShoeId(`SK-${val}-${nextNum}`);
-                      }
-                    }}
-                    className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
-                  />
+                        setNewShoeId(`SK-${newSize}-${nextNum}`);
+                      }}
+                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                        !newIsExtended
+                          ? "bg-[#29221E] text-white border-[#29221E] shadow-2xs"
+                          : "bg-white text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
+                      }`}
+                    >
+                      {t("shoes.standardSize", "Single Size")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewIsExtended(true);
+                        const sameExt = shoes.filter((s) => s.isExtended && s.extendedType === newExtendedType);
+                        const nextNum = String(sameExt.length + 1).padStart(2, "0");
+                        const prefix = newExtendedType === "EXTENDED_SMALL" ? "S" : newExtendedType === "EXTENDED_LARGE" ? "L" : "M";
+                        setNewShoeId(`SK-EXT-${prefix}-${nextNum}`);
+                      }}
+                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                        newIsExtended
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-2xs"
+                          : "bg-white text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
+                      }`}
+                    >
+                      {t("shoes.extendedSize", "Extended (Multi-Size)")}
+                    </button>
+                  </div>
                 </div>
+
+                {!newIsExtended ? (
+                  /* Standard Single Size Input */
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                      {t("shoes.shoeSizeLabel", "Shoe Size")}
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={26}
+                      max={52}
+                      value={newSize}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewSize(val);
+                        if (val) {
+                          const sameSize = shoes.filter((s) => !s.isExtended && s.size === Number(val));
+                          const nextNum = String(sameSize.length + 1).padStart(2, "0");
+                          setNewShoeId(`SK-${val}-${nextNum}`);
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30"
+                    />
+                  </div>
+                ) : (
+                  /* Extended Tier Selection & Covered Sizes */
+                  <div className="space-y-3 bg-[#FAF9F6] p-3 rounded-xl border border-[#E9D9C5]">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("shoes.extendedTypeLabel", "Extended Size Tier")}
+                      </label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { id: "EXTENDED_SMALL", label: t("shoes.extendedSmall", "Small"), sizes: "31, 32, 33, 34", prefix: "S" },
+                          { id: "EXTENDED_MEDIUM", label: t("shoes.extendedMedium", "Medium"), sizes: "35, 36, 37, 38", prefix: "M" },
+                          { id: "EXTENDED_LARGE", label: t("shoes.extendedLarge", "Large"), sizes: "39, 40, 41, 42", prefix: "L" },
+                        ].map((tier) => (
+                          <button
+                            key={tier.id}
+                            type="button"
+                            onClick={() => {
+                              setNewExtendedType(tier.id as ExtendedSizeType);
+                              setNewCoveredSizesStr(tier.sizes);
+                              const sameExt = shoes.filter((s) => s.isExtended && s.extendedType === tier.id);
+                              const nextNum = String(sameExt.length + 1).padStart(2, "0");
+                              setNewShoeId(`SK-EXT-${tier.prefix}-${nextNum}`);
+                            }}
+                            className={`py-2 px-1 text-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              newExtendedType === tier.id
+                                ? "bg-[#D96827] text-white border-[#D96827] shadow-2xs"
+                                : "bg-white text-[#29221E] border-[#E9D9C5] hover:bg-[#FFF4E5]"
+                            }`}
+                          >
+                            <div>{tier.label}</div>
+                            <div className="text-[10px] font-normal opacity-80">({tier.sizes.split(",")[0]}-{tier.sizes.split(",").slice(-1)[0].trim()})</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("shoes.coveredSizes", "Covered Sizes (comma separated)")}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newCoveredSizesStr}
+                        onChange={(e) => setNewCoveredSizesStr(e.target.value)}
+                        placeholder="e.g. 35, 36, 37, 38"
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Unique Shoe ID */}
                 <div>
@@ -901,36 +1136,127 @@ export default function ShoesInventoryPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      {t("shoes.shoeIdLabel", "Shoe ID Tag")}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editShoeId}
-                      onChange={(e) => setEditShoeId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] uppercase focus:outline-none focus:ring-2 focus:ring-[#D96827]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#29221E] mb-1">
-                      {t("shoes.shoeSizeLabel", "Shoe Size")}
-                    </label>
-                    <select
-                      value={editSize}
-                      onChange={(e) => setEditSize(e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                {/* Size Mode Toggle */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] mb-1 uppercase tracking-wider">
+                    {t("shoes.sizeMode", "Size Mode")}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditIsExtended(false)}
+                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                        !editIsExtended
+                          ? "bg-[#29221E] text-white border-[#29221E] shadow-2xs"
+                          : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
+                      }`}
                     >
-                      {Array.from({ length: 18 }, (_, i) => 30 + i).map((sz) => (
-                        <option key={sz} value={sz}>
-                          {t("common.size", "Size")} #{sz}
-                        </option>
-                      ))}
-                    </select>
+                      {t("shoes.standardSize", "Single Size")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditIsExtended(true)}
+                      className={`p-2 rounded-xl text-xs font-bold border transition-all cursor-pointer text-center ${
+                        editIsExtended
+                          ? "bg-[#D96827] text-white border-[#D96827] shadow-2xs"
+                          : "bg-[#F7F6F3] text-[#8B8179] border-[#E9D9C5] hover:text-[#29221E]"
+                      }`}
+                    >
+                      {t("shoes.extendedSize", "Extended (Multi-Size)")}
+                    </button>
                   </div>
                 </div>
+
+                {!editIsExtended ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("shoes.shoeIdLabel", "Shoe ID Tag")}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editShoeId}
+                        onChange={(e) => setEditShoeId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] uppercase focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("shoes.shoeSizeLabel", "Shoe Size")}
+                      </label>
+                      <select
+                        value={editSize}
+                        onChange={(e) => setEditSize(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      >
+                        {Array.from({ length: 18 }, (_, i) => 30 + i).map((sz) => (
+                          <option key={sz} value={sz}>
+                            {t("common.size", "Size")} #{sz}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 bg-[#FAF9F6] p-3 rounded-xl border border-[#E9D9C5]">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("shoes.shoeIdLabel", "Shoe ID Tag")}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editShoeId}
+                        onChange={(e) => setEditShoeId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] uppercase focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("shoes.extendedTypeLabel", "Extended Size Tier")}
+                      </label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { id: "EXTENDED_SMALL", label: t("shoes.extendedSmall", "Small"), sizes: "31, 32, 33, 34" },
+                          { id: "EXTENDED_MEDIUM", label: t("shoes.extendedMedium", "Medium"), sizes: "35, 36, 37, 38" },
+                          { id: "EXTENDED_LARGE", label: t("shoes.extendedLarge", "Large"), sizes: "39, 40, 41, 42" },
+                        ].map((tier) => (
+                          <button
+                            key={tier.id}
+                            type="button"
+                            onClick={() => {
+                              setEditExtendedType(tier.id as ExtendedSizeType);
+                              if (!editCoveredSizesStr) setEditCoveredSizesStr(tier.sizes);
+                            }}
+                            className={`py-2 px-1 text-center rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              editExtendedType === tier.id
+                                ? "bg-[#D96827] text-white border-[#D96827] shadow-2xs"
+                                : "bg-white text-[#29221E] border-[#E9D9C5] hover:bg-[#FFF4E5]"
+                            }`}
+                          >
+                            <div>{tier.label}</div>
+                            <div className="text-[10px] font-normal opacity-80">({tier.sizes.split(",")[0]}-{tier.sizes.split(",").slice(-1)[0].trim()})</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] mb-1">
+                        {t("shoes.coveredSizes", "Covered Sizes (comma separated)")}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editCoveredSizesStr}
+                        onChange={(e) => setEditCoveredSizesStr(e.target.value)}
+                        placeholder="e.g. 35, 36, 37, 38"
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-semibold text-[#29221E] mb-1">
