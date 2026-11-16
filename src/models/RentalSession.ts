@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type SessionPricingType = "WEEKDAY" | "WEEKEND";
-export type SessionStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
+export type SessionStatus = "ACTIVE" | "COMPLETED" | "CANCELLED" | "RETURNED_UNPAID";
 export type PaymentStatus = "PAID" | "UNPAID";
 export type PaymentMethod = "CASH" | "TELEBIRR" | "CBE";
 
@@ -41,6 +41,13 @@ export interface IRentalSession extends Document {
   status: SessionStatus;
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
+  hasOwnSkates?: boolean;
+  isShoeReturned?: boolean;
+  shoeReturnedAt?: Date;
+  billedToSessionId?: string;
+  billedToShoeId?: string;
+  billedToCustomerName?: string;
+  payingForSessionIds?: string[];
   shoeSwaps: IShoeSwapLog[];
   extensions: ISessionExtensionLog[];
   registeredByStaffId?: string;
@@ -125,7 +132,7 @@ const RentalSessionSchema = new Schema<IRentalSession>(
     },
     status: {
       type: String,
-      enum: ["ACTIVE", "COMPLETED", "CANCELLED"],
+      enum: ["ACTIVE", "COMPLETED", "CANCELLED", "RETURNED_UNPAID"],
       default: "ACTIVE",
       index: true,
     },
@@ -138,6 +145,31 @@ const RentalSessionSchema = new Schema<IRentalSession>(
     paymentMethod: {
       type: String,
       enum: ["CASH", "TELEBIRR", "CBE"],
+    },
+    hasOwnSkates: {
+      type: Boolean,
+      default: false,
+    },
+    isShoeReturned: {
+      type: Boolean,
+      default: false,
+    },
+    shoeReturnedAt: {
+      type: Date,
+    },
+    billedToSessionId: {
+      type: String,
+      index: true,
+    },
+    billedToShoeId: {
+      type: String,
+    },
+    billedToCustomerName: {
+      type: String,
+    },
+    payingForSessionIds: {
+      type: [String],
+      default: [],
     },
     shoeSwaps: [
       {

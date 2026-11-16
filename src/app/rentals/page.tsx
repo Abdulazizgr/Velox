@@ -35,6 +35,9 @@ import {
   Ban,
   Loader2,
   Minus,
+  ChevronDown,
+  Link2,
+  UserCheck,
 } from "lucide-react";
 
 interface ShoeSwapLog {
@@ -60,13 +63,27 @@ interface RentalSessionItem {
   extensionPrice: number;
   totalRentalFee: number;
   pricingType: "WEEKDAY" | "WEEKEND";
-  status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED" | "RETURNED_UNPAID";
   paymentStatus: "PAID" | "UNPAID";
   paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
+  hasOwnSkates?: boolean;
+  isShoeReturned?: boolean;
+  shoeReturnedAt?: string;
+  billedToSessionId?: string;
+  billedToShoeId?: string;
+  billedToCustomerName?: string;
+  payingForSessionIds?: string[];
   skateType?: "INLINE" | "QUAD";
   isExtended?: boolean;
   extendedType?: "EXTENDED_SMALL" | "EXTENDED_MEDIUM" | "EXTENDED_LARGE";
   shoeSwaps?: ShoeSwapLog[];
+  extensions?: Array<{
+    addedMinutes: number;
+    additionalFee: number;
+    paymentStatus?: "PAID" | "UNPAID";
+    paymentMethod?: "CASH" | "TELEBIRR" | "CBE";
+    requestedAt: string;
+  }>;
   tabTotal?: number;
   tabItemsCount?: number;
 }
@@ -89,7 +106,7 @@ export default function RentalBoardPage() {
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusTab, setStatusTab] = useState<"ACTIVE" | "OVERDUE" | "COMPLETED">("ACTIVE");
+  const [statusTab, setStatusTab] = useState<"ACTIVE" | "OVERDUE" | "UNPAID_RETURNS" | "COMPLETED">("ACTIVE");
   const [sortBy, setSortBy] = useState<"EARLIEST_END" | "SHOE_ID" | "SIZE">("EARLIEST_END");
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -101,9 +118,12 @@ export default function RentalBoardPage() {
   // New Rental Modal State
   const [showNewModal, setShowNewModal] = useState(false);
   const [availableShoes, setAvailableShoes] = useState<ShoeOption[]>([]);
-  const [selectedSize, setSelectedSize] = useState<number>(40);
+  const [selectedSize, setSelectedSize] = useState<number | "ALL">("ALL");
   const [selectedType, setSelectedType] = useState<"INLINE" | "QUAD">("QUAD");
   const [selectedShoeId, setSelectedShoeId] = useState<string>("");
+  const [hasOwnSkates, setHasOwnSkates] = useState(false);
+  const [shoeDropdownOpen, setShoeDropdownOpen] = useState(false);
+  const [shoeSearchQuery, setShoeSearchQuery] = useState("");
   const [duration, setDuration] = useState<30 | 60>(30);
   const [customStartTime, setCustomStartTime] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -112,7 +132,7 @@ export default function RentalBoardPage() {
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [submitting, setSubmitting] = useState(false);
   const [loggingDemand, setLoggingDemand] = useState(false);
-  const [loggedDemandSize, setLoggedDemandSize] = useState<number | null>(null);
+  const [loggedDemandSize, setLoggedDemandSize] = useState<number | "ALL" | null>(null);
 
   // Swap Modal State
   const [swapSession, setSwapSession] = useState<RentalSessionItem | null>(null);
@@ -123,7 +143,13 @@ export default function RentalBoardPage() {
   // Return & Settle Modal State
   const [returnSession, setReturnSession] = useState<RentalSessionItem | null>(null);
   const [returnPaymentMethod, setReturnPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
+  const [returnCustomAmount, setReturnCustomAmount] = useState<string>("");
   const [returnLoading, setReturnLoading] = useState(false);
+
+  // Link Payer Modal State (Requirement #5)
+  const [linkPayerSession, setLinkPayerSession] = useState<RentalSessionItem | null>(null);
+  const [targetPayerId, setTargetPayerId] = useState<string>("");
+  const [linkPayerLoading, setLinkPayerLoading] = useState(false);
 
   // Cancel Rental Modal State
   const [cancelSession, setCancelSession] = useState<RentalSessionItem | null>(null);
@@ -142,6 +168,7 @@ export default function RentalBoardPage() {
   // Time Adjust & Extend Modal State
   const [timeAdjustSession, setTimeAdjustSession] = useState<RentalSessionItem | null>(null);
   const [adjustMinutes, setAdjustMinutes] = useState<number>(30);
+  const [adjustCustomFee, setAdjustCustomFee] = useState<string>("");
   const [adjustPaymentOption, setAdjustPaymentOption] = useState<"PAID" | "UNPAID">("PAID");
   const [adjustPaymentMethod, setAdjustPaymentMethod] = useState<"CASH" | "TELEBIRR" | "CBE">("CASH");
   const [adjustSubmitting, setAdjustSubmitting] = useState(false);
@@ -392,11 +419,14 @@ export default function RentalBoardPage() {
     fetchAvailableShoes();
   }, []);
 
-  // Check available skate types (Inline vs Quads) for the currently selected size
+  // Check available skate types (Inline vs Quads) for the currently selected size (or ALL sizes)
   const availableTypesForSelectedSize = useMemo(() => {
-    const shoesForSize = availableShoes.filter(
-      (s) => s.size === selectedSize || Boolean(s.isExtended && s.coveredSizes?.includes(selectedSize))
-    );
+    const shoesForSize =
+      selectedSize === "ALL"
+        ? availableShoes
+        : availableShoes.filter(
+            (s) => s.size === selectedSize || Boolean(s.isExtended && s.coveredSizes?.includes(selectedSize))
+          );
     const inlineShoes = shoesForSize.filter((s) => (s.type || "INLINE") === "INLINE");
     const quadShoes = shoesForSize.filter((s) => s.type === "QUAD");
 
@@ -435,11 +465,11 @@ export default function RentalBoardPage() {
     availableTypesForSelectedSize.quadAvail,
   ]);
 
-  // Filter available shoes by selected size AND selected skate type
+  // Filter available shoes by selected size (or ALL) AND selected skate type
   const shoesForSelectedSizeAndType = useMemo(() => {
     return availableShoes.filter(
       (s) =>
-        (s.size === selectedSize || Boolean(s.isExtended && s.coveredSizes?.includes(selectedSize))) &&
+        (selectedSize === "ALL" || s.size === selectedSize || Boolean(s.isExtended && s.coveredSizes?.includes(selectedSize))) &&
         (s.type || "INLINE") === selectedType &&
         s.status === "AVAILABLE"
     );
@@ -447,6 +477,7 @@ export default function RentalBoardPage() {
 
   // Top 3 active rented shoes for selected size AND selected type returning earliest
   const activeSessionsForSelectedSizeAndType = useMemo(() => {
+    if (selectedSize === "ALL") return [];
     return sessions
       .filter((s) => {
         const shoeObj = availableShoes.find((sh) => sh.shoeId === s.shoeId);
@@ -475,7 +506,10 @@ export default function RentalBoardPage() {
 
   // Pricing calculations for current day
   const isWeekend = [0, 6].includes(new Date().getDay());
-  const calculatedPrice = duration === 30 ? (isWeekend ? 200 : 150) : (isWeekend ? 300 : 250);
+  const standardBasePrice = duration === 30 ? (isWeekend ? 200 : 150) : (isWeekend ? 300 : 250);
+  const calculatedPrice = hasOwnSkates
+    ? Math.max(0, standardBasePrice - (duration === 30 ? 50 : 100))
+    : standardBasePrice;
 
   // Handle Log Missed Demand when size is out of stock (for owner's bottleneck report)
   const handleLogMissedDemand = async () => {
@@ -515,7 +549,7 @@ export default function RentalBoardPage() {
   // Handle Start Rental
   const handleStartRental = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedShoeId) {
+    if (!hasOwnSkates && !selectedShoeId) {
       showAlert({
         title: "Shoe Required",
         message: "Please choose an available shoe asset before starting the rental.",
@@ -530,13 +564,14 @@ export default function RentalBoardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shoeId: selectedShoeId,
+          shoeId: hasOwnSkates ? "OWN-SKATES" : selectedShoeId,
           durationMinutes: duration,
           customerName: customerName.trim() || "Skater",
           customerPhone: customerPhone.trim(),
           paymentStatus: paymentOption,
           paymentMethod: paymentOption === "PAID" ? paymentMethod : undefined,
           startTime: customStartTime.trim() || undefined,
+          hasOwnSkates,
         }),
       });
 
@@ -546,6 +581,8 @@ export default function RentalBoardPage() {
         setCustomStartTime("");
         setCustomerName("");
         setCustomerPhone("");
+        setHasOwnSkates(false);
+        setSelectedSize("ALL");
         fetchRentals();
         fetchAvailableShoes();
       } else {
@@ -571,6 +608,7 @@ export default function RentalBoardPage() {
   const openTimeAdjustModal = (session: RentalSessionItem, initialDelta: number = 30) => {
     setTimeAdjustSession(session);
     setAdjustMinutes(initialDelta);
+    setAdjustCustomFee("");
     setAdjustPaymentOption(session.paymentStatus === "PAID" ? "PAID" : "UNPAID");
     setAdjustPaymentMethod(session.paymentMethod || "CASH");
   };
@@ -623,6 +661,7 @@ export default function RentalBoardPage() {
           addedMinutes: adjustMinutes,
           paymentStatus: adjustMinutes > 0 ? adjustPaymentOption : "PAID",
           paymentMethod: adjustPaymentMethod,
+          customFee: adjustCustomFee ? Number(adjustCustomFee) : undefined,
         }),
       });
 
@@ -635,6 +674,7 @@ export default function RentalBoardPage() {
           type: "success",
         });
         setTimeAdjustSession(null);
+        setAdjustCustomFee("");
         fetchRentals();
         fetchAvailableShoes();
       } else {
@@ -699,7 +739,7 @@ export default function RentalBoardPage() {
   };
 
   // Handle Return Shoe & Settle
-  const handleReturnSubmit = async (e: React.FormEvent) => {
+  const handleReturnSubmit = async (e: React.FormEvent, unpaidInHouse: boolean = false) => {
     e.preventDefault();
     if (!returnSession) return;
 
@@ -708,19 +748,24 @@ export default function RentalBoardPage() {
       const res = await fetch(`/api/rentals/${returnSession._id}/return`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentMethod: returnPaymentMethod }),
+        body: JSON.stringify({
+          paymentMethod: returnPaymentMethod,
+          unpaidInHouse,
+          customSettledAmount: returnCustomAmount ? Number(returnCustomAmount) : undefined,
+        }),
       });
 
       if (res.ok) {
         playAudioCue("chime");
         setReturnSession(null);
+        setReturnCustomAmount("");
         fetchRentals();
         fetchAvailableShoes();
       } else {
         const data = await res.json();
         showAlert({
           title: "Return Failed",
-          message: data.error || "Failed to return shoe",
+          message: data.error || "Failed to process return",
           type: "error",
         });
       }
@@ -732,6 +777,60 @@ export default function RentalBoardPage() {
       });
     } finally {
       setReturnLoading(false);
+    }
+  };
+
+  // Handle Link Payer (Requirement #5)
+  const handleLinkPayerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkPayerSession || !targetPayerId) return;
+
+    setLinkPayerLoading(true);
+    try {
+      const res = await fetch(`/api/rentals/${linkPayerSession._id}/link-payer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payerSessionId: targetPayerId }),
+      });
+
+      if (res.ok) {
+        playAudioCue("chime");
+        setLinkPayerSession(null);
+        setTargetPayerId("");
+        fetchRentals();
+      } else {
+        const data = await res.json();
+        showAlert({
+          title: "Failed to Link Skater",
+          message: data.error || "Could not link bill.",
+          type: "error",
+        });
+      }
+    } catch {
+      showAlert({
+        title: "Network Error",
+        message: "Failed to communicate with server.",
+        type: "error",
+      });
+    } finally {
+      setLinkPayerLoading(false);
+    }
+  };
+
+  const handleUnlinkPayer = async (session: RentalSessionItem) => {
+    try {
+      const res = await fetch(`/api/rentals/${session._id}/link-payer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "UNLINK" }),
+      });
+      if (res.ok) {
+        playAudioCue("chime");
+        setLinkPayerSession(null);
+        fetchRentals();
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -784,6 +883,9 @@ export default function RentalBoardPage() {
         if (statusTab === "OVERDUE") {
           return s.status === "ACTIVE" && timer.isOverdue;
         }
+        if (statusTab === "UNPAID_RETURNS") {
+          return s.status === "RETURNED_UNPAID" || (s.isShoeReturned && s.paymentStatus === "UNPAID");
+        }
         if (statusTab === "COMPLETED") {
           return s.status === "COMPLETED";
         }
@@ -812,6 +914,9 @@ export default function RentalBoardPage() {
   ).length;
   const dueSoonCount = sessions.filter(
     (s) => s.status === "ACTIVE" && getSessionTimerData(s).isDueSoon
+  ).length;
+  const unpaidReturnsCount = sessions.filter(
+    (s) => s.status === "RETURNED_UNPAID" || (s.isShoeReturned && s.paymentStatus === "UNPAID")
   ).length;
   const completedTodayCount = sessions.filter((s) => s.status === "COMPLETED").length;
 
@@ -904,7 +1009,7 @@ export default function RentalBoardPage() {
         </div>
 
         {/* Status Highlight Tabs */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           <button
             onClick={() => setStatusTab("ACTIVE")}
             className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
@@ -951,6 +1056,32 @@ export default function RentalBoardPage() {
               <span className="text-2xl sm:text-3xl font-black text-[#D94B45]">{overdueCount}</span>
               {overdueCount > 0 && (
                 <span className="inline-block h-2 w-2 rounded-full bg-[#D94B45] animate-ping ml-1" />
+              )}
+            </div>
+          </button>
+
+          <button
+            onClick={() => setStatusTab("UNPAID_RETURNS")}
+            className={`p-3 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
+              statusTab === "UNPAID_RETURNS"
+                ? "bg-gradient-to-br from-[#FFF9E6] to-[#FFF0C2] border-2 border-[#D99B26] shadow-md shadow-[#D99B26]/15 ring-2 ring-[#D99B26]/20"
+                : "bg-[#FFFDF7] border border-[#F0E4B8] hover:border-[#D99B26] hover:bg-[#FFF9E6]/50"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] sm:text-xs uppercase font-bold text-[#9C6D14]">
+                {t("rentals.unpaidReturnsTab", "Unpaid Returns")}
+              </span>
+              <span className="p-1 rounded-lg bg-[#FFF2B8] text-[#9C6D14]">
+                <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-black text-[#9C6D14]">{unpaidReturnsCount}</span>
+              {unpaidReturnsCount > 0 && (
+                <span className="text-[10px] text-[#9C6D14] font-bold">
+                  (in house)
+                </span>
               )}
             </div>
           </button>
@@ -1056,26 +1187,34 @@ export default function RentalBoardPage() {
                     <div className="flex items-start justify-between gap-2 mb-2.5">
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xl sm:text-2xl font-black text-[#29221E] tracking-tight">
-                            {session.shoeId}
-                          </span>
-                          <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
-                            {t("common.size", "Size")} #{session.shoeSize}
-                          </span>
-                          {session.isExtended && (
-                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30 whitespace-nowrap">
-                              {session.extendedType === "EXTENDED_SMALL" ? "EXT-S" : session.extendedType === "EXTENDED_LARGE" ? "EXT-L" : "EXT-M"}
+                          {session.hasOwnSkates ? (
+                            <span className="font-mono text-xs sm:text-sm font-black text-[#D96827] bg-[#FFF4E5] px-2 py-0.5 rounded-lg border border-[#D96827]/30 flex items-center gap-1">
+                              🛼 {t("rentals.ownSkates", "Own Skates")}
                             </span>
+                          ) : (
+                            <>
+                              <span className="font-mono text-xl sm:text-2xl font-black text-[#29221E] tracking-tight">
+                                {session.shoeId}
+                              </span>
+                              <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-[#FFF4E5] text-[#D96827] border border-[#E9D9C5]">
+                                {t("common.size", "Size")} #{session.shoeSize}
+                              </span>
+                              {session.isExtended && (
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-[#FFF4E5] text-[#D96827] border border-[#D96827]/30 whitespace-nowrap">
+                                  {session.extendedType === "EXTENDED_SMALL" ? "EXT-S" : session.extendedType === "EXTENDED_LARGE" ? "EXT-L" : "EXT-M"}
+                                </span>
+                              )}
+                              <span
+                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                                  (session.skateType || "INLINE") === "QUAD"
+                                    ? "bg-[#EDE9FE] text-[#6D28D9] border border-[#DDD6FE]"
+                                    : "bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD]"
+                                }`}
+                              >
+                                {(session.skateType || "INLINE") === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")}
+                              </span>
+                            </>
                           )}
-                          <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-                              (session.skateType || "INLINE") === "QUAD"
-                                ? "bg-[#EDE9FE] text-[#6D28D9] border border-[#DDD6FE]"
-                                : "bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD]"
-                            }`}
-                          >
-                            {(session.skateType || "INLINE") === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")}
-                          </span>
                         </div>
                         <div className="text-xs text-[#8B8179] mt-1 flex items-center gap-1.5 truncate">
                           <User className="h-3 w-3 text-[#8B8179] shrink-0" />
@@ -1086,12 +1225,44 @@ export default function RentalBoardPage() {
                             </span>
                           )}
                         </div>
+
+                        {/* Linked Payer or Paying For Badges (Requirement #5) */}
+                        {session.billedToShoeId && (
+                          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#0369A1] bg-[#E0F2FE] px-2 py-0.5 rounded-lg border border-[#BAE6FD]">
+                            <Link2 className="h-3 w-3 shrink-0" />
+                            <span>
+                              {t("rentals.billedTo", "Billed to")}: <strong>#{session.billedToShoeId}</strong> ({session.billedToCustomerName || "Skater"})
+                            </span>
+                            {isActive && (
+                              <button
+                                type="button"
+                                onClick={() => handleUnlinkPayer(session)}
+                                className="ml-1 text-[10px] text-[#0369A1] hover:text-[#D94B45] font-bold cursor-pointer"
+                                title="Unlink payer"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {session.payingForSessionIds && session.payingForSessionIds.length > 0 && (
+                          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#26845B] bg-[#EBF5F0] px-2 py-0.5 rounded-lg border border-[#26845B]/30 font-semibold">
+                            <UserCheck className="h-3 w-3 shrink-0" />
+                            <span>
+                              {t("rentals.payingFor", "Paying for")}: {session.payingForSessionIds.length} {t("common.skaters", "skater(s)")}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Status Tag & Card Actions */}
                       <div className="shrink-0 flex items-center gap-1.5">
                         {!isActive ? (
-                          session.status === "CANCELLED" ? (
+                          session.status === "RETURNED_UNPAID" ? (
+                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#FFF9E6] text-[#9C6D14] border border-[#D99B26]/40">
+                              {t("rentals.unpaidReturnsTab", "Unpaid Return")}
+                            </span>
+                          ) : session.status === "CANCELLED" ? (
                             <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#FDF0EF] text-[#D94B45] border border-[#D94B45]/30">
                               {t("rentals.cancelledBadge", "CANCELLED")}
                             </span>
@@ -1115,6 +1286,23 @@ export default function RentalBoardPage() {
                                 {t("rentals.activeTab", "Active")}
                               </span>
                             )}
+
+                            {/* Link Payer button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLinkPayerSession(session);
+                                setTargetPayerId(session.billedToSessionId || "");
+                              }}
+                              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                session.billedToSessionId
+                                  ? "text-[#0369A1] bg-[#E0F2FE] border-[#BAE6FD]"
+                                  : "text-[#8B8179] hover:text-[#0369A1] hover:bg-[#E0F2FE] border-[#E9D9C5]"
+                              }`}
+                              title={t("rentals.linkPayer", "Bill to Another Skater")}
+                            >
+                              <Link2 className="h-3.5 w-3.5" />
+                            </button>
 
                             {/* Edit session */}
                             <button
@@ -1234,17 +1422,23 @@ export default function RentalBoardPage() {
                   {/* Bottom Operational Action Buttons */}
                   {isActive && (
                     <div className="mt-3.5 pt-3 border-t border-[#E9D9C5] grid grid-cols-4 gap-1.5 sm:gap-2">
-                      <button
-                        onClick={() => {
-                          setSwapSession(session);
-                          setSwapNewShoeId("");
-                        }}
-                        className="py-2 px-1 rounded-xl bg-[#F7F6F3] hover:bg-[#E9D9C5]/40 border border-[#E9D9C5] text-[11px] sm:text-xs font-semibold text-[#29221E] transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                        title={t("rentals.swapShoe", "Change Shoe")}
-                      >
-                        <Repeat className="h-3.5 w-3.5 text-[#D96827]" />
-                        <span>{t("rentals.swapShoe", "Swap")}</span>
-                      </button>
+                      {!session.hasOwnSkates ? (
+                        <button
+                          onClick={() => {
+                            setSwapSession(session);
+                            setSwapNewShoeId("");
+                          }}
+                          className="py-2 px-1 rounded-xl bg-[#F7F6F3] hover:bg-[#E9D9C5]/40 border border-[#E9D9C5] text-[11px] sm:text-xs font-semibold text-[#29221E] transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                          title={t("rentals.swapShoe", "Change Shoe")}
+                        >
+                          <Repeat className="h-3.5 w-3.5 text-[#D96827]" />
+                          <span>{t("rentals.swapShoe", "Swap")}</span>
+                        </button>
+                      ) : (
+                        <div className="py-2 px-1 rounded-xl bg-[#F7F6F3] text-[10px] text-[#8B8179] font-medium flex items-center justify-center border border-[#E9D9C5] opacity-60">
+                          <span>Own Skates</span>
+                        </div>
+                      )}
 
                       <button
                         onClick={() => openTimeAdjustModal(session, -30)}
@@ -1268,12 +1462,34 @@ export default function RentalBoardPage() {
                         onClick={() => {
                           setReturnSession(session);
                           setReturnPaymentMethod(session.paymentMethod || "CASH");
+                          setReturnCustomAmount(session.totalRentalFee ? String(session.totalRentalFee) : "");
                         }}
                         className="py-2 px-1 rounded-xl bg-[#D96827] hover:bg-[#C2571A] text-[11px] sm:text-xs font-bold text-white transition-colors flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                         title={t("rentals.returnSettle", "Return & Settle")}
                       >
                         <Check className="h-3.5 w-3.5" />
                         <span>{t("rentals.returnSettle", "Return")}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Settle button for Returned Unpaid sessions (Requirement #4) */}
+                  {session.status === "RETURNED_UNPAID" && (
+                    <div className="mt-3.5 pt-3 border-t border-[#E9D9C5] flex items-center justify-between gap-2">
+                      <div className="text-xs text-[#9C6D14] font-medium flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4 text-[#D99B26]" />
+                        <span>Shoe returned • In house</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setReturnSession(session);
+                          setReturnPaymentMethod(session.paymentMethod || "CASH");
+                          setReturnCustomAmount(session.totalRentalFee ? String(session.totalRentalFee) : "");
+                        }}
+                        className="py-2 px-3 rounded-xl bg-[#D99B26] hover:bg-[#B8801C] text-xs font-bold text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      >
+                        <Check className="h-4 w-4" />
+                        <span>{t("rentals.settlePayment", "Settle Payment")}</span>
                       </button>
                     </div>
                   )}
@@ -1310,271 +1526,413 @@ export default function RentalBoardPage() {
               </div>
 
               <form onSubmit={handleStartRental} className="mt-4 space-y-4">
-                {/* Step 1: Select Shoe Size */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    {t("rentals.selectSize", "1. Select Shoe Size")}
+                {/* Own Skates Option (Requirement #6) */}
+                <div className="p-3 rounded-xl border border-[#E9D9C5] bg-[#F7F6F3] flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-[#29221E] flex items-center gap-1.5">
+                      <span>🛼 {t("rentals.ownSkates", "Own Skates (Floor Access Only)")}</span>
+                    </div>
+                    <div className="text-[10px] text-[#8B8179]">
+                      {t("rentals.ownSkatesDesc", "Customer has their own shoes (-50 ETB for 30m, -100 ETB for 1h)")}
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hasOwnSkates}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setHasOwnSkates(checked);
+                        if (checked) {
+                          setSelectedShoeId("OWN-SKATES");
+                        } else {
+                          setSelectedShoeId("");
+                        }
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-[#E9D9C5] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#D96827]"></div>
                   </label>
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
-                    {distinctSizes.map((size) => {
-                      const avail = availableShoes.filter(
-                        (s) =>
-                          (s.size === size || Boolean(s.isExtended && s.coveredSizes?.includes(size))) &&
-                          s.status === "AVAILABLE"
-                      ).length;
-                      const hasExtended = availableShoes.some(
-                        (s) => s.isExtended && s.coveredSizes?.includes(size) && s.status === "AVAILABLE"
-                      );
-                      const isSelected = selectedSize === size;
-                      return (
+                </div>
+
+                {!hasOwnSkates ? (
+                  <>
+                    {/* Step 1: Select Shoe Size */}
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
+                        {t("rentals.selectSize", "1. Select Shoe Size")}
+                      </label>
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
+                        {/* [ ALL ] card (Requirement #2) */}
                         <button
-                          key={size}
                           type="button"
-                          onClick={() => setSelectedSize(size)}
+                          onClick={() => {
+                            setSelectedSize("ALL");
+                            setSelectedShoeId("");
+                          }}
                           className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center min-w-[56px] shrink-0 ${
-                            isSelected
+                            selectedSize === "ALL"
                               ? "bg-[#D96827] text-white shadow-md shadow-[#D96827]/25 scale-105"
-                              : avail > 0
-                              ? "bg-[#F7F6F3] text-[#29221E] border border-[#E9D9C5] hover:border-[#D96827]"
-                              : "bg-[#F7F6F3]/50 text-[#8B8179]/50 border border-dashed border-[#E9D9C5] opacity-50"
+                              : "bg-[#F7F6F3] text-[#29221E] border border-[#E9D9C5] hover:border-[#D96827]"
                           }`}
                         >
-                          <span className="text-sm">#{size}</span>
+                          <span className="text-sm">{t("rentals.allSizes", "All")}</span>
                           <span className="text-[10px] font-normal opacity-80">
-                            {avail > 0 ? `${avail} ${t("rentals.left", "left")}` : `0 ${t("rentals.left", "left")}`}
+                            {availableShoes.filter((s) => s.status === "AVAILABLE").length} {t("rentals.left", "left")}
                           </span>
-                          {hasExtended && (
-                            <span className="text-[8px] px-1 bg-[#D96827]/20 text-[#D96827] rounded font-bold uppercase mt-0.5">
-                              Ext
-                            </span>
+                        </button>
+
+                        {distinctSizes.map((size) => {
+                          const avail = availableShoes.filter(
+                            (s) =>
+                              (s.size === size || Boolean(s.isExtended && s.coveredSizes?.includes(size))) &&
+                              s.status === "AVAILABLE"
+                          ).length;
+                          const hasExtended = availableShoes.some(
+                            (s) => s.isExtended && s.coveredSizes?.includes(size) && s.status === "AVAILABLE"
+                          );
+                          const isSelected = selectedSize === size;
+                          return (
+                            <button
+                              key={size}
+                              type="button"
+                              onClick={() => {
+                                setSelectedSize(size);
+                                setSelectedShoeId("");
+                              }}
+                              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex flex-col items-center min-w-[56px] shrink-0 ${
+                                isSelected
+                                  ? "bg-[#D96827] text-white shadow-md shadow-[#D96827]/25 scale-105"
+                                  : avail > 0
+                                  ? "bg-[#F7F6F3] text-[#29221E] border border-[#E9D9C5] hover:border-[#D96827]"
+                                  : "bg-[#F7F6F3]/50 text-[#8B8179]/50 border border-dashed border-[#E9D9C5] opacity-50"
+                              }`}
+                            >
+                              <span className="text-sm">#{size}</span>
+                              <span className="text-[10px] font-normal opacity-80">
+                                {avail > 0 ? `${avail} ${t("rentals.left", "left")}` : `0 ${t("rentals.left", "left")}`}
+                              </span>
+                              {hasExtended && (
+                                <span className="text-[8px] px-1 bg-[#D96827]/20 text-[#D96827] rounded font-bold uppercase mt-0.5">
+                                  Ext
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Step 2: Skate Type (Inline Skates vs Quads) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider">
+                          {t("rentals.selectType", "2. Skate Type")} {selectedSize === "ALL" ? "(All Sizes)" : `(#${selectedSize})`}
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {/* Quads Button (Default) */}
+                        <button
+                          type="button"
+                          disabled={!availableTypesForSelectedSize.hasQuad}
+                          onClick={() => setSelectedType("QUAD")}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                            selectedType === "QUAD"
+                              ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
+                              : availableTypesForSelectedSize.hasQuad
+                              ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
+                              : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 shrink-0" />
+                            <div>
+                              <div className="text-xs font-bold leading-tight">{t("common.quads", "Quads")}</div>
+                              <div
+                                className={`text-[10px] mt-0.5 ${
+                                  selectedType === "QUAD" ? "text-white/80" : "text-[#8B8179]"
+                                }`}
+                              >
+                                {availableTypesForSelectedSize.hasQuad
+                                  ? `${availableTypesForSelectedSize.quadAvail} ${t("common.available", "available")}`
+                                  : "0"}
+                              </div>
+                            </div>
+                          </div>
+                          {selectedType === "QUAD" && (
+                            <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
                           )}
                         </button>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* Step 2: Skate Type (Inline Skates vs Quads) */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider">
-                      {t("rentals.selectType", "2. Skate Type")} (#{selectedSize})
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Quads Button (Default) */}
-                    <button
-                      type="button"
-                      disabled={!availableTypesForSelectedSize.hasQuad}
-                      onClick={() => setSelectedType("QUAD")}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                        selectedType === "QUAD"
-                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
-                          : availableTypesForSelectedSize.hasQuad
-                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
-                          : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 shrink-0" />
-                        <div>
-                          <div className="text-xs font-bold leading-tight">{t("common.quads", "Quads")}</div>
-                          <div
-                            className={`text-[10px] mt-0.5 ${
-                              selectedType === "QUAD" ? "text-white/80" : "text-[#8B8179]"
-                            }`}
-                          >
-                            {availableTypesForSelectedSize.hasQuad
-                              ? `${availableTypesForSelectedSize.quadAvail} ${t("common.available", "available")}`
-                              : "0"}
-                          </div>
-                        </div>
-                      </div>
-                      {selectedType === "QUAD" && (
-                        <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                      )}
-                    </button>
-
-                    {/* Inline Skates Button */}
-                    <button
-                      type="button"
-                      disabled={!availableTypesForSelectedSize.hasInline}
-                      onClick={() => setSelectedType("INLINE")}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                        selectedType === "INLINE"
-                          ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
-                          : availableTypesForSelectedSize.hasInline
-                          ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
-                          : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Footprints className="h-4 w-4 shrink-0" />
-                        <div>
-                          <div className="text-xs font-bold leading-tight">{t("common.inlineSkates", "Inline Skates")}</div>
-                          <div
-                            className={`text-[10px] mt-0.5 ${
-                              selectedType === "INLINE" ? "text-white/80" : "text-[#8B8179]"
-                            }`}
-                          >
-                            {availableTypesForSelectedSize.hasInline
-                              ? `${availableTypesForSelectedSize.inlineAvail} ${t("common.available", "available")}`
-                              : "0"}
-                          </div>
-                        </div>
-                      </div>
-                      {selectedType === "INLINE" && (
-                        <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Step 3: Specific Shoe ID Asset */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
-                    {t("rentals.chooseAsset", "3. Choose Shoe Tag")}
-                  </label>
-                  {shoesForSelectedSizeAndType.length === 0 ? (
-                    <div className="space-y-2.5">
-                      <div className="p-3 rounded-xl bg-[#FDF0EF] border border-[#D94B45]/30 text-[#D94B45] text-xs flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 shrink-0 text-[#D94B45] mt-0.5" />
-                        <div>
-                          <strong className="block font-bold">
-                            {t("rentals.outOfStockAlert", "No skates of this size are currently available")}
-                          </strong>
-                          <span className="text-[11px] text-[#D94B45]/90">
-                            {t("rentals.noShoesAvailable", "Customer will need to wait for one to be returned.")}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Log Missed Demand Button (Owner Bottleneck Report) */}
-                      <button
-                        type="button"
-                        disabled={loggingDemand}
-                        onClick={handleLogMissedDemand}
-                        className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#FDF0EF] border-2 border-[#D94B45] text-[#D94B45] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-98"
-                      >
-                        <AlertTriangle className="h-3.5 w-3.5 text-[#D94B45]" />
-                        <span>
-                          {loggedDemandSize === selectedSize
-                            ? t("rentals.loggedSuccess", "✓ Logged! Customer Request Recorded")
-                            : t("rentals.logTurnaway", "+ Log 1 Turned Away Customer (Out of Stock)")}
-                        </span>
-                      </button>
-
-                      {/* Helpful tip if alternate type is available */}
-                      {selectedType === "INLINE" && availableTypesForSelectedSize.quadAvail > 0 && (
+                        {/* Inline Skates Button */}
                         <button
                           type="button"
-                          onClick={() => setSelectedType("QUAD")}
-                          className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
-                        >
-                          <span className="font-semibold text-left">
-                            💡 {t("rentals.quadsAvailable", "Quads are available for Size")} #{selectedSize} ({availableTypesForSelectedSize.quadAvail} {t("rentals.left", "left")})
-                          </span>
-                          <span className="text-[11px] font-bold underline shrink-0">{t("rentals.switchToQuads", "Switch to Quads")} &rarr;</span>
-                        </button>
-                      )}
-
-                      {selectedType === "QUAD" && availableTypesForSelectedSize.inlineAvail > 0 && (
-                        <button
-                          type="button"
+                          disabled={!availableTypesForSelectedSize.hasInline}
                           onClick={() => setSelectedType("INLINE")}
-                          className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                            selectedType === "INLINE"
+                              ? "bg-[#D96827] text-white border-[#D96827] shadow-sm font-bold"
+                              : availableTypesForSelectedSize.hasInline
+                              ? "bg-white text-[#29221E] border-[#E9D9C5] hover:border-[#D96827]/40"
+                              : "bg-[#F7F6F3]/50 text-[#8B8179]/40 border-dashed border-[#E9D9C5] cursor-not-allowed"
+                          }`}
                         >
-                          <span className="font-semibold text-left">
-                            💡 {t("rentals.inlineAvailable", "Inline skates are available for Size")} #{selectedSize} ({availableTypesForSelectedSize.inlineAvail} {t("rentals.left", "left")})
-                          </span>
-                          <span className="text-[11px] font-bold underline shrink-0">{t("rentals.switchToInline", "Switch to Inline")} &rarr;</span>
+                          <div className="flex items-center gap-2">
+                            <Footprints className="h-4 w-4 shrink-0" />
+                            <div>
+                              <div className="text-xs font-bold leading-tight">{t("common.inlineSkates", "Inline Skates")}</div>
+                              <div
+                                className={`text-[10px] mt-0.5 ${
+                                  selectedType === "INLINE" ? "text-white/80" : "text-[#8B8179]"
+                                }`}
+                              >
+                                {availableTypesForSelectedSize.hasInline
+                                  ? `${availableTypesForSelectedSize.inlineAvail} ${t("common.available", "available")}`
+                                  : "0"}
+                              </div>
+                            </div>
+                          </div>
+                          {selectedType === "INLINE" && (
+                            <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
+                          )}
                         </button>
-                      )}
+                      </div>
+                    </div>
 
-                      {activeSessionsForSelectedSizeAndType.length > 0 ? (
-                        <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] space-y-2">
-                          <div className="flex items-center justify-between text-xs pb-1 border-b border-[#E9D9C5]/60">
-                            <span className="font-bold text-[#29221E] flex items-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5 text-[#D96827]" />
-                              {t("rentals.returningSoonest", "Returning Soonest")} (#{selectedSize}):
-                            </span>
-                            <span className="text-[10px] text-[#8B8179] font-medium">{t("rentals.estWait", "Est. Wait")}</span>
+                    {/* Step 3: Specific Shoe ID Asset (Custom Dropdown) */}
+                    <div>
+                      <label className="block text-xs font-semibold text-[#29221E] uppercase tracking-wider mb-1.5">
+                        {t("rentals.chooseAsset", "3. Choose Shoe Tag")}
+                      </label>
+                      {shoesForSelectedSizeAndType.length === 0 ? (
+                        <div className="space-y-2.5">
+                          <div className="p-3 rounded-xl bg-[#FDF0EF] border border-[#D94B45]/30 text-[#D94B45] text-xs flex items-start gap-2">
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-[#D94B45] mt-0.5" />
+                            <div>
+                              <strong className="block font-bold">
+                                {t("rentals.outOfStockAlert", "No skates of this size are currently available")}
+                              </strong>
+                              <span className="text-[11px] text-[#D94B45]/90">
+                                {t("rentals.noShoesAvailable", "Customer will need to wait for one to be returned.")}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="space-y-1.5">
-                            {activeSessionsForSelectedSizeAndType.map((s, idx) => {
-                              const timer = getSessionTimerData(s);
-                              const dueTime = format12HourTime(s.expectedEndTime);
-                              const displayName =
-                                !s.customerName || s.customerName.toLowerCase().includes("walk-in")
-                                  ? "Skater"
-                                  : s.customerName;
+                          {/* Log Missed Demand Button (Owner Bottleneck Report) */}
+                          <button
+                            type="button"
+                            disabled={loggingDemand}
+                            onClick={handleLogMissedDemand}
+                            className="w-full py-2 px-3 rounded-xl bg-white hover:bg-[#FDF0EF] border-2 border-[#D94B45] text-[#D94B45] text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-98"
+                          >
+                            <AlertTriangle className="h-3.5 w-3.5 text-[#D94B45]" />
+                            <span>
+                              {loggedDemandSize === selectedSize
+                                ? t("rentals.loggedSuccess", "✓ Logged! Customer Request Recorded")
+                                : t("rentals.logTurnaway", "+ Log 1 Turned Away Customer (Out of Stock)")}
+                            </span>
+                          </button>
 
-                              return (
-                                <div
-                                  key={s._id}
-                                  className="flex items-center justify-between p-2 rounded-lg bg-white border border-[#E9D9C5] text-xs shadow-2xs"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="h-5 w-5 rounded-full bg-[#FFF4E5] text-[#D96827] font-bold text-[10px] flex items-center justify-center border border-[#E9D9C5]">
-                                      #{idx + 1}
-                                    </span>
-                                    <span className="font-mono font-bold text-[#29221E]">{s.shoeId}</span>
-                                    <span className="text-[#8B8179] text-[11px] truncate max-w-[120px]">
-                                      ({displayName})
-                                    </span>
-                                  </div>
+                          {/* Helpful tip if alternate type is available */}
+                          {selectedType === "INLINE" && availableTypesForSelectedSize.quadAvail > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedType("QUAD")}
+                              className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
+                            >
+                              <span className="font-semibold text-left">
+                                💡 {t("rentals.quadsAvailable", "Quads are available for Size")} #{selectedSize} ({availableTypesForSelectedSize.quadAvail} {t("rentals.left", "left")})
+                              </span>
+                              <span className="text-[11px] font-bold underline shrink-0">{t("rentals.switchToQuads", "Switch to Quads")} &rarr;</span>
+                            </button>
+                          )}
 
-                                  <div className="text-right">
-                                    {timer.isOverdue ? (
-                                      <span className="text-[#D94B45] font-bold font-mono text-[11px] flex items-center gap-1">
-                                        <span className="h-2 w-2 rounded-full bg-[#D94B45] animate-ping" />
-                                        {t("rentals.overdueTab", "Overdue")} (+{timer.timeFormatted})
-                                      </span>
-                                    ) : (
-                                      <div className="text-right">
-                                        <span className="font-mono font-bold text-[#D96827] text-xs">
-                                          ~{timer.timeFormatted} {t("rentals.left", "left")}
+                          {selectedType === "QUAD" && availableTypesForSelectedSize.inlineAvail > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedType("INLINE")}
+                              className="w-full p-2.5 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] text-[#D96827] text-xs flex items-center justify-between cursor-pointer hover:bg-[#FFE8CC] transition-colors"
+                            >
+                              <span className="font-semibold text-left">
+                                💡 {t("rentals.inlineAvailable", "Inline skates are available for Size")} #{selectedSize} ({availableTypesForSelectedSize.inlineAvail} {t("rentals.left", "left")})
+                              </span>
+                              <span className="text-[11px] font-bold underline shrink-0">{t("rentals.switchToInline", "Switch to Inline")} &rarr;</span>
+                            </button>
+                          )}
+
+                          {activeSessionsForSelectedSizeAndType.length > 0 ? (
+                            <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#E9D9C5] space-y-2">
+                              <div className="flex items-center justify-between text-xs pb-1 border-b border-[#E9D9C5]/60">
+                                <span className="font-bold text-[#29221E] flex items-center gap-1.5">
+                                  <Clock className="h-3.5 w-3.5 text-[#D96827]" />
+                                  {t("rentals.returningSoonest", "Returning Soonest")} (#{selectedSize}):
+                                </span>
+                                <span className="text-[10px] text-[#8B8179] font-medium">{t("rentals.estWait", "Est. Wait")}</span>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                {activeSessionsForSelectedSizeAndType.map((s, idx) => {
+                                  const timer = getSessionTimerData(s);
+                                  const dueTime = format12HourTime(s.expectedEndTime);
+                                  const displayName =
+                                    !s.customerName || s.customerName.toLowerCase().includes("walk-in")
+                                      ? "Skater"
+                                      : s.customerName;
+
+                                  return (
+                                    <div
+                                      key={s._id}
+                                      className="flex items-center justify-between p-2 rounded-lg bg-white border border-[#E9D9C5] text-xs shadow-2xs"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className="h-5 w-5 rounded-full bg-[#FFF4E5] text-[#D96827] font-bold text-[10px] flex items-center justify-center border border-[#E9D9C5]">
+                                          #{idx + 1}
                                         </span>
-                                        <span className="block text-[10px] text-[#8B8179]">
-                                          ({t("rentals.dueIn", "due")} {dueTime})
+                                        <span className="font-mono font-bold text-[#29221E]">{s.shoeId}</span>
+                                        <span className="text-[#8B8179] text-[11px] truncate max-w-[120px]">
+                                          ({displayName})
                                         </span>
                                       </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+
+                                      <div className="text-right">
+                                        {timer.isOverdue ? (
+                                          <span className="text-[#D94B45] font-bold font-mono text-[11px] flex items-center gap-1">
+                                            <span className="h-2 w-2 rounded-full bg-[#D94B45] animate-ping" />
+                                            {t("rentals.overdueTab", "Overdue")} (+{timer.timeFormatted})
+                                          </span>
+                                        ) : (
+                                          <div className="text-right">
+                                            <span className="font-mono font-bold text-[#D96827] text-xs">
+                                              ~{timer.timeFormatted} {t("rentals.left", "left")}
+                                            </span>
+                                            <span className="block text-[10px] text-[#8B8179]">
+                                              ({t("rentals.dueIn", "due")} {dueTime})
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="relative">
+                          {/* Custom Dropdown Trigger */}
+                          <button
+                            type="button"
+                            onClick={() => setShoeDropdownOpen(!shoeDropdownOpen)}
+                            className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-left flex items-center justify-between text-[#29221E] font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 hover:border-[#D96827] transition-all cursor-pointer"
+                          >
+                            <span className="flex items-center gap-2 truncate">
+                              {selectedShoeId ? (
+                                (() => {
+                                  const shoe = availableShoes.find((s) => s.shoeId === selectedShoeId);
+                                  return shoe ? (
+                                    <>
+                                      <span className="font-mono font-black text-[#D96827]">{shoe.shoeId}</span>
+                                      <span className="text-xs text-[#8B8179]">
+                                        ({shoe.isExtended
+                                          ? `${shoe.extendedType === "EXTENDED_SMALL" ? "Ext-S" : shoe.extendedType === "EXTENDED_LARGE" ? "Ext-L" : "Ext-M"}`
+                                          : `Size #${shoe.size}`}
+                                        {" • "}
+                                        {shoe.type === "QUAD" ? "Quads" : "Inline"})
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="font-mono font-bold">{selectedShoeId}</span>
+                                  );
+                                })()
+                              ) : (
+                                <span className="text-[#8B8179] font-normal">
+                                  {t("rentals.chooseAsset", "Select an available shoe...")}
+                                </span>
+                              )}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 text-[#8B8179] transition-transform ${shoeDropdownOpen ? "rotate-180" : ""}`} />
+                          </button>
+
+                          {/* Custom Dropdown Menu */}
+                          {shoeDropdownOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white border border-[#E9D9C5] rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-150">
+                              <div className="p-2 border-b border-[#E9D9C5] bg-[#F7F6F3]">
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-[#8B8179]" />
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    placeholder={t("rentals.searchShoes", "Search shoe ID or size...")}
+                                    value={shoeSearchQuery}
+                                    onChange={(e) => setShoeSearchQuery(e.target.value)}
+                                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#E9D9C5] rounded-lg text-xs text-[#29221E] focus:outline-none focus:ring-1 focus:ring-[#D96827]"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="max-h-52 overflow-y-auto divide-y divide-[#E9D9C5]/50">
+                                {shoesForSelectedSizeAndType
+                                  .filter((s) => {
+                                    if (!shoeSearchQuery.trim()) return true;
+                                    const q = shoeSearchQuery.toLowerCase();
+                                    return (
+                                      s.shoeId.toLowerCase().includes(q) ||
+                                      String(s.size).includes(q) ||
+                                      (s.type || "").toLowerCase().includes(q) ||
+                                      (s.coveredSizes && s.coveredSizes.some((cs) => String(cs).includes(q)))
+                                    );
+                                  })
+                                  .map((s) => {
+                                    const isSelected = selectedShoeId === s.shoeId;
+                                    return (
+                                      <button
+                                        key={s._id}
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedShoeId(s.shoeId);
+                                          setShoeDropdownOpen(false);
+                                          setShoeSearchQuery("");
+                                        }}
+                                        className={`w-full px-3.5 py-2 text-left flex items-center justify-between text-xs transition-colors cursor-pointer ${
+                                          isSelected
+                                            ? "bg-[#FFF4E5] text-[#D96827] font-bold"
+                                            : "hover:bg-[#F7F6F3] text-[#29221E]"
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-mono font-black text-sm">{s.shoeId}</span>
+                                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-[#F7F6F3] text-[#8B8179] border border-[#E9D9C5]">
+                                            {s.isExtended
+                                              ? `${s.extendedType === "EXTENDED_SMALL" ? "Ext-S" : s.extendedType === "EXTENDED_LARGE" ? "Ext-L" : "Ext-M"}`
+                                              : `Size #${s.size}`}
+                                          </span>
+                                          <span className="text-[10px] text-[#8B8179]">
+                                            {s.type === "QUAD" ? "Quads" : "Inline"}
+                                          </span>
+                                        </div>
+                                        {isSelected && <Check className="h-4 w-4 text-[#D96827]" />}
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <select
-                      value={selectedShoeId}
-                      onChange={(e) => setSelectedShoeId(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-[#29221E] font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-[#D96827]/30 focus:border-[#D96827] cursor-pointer"
-                    >
-                      {shoesForSelectedSizeAndType.map((s) => (
-                        <option key={s._id} value={s.shoeId}>
-                          {s.shoeId} (
-                          {s.isExtended
-                            ? `${t("shoes.extended", "Extended")} ${
-                                s.extendedType === "EXTENDED_SMALL"
-                                  ? "S [31-34]"
-                                  : s.extendedType === "EXTENDED_LARGE"
-                                  ? "L [39-42]"
-                                  : "M [35-38]"
-                              }`
-                            : `${t("common.size", "Size")} #${s.size}`}
-                          {" • "}
-                          {s.type === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")})
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                  </>
+                ) : (
+                  <div className="p-3.5 rounded-xl bg-[#FFF4E5] border border-[#D96827]/30 text-xs text-[#29221E] space-y-1">
+                    <span className="font-bold text-[#D96827] flex items-center gap-1.5">
+                      🛼 {t("rentals.ownSkates", "Own Skates — Floor Access Only")}
+                    </span>
+                    <p className="text-[11px] text-[#8B8179]">
+                      Customer is using their personal skates. No rental shoes will be reserved from fleet inventory.
+                    </p>
+                  </div>
+                )}
 
                 {/* Step 4: Duration & Pricing */}
                 <div>
@@ -1593,10 +1951,12 @@ export default function RentalBoardPage() {
                     >
                       <div className="font-bold text-sm text-[#29221E]">{t("rentals.min30", "30 Minutes")}</div>
                       <div className="text-[11px] text-[#D96827] font-bold mt-0.5 font-mono">
-                        {isWeekend ? `200 ${t("common.etb", "ETB")}` : `150 ${t("common.etb", "ETB")}`}
+                        {hasOwnSkates
+                          ? `${Math.max(0, (isWeekend ? 200 : 150) - 50)} ${t("common.etb", "ETB")}`
+                          : `${isWeekend ? 200 : 150} ${t("common.etb", "ETB")}`}
                       </div>
                       <div className="text-[10px] text-[#8B8179] mt-1 font-mono">
-                        +5m buffer = 35m
+                        +5m buffer = 35m {hasOwnSkates && "(-50 ETB)"}
                       </div>
                     </button>
 
@@ -1611,10 +1971,12 @@ export default function RentalBoardPage() {
                     >
                       <div className="font-bold text-sm text-[#29221E]">{t("rentals.min60", "60 Minutes (1 Hour)")}</div>
                       <div className="text-[11px] text-[#D96827] font-bold mt-0.5 font-mono">
-                        {isWeekend ? `300 ${t("common.etb", "ETB")}` : `250 ${t("common.etb", "ETB")}`}
+                        {hasOwnSkates
+                          ? `${Math.max(0, (isWeekend ? 300 : 250) - 100)} ${t("common.etb", "ETB")}`
+                          : `${isWeekend ? 300 : 250} ${t("common.etb", "ETB")}`}
                       </div>
                       <div className="text-[10px] text-[#8B8179] mt-1 font-mono">
-                        +5m buffer = 65m
+                        +5m buffer = 65m {hasOwnSkates && "(-100 ETB)"}
                       </div>
                     </button>
                   </div>
@@ -1865,29 +2227,49 @@ export default function RentalBoardPage() {
 
         {/* 3. RETURN & CHECKOUT MODAL */}
         {returnSession && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
             <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E]">
               <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-[#26845B]" />
                   <h3 className="text-base sm:text-lg font-bold text-[#29221E]">
-                    {t("rentals.returnModalTitle", "Return Skates & Settle")}
+                    {returnSession.status === "RETURNED_UNPAID"
+                      ? t("rentals.settlePayment", "Settle Payment")
+                      : t("rentals.returnModalTitle", "Return Skates & Settle")}
                   </h3>
                 </div>
                 <button
-                  onClick={() => setReturnSession(null)}
+                  onClick={() => {
+                    setReturnSession(null);
+                    setReturnCustomAmount("");
+                  }}
                   className="p-1 text-[#8B8179] hover:text-[#29221E]"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleReturnSubmit} className="mt-4 space-y-4">
+              <form onSubmit={(e) => handleReturnSubmit(e, false)} className="mt-4 space-y-4">
+                {/* Linked Billed Alert */}
+                {returnSession.billedToShoeId && (
+                  <div className="p-3 rounded-xl bg-[#E0F2FE] border border-[#BAE6FD] text-xs text-[#0369A1] flex items-start gap-2">
+                    <Link2 className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold">Mapped to another skater</strong>
+                      <span>
+                        This session is billed to <strong>#{returnSession.billedToShoeId}</strong> ({returnSession.billedToCustomerName || "Skater"}). You can settle now or let them settle together.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-4 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] space-y-2.5">
                   <div className="flex justify-between text-xs text-[#8B8179]">
                     <span>{t("shoes.title", "Shoe")}:</span>
                     <strong className="text-[#29221E] font-mono">
-                      {returnSession.shoeId} ({t("common.size", "Size")} #{returnSession.shoeSize})
+                      {returnSession.hasOwnSkates
+                        ? "Own Skates (Floor Access)"
+                        : `${returnSession.shoeId} (${t("common.size", "Size")} #${returnSession.shoeSize})`}
                     </strong>
                   </div>
                   <div className="flex justify-between text-xs text-[#8B8179]">
@@ -1907,7 +2289,7 @@ export default function RentalBoardPage() {
                       <span>{t("rentals.rentalCharge", "Rental Fee")}:</span>
                       <div className="flex items-center gap-1.5 font-mono">
                         <span className={returnSession.paymentStatus === "PAID" ? "line-through text-[#8B8179]" : "font-bold text-[#29221E]"}>
-                          {formatETB(returnSession.totalRentalFee)}
+                          {formatETB(returnCustomAmount ? Number(returnCustomAmount) : returnSession.totalRentalFee)}
                         </span>
                         {returnSession.paymentStatus === "PAID" && (
                           <span className="text-[10px] font-bold text-[#26845B] bg-[#EBF5F0] px-1.5 py-0.5 rounded border border-[#26845B]/30">
@@ -1925,12 +2307,46 @@ export default function RentalBoardPage() {
                     ) : null}
                   </div>
 
+                  {/* Group Billed Skaters covered by this session (Requirement #5) */}
+                  {(() => {
+                    if (!returnSession.payingForSessionIds || returnSession.payingForSessionIds.length === 0) return null;
+                    const covered = sessions.filter(
+                      (s) => returnSession.payingForSessionIds?.includes(s._id) && s.status !== "COMPLETED"
+                    );
+                    if (covered.length === 0) return null;
+                    const coveredTotal = covered.reduce((sum, s) => sum + s.totalRentalFee, 0);
+
+                    return (
+                      <div className="mt-2 pt-2 border-t border-[#E9D9C5] space-y-1.5">
+                        <div className="flex justify-between items-center text-xs font-bold text-[#26845B]">
+                          <span>Paying for {covered.length} friend(s):</span>
+                          <span className="font-mono">+{formatETB(coveredTotal)}</span>
+                        </div>
+                        <div className="space-y-1 bg-white p-2 rounded-lg border border-[#E9D9C5]">
+                          {covered.map((cs) => (
+                            <div key={cs._id} className="flex justify-between items-center text-[11px] font-mono text-[#29221E]">
+                              <span>{cs.hasOwnSkates ? "Own Skates" : cs.shoeId} ({cs.customerName || "Skater"})</span>
+                              <span className="font-bold">{formatETB(cs.totalRentalFee)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Amount Due to Collect Now */}
                   {(() => {
                     const isSkatePaid = returnSession.paymentStatus === "PAID";
-                    const skateDue = isSkatePaid ? 0 : returnSession.totalRentalFee;
+                    const settledFee = returnCustomAmount ? Number(returnCustomAmount) : returnSession.totalRentalFee;
+                    const skateDue = isSkatePaid ? 0 : settledFee;
                     const snackDue = returnSession.tabTotal || 0;
-                    const totalDueNow = skateDue + snackDue;
+
+                    const covered = sessions.filter(
+                      (s) => returnSession.payingForSessionIds?.includes(s._id) && s.status !== "COMPLETED"
+                    );
+                    const coveredDue = covered.reduce((sum, s) => sum + (s.paymentStatus === "PAID" ? 0 : s.totalRentalFee), 0);
+
+                    const totalDueNow = skateDue + snackDue + coveredDue;
 
                     return (
                       <div className="pt-2.5 border-t border-[#E9D9C5]">
@@ -1949,12 +2365,39 @@ export default function RentalBoardPage() {
                   })()}
                 </div>
 
+                {/* Requirement #3: Custom settled price input if session had extensions/additional time */}
+                {returnSession.extensions && returnSession.extensions.length > 0 && (
+                  <div className="p-3 rounded-xl bg-[#FFF4E5] border border-[#D96827]/30 space-y-1.5">
+                    <label className="block text-xs font-bold text-[#D96827] uppercase">
+                      {t("rentals.customPrice", "Custom Settled Amount (Optional)")}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder={String(returnSession.totalRentalFee)}
+                        value={returnCustomAmount}
+                        onChange={(e) => setReturnCustomAmount(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      />
+                      <span className="text-xs font-bold font-mono text-[#8B8179]">ETB</span>
+                    </div>
+                    <p className="text-[10px] text-[#8B8179]">
+                      Session had time adjustments. You can override the final fee if negotiated.
+                    </p>
+                  </div>
+                )}
+
                 {/* Payment method selector if balance is owed */}
                 {(() => {
                   const isSkatePaid = returnSession.paymentStatus === "PAID";
-                  const skateDue = isSkatePaid ? 0 : returnSession.totalRentalFee;
+                  const settledFee = returnCustomAmount ? Number(returnCustomAmount) : returnSession.totalRentalFee;
+                  const skateDue = isSkatePaid ? 0 : settledFee;
                   const snackDue = returnSession.tabTotal || 0;
-                  const totalDueNow = skateDue + snackDue;
+                  const covered = sessions.filter(
+                    (s) => returnSession.payingForSessionIds?.includes(s._id) && s.status !== "COMPLETED"
+                  );
+                  const coveredDue = covered.reduce((sum, s) => sum + (s.paymentStatus === "PAID" ? 0 : s.totalRentalFee), 0);
+                  const totalDueNow = skateDue + snackDue + coveredDue;
 
                   if (totalDueNow <= 0) return null;
 
@@ -1983,21 +2426,45 @@ export default function RentalBoardPage() {
                   );
                 })()}
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
                   <button
                     type="button"
-                    onClick={() => setReturnSession(null)}
-                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                    onClick={() => {
+                      setReturnSession(null);
+                      setReturnCustomAmount("");
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer text-center"
                   >
                     {t("common.cancel", "Cancel")}
                   </button>
+
+                  {/* Requirement #4: Return Shoe Only (Unpaid / In House) button */}
+                  {returnSession.status === "ACTIVE" && !returnSession.hasOwnSkates && (
+                    <button
+                      type="button"
+                      disabled={returnLoading}
+                      onClick={(e) => handleReturnSubmit(e, true)}
+                      className="px-3.5 py-2.5 bg-[#FFF9E6] hover:bg-[#FFF0C2] text-[#9C6D14] border border-[#D99B26] font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      title="Shoe is freed to rack for others; customer debt is recorded in Unpaid Returns tab"
+                    >
+                      {returnLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      <span>{t("rentals.returnShoeOnly", "Return Shoe Only (In House)")}</span>
+                    </button>
+                  )}
+
                   <button
                     type="submit"
                     disabled={returnLoading}
                     className="px-5 py-2.5 bg-[#26845B] hover:bg-[#1f6d4a] text-white font-bold text-xs rounded-xl shadow-md shadow-[#26845B]/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     {returnLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    <span>{returnLoading ? t("common.loading", "Loading...") : t("rentals.completeReturn", "Confirm Return & Payment")}</span>
+                    <span>
+                      {returnLoading
+                        ? t("common.loading", "Loading...")
+                        : returnSession.status === "RETURNED_UNPAID"
+                        ? t("rentals.settlePayment", "Confirm Payment & Settle")
+                        : t("rentals.returnAndSettle", "Settle & Return Now")}
+                    </span>
                   </button>
                 </div>
               </form>
@@ -2341,7 +2808,9 @@ export default function RentalBoardPage() {
 
                 {/* Live Preview Box */}
                 {(() => {
-                  const fee = calculateAdjustFee(timeAdjustSession, adjustMinutes);
+                  const fee = adjustCustomFee !== "" && !isNaN(Number(adjustCustomFee))
+                    ? Number(adjustCustomFee)
+                    : calculateAdjustFee(timeAdjustSession, adjustMinutes);
                   const newEnd = calculateAdjustedEndTime(timeAdjustSession, adjustMinutes);
                   return (
                     <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs space-y-1.5 font-mono">
@@ -2362,6 +2831,28 @@ export default function RentalBoardPage() {
                     </div>
                   );
                 })()}
+
+                {/* Requirement #3: Custom Price Override (Optional) */}
+                {adjustMinutes > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1 flex items-center justify-between">
+                      <span>{t("rentals.customPrice", "Custom Price Override (Optional)")}</span>
+                      <span className="text-[10px] text-[#8B8179]">
+                        {t("rentals.defaultPrice", "Default")}: {calculateAdjustFee(timeAdjustSession, adjustMinutes)} ETB
+                      </span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder={String(calculateAdjustFee(timeAdjustSession, adjustMinutes))}
+                        value={adjustCustomFee}
+                        onChange={(e) => setAdjustCustomFee(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#E9D9C5] rounded-xl text-xs font-mono font-bold text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#D96827]"
+                      />
+                      <span className="text-xs font-bold font-mono text-[#8B8179]">ETB</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Payment Channel Selector (Requirement #1) */}
                 {adjustMinutes > 0 && (
@@ -2439,6 +2930,105 @@ export default function RentalBoardPage() {
                         ? `Confirm +${adjustMinutes}m`
                         : `Confirm ${adjustMinutes}m`}
                     </span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* 7. LINK PAYER MODAL (Requirement #5) */}
+        {linkPayerSession && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white border border-[#E9D9C5] rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl relative my-auto text-[#29221E] space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E9D9C5]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-[#E0F2FE] text-[#0369A1]">
+                    <Link2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-[#29221E]">
+                      {t("rentals.linkPayer", "Bill to Another Skater")}
+                    </h3>
+                    <p className="text-xs text-[#8B8179]">
+                      Map this skater's payment to another active skater
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setLinkPayerSession(null)}
+                  className="p-1 text-[#8B8179] hover:text-[#29221E] rounded-lg cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#F7F6F3] border border-[#E9D9C5] text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-[#8B8179]">Current Skater:</span>
+                  <strong className="font-mono text-[#29221E]">
+                    {linkPayerSession.hasOwnSkates ? "Own Skates" : linkPayerSession.shoeId} ({linkPayerSession.customerName || "Skater"})
+                  </strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#8B8179]">Session Fee:</span>
+                  <strong className="text-[#D96827] font-mono">{formatETB(linkPayerSession.totalRentalFee)}</strong>
+                </div>
+                {linkPayerSession.billedToShoeId && (
+                  <div className="mt-2 pt-2 border-t border-[#E9D9C5] flex items-center justify-between text-[#0369A1]">
+                    <span>Currently billed to: <strong>#{linkPayerSession.billedToShoeId}</strong> ({linkPayerSession.billedToCustomerName || "Skater"})</span>
+                    <button
+                      type="button"
+                      onClick={() => handleUnlinkPayer(linkPayerSession)}
+                      className="text-[11px] font-bold text-[#D94B45] underline cursor-pointer hover:opacity-80"
+                    >
+                      Unlink
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <form onSubmit={handleLinkPayerSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#29221E] uppercase mb-1.5">
+                    Select Who Will Pay (Active Skaters)
+                  </label>
+                  <select
+                    value={targetPayerId}
+                    onChange={(e) => setTargetPayerId(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-white border border-[#E9D9C5] rounded-xl text-xs sm:text-sm font-medium text-[#29221E] focus:outline-none focus:ring-2 focus:ring-[#0369A1] cursor-pointer"
+                  >
+                    <option value="">-- Choose payer on the floor --</option>
+                    {sessions
+                      .filter(
+                        (s) =>
+                          s._id !== linkPayerSession._id &&
+                          s.status === "ACTIVE" &&
+                          s.billedToSessionId !== linkPayerSession._id
+                      )
+                      .map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.hasOwnSkates ? "Own Skates" : s.shoeId} - {s.customerName || "Skater"} (Due: {format12HourTime(s.expectedEndTime)})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#E9D9C5]">
+                  <button
+                    type="button"
+                    onClick={() => setLinkPayerSession(null)}
+                    className="px-4 py-2 text-xs font-semibold text-[#8B8179] hover:text-[#29221E] cursor-pointer"
+                  >
+                    {t("common.cancel", "Cancel")}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={linkPayerLoading || !targetPayerId}
+                    className="px-5 py-2.5 bg-[#0369A1] hover:bg-[#0284C7] text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {linkPayerLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    <span>Map to Skater</span>
                   </button>
                 </div>
               </form>

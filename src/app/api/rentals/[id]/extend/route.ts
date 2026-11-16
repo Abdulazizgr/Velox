@@ -20,6 +20,7 @@ export async function POST(
       addedMinutes = 30,
       paymentStatus = "PAID", // "PAID" | "UNPAID"
       paymentMethod = "CASH", // "CASH" | "TELEBIRR" | "CBE"
+      customFee,
     } = body;
 
     const minutesToAdd = Number(addedMinutes);
@@ -51,19 +52,23 @@ export async function POST(
     let additionalFee = 0;
     const absMin = Math.abs(minutesToAdd);
 
-    if (absMin === 30) {
-      additionalFee = isWeekend ? 200 : 150;
-    } else if (absMin === 60) {
-      additionalFee = isWeekend ? 300 : 250;
-    } else if (absMin === 15) {
-      additionalFee = isWeekend ? 100 : 75;
+    if (customFee !== undefined && customFee !== null && customFee !== "" && !isNaN(Number(customFee))) {
+      additionalFee = Number(customFee);
     } else {
-      const base30 = isWeekend ? 200 : 150;
-      additionalFee = Math.round((absMin / 30) * base30);
-    }
+      if (absMin === 30) {
+        additionalFee = isWeekend ? 200 : 150;
+      } else if (absMin === 60) {
+        additionalFee = isWeekend ? 300 : 250;
+      } else if (absMin === 15) {
+        additionalFee = isWeekend ? 100 : 75;
+      } else {
+        const base30 = isWeekend ? 200 : 150;
+        additionalFee = Math.round((absMin / 30) * base30);
+      }
 
-    if (minutesToAdd < 0) {
-      additionalFee = -additionalFee;
+      if (minutesToAdd < 0) {
+        additionalFee = -additionalFee;
+      }
     }
 
     const now = new Date();
