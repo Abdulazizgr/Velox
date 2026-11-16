@@ -1228,12 +1228,21 @@ export default function RentalBoardPage() {
 
                         {/* Linked Payer or Paying For Badges (Requirement #5) */}
                         {session.billedToShoeId && (
-                          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#0369A1] bg-[#E0F2FE] px-2 py-0.5 rounded-lg border border-[#BAE6FD]">
+                          <div
+                            className={`mt-1 flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-lg border ${
+                              session.paymentStatus === "PAID"
+                                ? "text-[#26845B] bg-[#EBF5F0] border-[#26845B]/30 font-semibold"
+                                : "text-[#0369A1] bg-[#E0F2FE] border-[#BAE6FD]"
+                            }`}
+                          >
                             <Link2 className="h-3 w-3 shrink-0" />
                             <span>
-                              {t("rentals.billedTo", "Billed to")}: <strong>#{session.billedToShoeId}</strong> ({session.billedToCustomerName || "Skater"})
+                              {session.paymentStatus === "PAID"
+                                ? `${t("rentals.paidBy", "Paid by")}: `
+                                : `${t("rentals.billedTo", "Billed to")}: `}
+                              <strong>#{session.billedToShoeId}</strong> ({session.billedToCustomerName || "Skater"})
                             </span>
-                            {isActive && (
+                            {isActive && session.paymentStatus !== "PAID" && (
                               <button
                                 type="button"
                                 onClick={() => handleUnlinkPayer(session)}
@@ -2252,12 +2261,20 @@ export default function RentalBoardPage() {
               <form onSubmit={(e) => handleReturnSubmit(e, false)} className="mt-4 space-y-4">
                 {/* Linked Billed Alert */}
                 {returnSession.billedToShoeId && (
-                  <div className="p-3 rounded-xl bg-[#E0F2FE] border border-[#BAE6FD] text-xs text-[#0369A1] flex items-start gap-2">
+                  <div className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                    returnSession.paymentStatus === "PAID"
+                      ? "bg-[#EBF5F0] border-[#26845B]/30 text-[#26845B]"
+                      : "bg-[#E0F2FE] border-[#BAE6FD] text-[#0369A1]"
+                  }`}>
                     <Link2 className="h-4 w-4 shrink-0 mt-0.5" />
                     <div>
-                      <strong className="block font-bold">Mapped to another skater</strong>
+                      <strong className="block font-bold">
+                        {returnSession.paymentStatus === "PAID" ? "Paid by Friend" : "Mapped to another skater"}
+                      </strong>
                       <span>
-                        This session is billed to <strong>#{returnSession.billedToShoeId}</strong> ({returnSession.billedToCustomerName || "Skater"}). You can settle now or let them settle together.
+                        {returnSession.paymentStatus === "PAID"
+                          ? `Payment was already settled by #${returnSession.billedToShoeId} (${returnSession.billedToCustomerName || "Skater"}). Just confirm shoe return.`
+                          : `This session is billed to #${returnSession.billedToShoeId} (${returnSession.billedToCustomerName || "Skater"}). You can return the shoe now and let them pay, or settle here.`}
                       </span>
                     </div>
                   </div>
@@ -2314,7 +2331,7 @@ export default function RentalBoardPage() {
                       (s) => returnSession.payingForSessionIds?.includes(s._id) && s.status !== "COMPLETED"
                     );
                     if (covered.length === 0) return null;
-                    const coveredTotal = covered.reduce((sum, s) => sum + s.totalRentalFee, 0);
+                    const coveredTotal = covered.reduce((sum, s) => sum + (s.paymentStatus === "PAID" ? 0 : s.totalRentalFee), 0);
 
                     return (
                       <div className="mt-2 pt-2 border-t border-[#E9D9C5] space-y-1.5">
@@ -2325,7 +2342,16 @@ export default function RentalBoardPage() {
                         <div className="space-y-1 bg-white p-2 rounded-lg border border-[#E9D9C5]">
                           {covered.map((cs) => (
                             <div key={cs._id} className="flex justify-between items-center text-[11px] font-mono text-[#29221E]">
-                              <span>{cs.hasOwnSkates ? "Own Skates" : cs.shoeId} ({cs.customerName || "Skater"})</span>
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span>{cs.hasOwnSkates ? "Own Skates" : cs.shoeId} ({cs.customerName || "Skater"})</span>
+                                <span className={`text-[10px] px-1 py-0.2 rounded font-sans font-medium ${
+                                  cs.isShoeReturned
+                                    ? "bg-[#FFF9E6] text-[#9C6D14] border border-[#D99B26]/30"
+                                    : "bg-[#EBF5F0] text-[#26845B] border border-[#26845B]/30"
+                                }`}>
+                                  {cs.isShoeReturned ? t("rentals.shoeReturnedBadge", "Shoe returned") : t("rentals.stillSkating", "Still skating")}
+                                </span>
+                              </div>
                               <span className="font-bold">{formatETB(cs.totalRentalFee)}</span>
                             </div>
                           ))}
@@ -2439,7 +2465,7 @@ export default function RentalBoardPage() {
                   </button>
 
                   {/* Requirement #4: Return Shoe Only (Unpaid / In House) button */}
-                  {returnSession.status === "ACTIVE" && !returnSession.hasOwnSkates && (
+                  {returnSession.status === "ACTIVE" && !returnSession.hasOwnSkates && returnSession.paymentStatus !== "PAID" && (
                     <button
                       type="button"
                       disabled={returnLoading}
@@ -2448,7 +2474,11 @@ export default function RentalBoardPage() {
                       title="Shoe is freed to rack for others; customer debt is recorded in Unpaid Returns tab"
                     >
                       {returnLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                      <span>{t("rentals.returnShoeOnly", "Return Shoe Only (In House)")}</span>
+                      <span>
+                        {returnSession.billedToShoeId
+                          ? t("rentals.returnShoeWaitingFriend", "Return Shoe (Friend Pays Later)")
+                          : t("rentals.returnShoeOnly", "Return Shoe Only (In House)")}
+                      </span>
                     </button>
                   )}
 
@@ -2463,6 +2493,8 @@ export default function RentalBoardPage() {
                         ? t("common.loading", "Loading...")
                         : returnSession.status === "RETURNED_UNPAID"
                         ? t("rentals.settlePayment", "Confirm Payment & Settle")
+                        : returnSession.paymentStatus === "PAID"
+                        ? t("rentals.confirmShoeReturn", "Confirm Shoe Return")
                         : t("rentals.returnAndSettle", "Settle & Return Now")}
                     </span>
                   </button>

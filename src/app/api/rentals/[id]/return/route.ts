@@ -73,7 +73,9 @@ export async function POST(
     session.actualReturnTime = now;
     session.status = "COMPLETED";
     session.paymentStatus = "PAID";
-    session.paymentMethod = paymentMethod;
+    if (!session.paymentMethod || session.paymentStatus !== "PAID") {
+      session.paymentMethod = paymentMethod;
+    }
     await session.save();
 
     // 5. Mark any attached unpaid Tab snacks as PAID
@@ -82,24 +84,31 @@ export async function POST(
       { $set: { paymentStatus: "PAID", paymentMethod } }
     );
 
-    // 6. Settle any linked sessions this skater was paying for (Requirement #5)
+    // 6. Settle payment for any linked sessions this skater was paying for (Requirement #5)
+    // IMPORTANT: When Person A pays for Person B:
+    // - Person B's bill is marked PAID.
+    // - If Person B already returned their shoe (e.g. resting in house, status RETURNED_UNPAID),
+    //   then Person B's session is now fully COMPLETED.
+    // - If Person B is STILL skating on the floor (isShoeReturned is false),
+    //   Person B remains ACTIVE with their shoe RENTED, but marked PAID so staff knows they are covered!
     if (Array.isArray(session.payingForSessionIds) && session.payingForSessionIds.length > 0) {
       for (const linkedId of session.payingForSessionIds) {
         const linkedSession = await RentalSession.findById(linkedId);
         if (linkedSession && linkedSession.status !== "COMPLETED") {
-          // Release linked shoe if not yet returned
-          if (!linkedSession.hasOwnSkates && !linkedSession.isShoeReturned) {
-            const linkedShoe = await Shoe.findOne({ shoeId: linkedSession.shoeId });
-            if (linkedShoe) {
-              linkedShoe.status = "AVAILABLE";
-              await linkedShoe.save();
-            }
-          }
-          linkedSession.isShoeReturned = true;
-          linkedSession.status = "COMPLETED";
           linkedSession.paymentStatus = "PAID";
           linkedSession.paymentMethod = paymentMethod;
-          linkedSession.actualReturnTime = now;
+
+          if (linkedSession.isShoeReturned) {
+            // Shoe was already returned previously: session is now completely finished
+            linkedSession.status = "COMPLETED";
+            if (!linkedSession.actualReturnTime) {
+              linkedSession.actualReturnTime = now;
+            }
+          } else {
+            // Skater is still on the floor skating!
+            // Keep them ACTIVE, keep shoe RENTED
+            linkedSession.status = "ACTIVE";
+          }
           await linkedSession.save();
 
           await Sale.updateMany(
