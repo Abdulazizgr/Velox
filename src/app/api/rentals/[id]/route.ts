@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { RentalSession } from "@/models";
 import { getSession } from "@/lib/auth";
-import { parseEthiopiaTimeString } from "@/lib/dateUtils";
+import { parseEthiopiaTimeString, getEthiopiaDayBounds } from "@/lib/dateUtils";
 
 export async function PATCH(
   req: NextRequest,
@@ -30,6 +30,16 @@ export async function PATCH(
     const session = await RentalSession.findById(id);
     if (!session) {
       return NextResponse.json({ error: "Rental session not found" }, { status: 404 });
+    }
+
+    // Role check: Only the owner can edit overnight / past-day rentals
+    const { start: startOfToday } = getEthiopiaDayBounds();
+    const isPastDay = new Date(session.startedAt) < startOfToday;
+    if (isPastDay && sessionUser.role !== "OWNER") {
+      return NextResponse.json(
+        { error: "Only the owner can edit rentals from previous days." },
+        { status: 403 }
+      );
     }
 
     // 1. Duration Update (e.g. reduce from 60 to 30, or increase to 60)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { RentalSession, Shoe, Sale } from "@/models";
 import { getSession } from "@/lib/auth";
+import { getEthiopiaDayBounds } from "@/lib/dateUtils";
 
 export async function POST(
   req: NextRequest,
@@ -31,6 +32,16 @@ export async function POST(
       return NextResponse.json(
         { error: "This rental session is already completed and returned." },
         { status: 400 }
+      );
+    }
+
+    // Role check: Only the owner can return or settle overnight / past-day rentals
+    const { start: startOfToday } = getEthiopiaDayBounds();
+    const isPastDay = new Date(session.startedAt) < startOfToday;
+    if (isPastDay && sessionUser.role !== "OWNER") {
+      return NextResponse.json(
+        { error: "Only the owner can settle or return rentals from previous days." },
+        { status: 403 }
       );
     }
 

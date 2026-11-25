@@ -104,6 +104,7 @@ export default function RentalBoardPage() {
   const { t, lang } = useLanguage();
   const [sessions, setSessions] = useState<RentalSessionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusTab, setStatusTab] = useState<"ACTIVE" | "OVERDUE" | "UNPAID_RETURNS" | "COMPLETED">("ACTIVE");
@@ -254,6 +255,17 @@ export default function RentalBoardPage() {
     };
     window.addEventListener("click", unlockAudio);
     window.addEventListener("touchstart", unlockAudio);
+
+    // Fetch user profile to detect if role is OWNER
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.authenticated && res.user) {
+          setIsOwner(res.user.role === "OWNER");
+        }
+      })
+      .catch(() => {});
+
     return () => {
       window.removeEventListener("click", unlockAudio);
       window.removeEventListener("touchstart", unlockAudio);
@@ -271,10 +283,16 @@ export default function RentalBoardPage() {
         (s) => s.status === "ACTIVE" && new Date(s.expectedEndTime).getTime() < currentNow
       );
 
-      if (activeOverdueSessions.length > 0) {
+      // Only trigger recurring audio alarm for today's active overdue sessions, not overnight carry-overs
+      const startOfTodayMs = new Date().setHours(0, 0, 0, 0);
+      const todayOverdueSessions = activeOverdueSessions.filter(
+        (s) => new Date(s.startedAt).getTime() >= startOfTodayMs
+      );
+
+      if (todayOverdueSessions.length > 0) {
         // Check if any session just transitioned into overdue status
         let hasNewOverdue = false;
-        activeOverdueSessions.forEach((s) => {
+        todayOverdueSessions.forEach((s) => {
           if (!playedAlertsRef.current.has(`${s._id}-overdue`)) {
             playedAlertsRef.current.add(`${s._id}-overdue`);
             hasNewOverdue = true;
@@ -299,10 +317,13 @@ export default function RentalBoardPage() {
   const fetchRentals = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/rentals?status=ALL&todayOnly=true");
+      const res = await fetch("/api/rentals?status=ALL&todayOnly=true&activeBoard=true");
       if (res.ok) {
         const data = await res.json();
         setSessions(data.sessions || []);
+        if (typeof data.isOwner === "boolean") {
+          setIsOwner(data.isOwner);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -834,6 +855,15 @@ export default function RentalBoardPage() {
     }
   };
 
+  // Helper to determine if a rental session originated from a previous calendar day
+  const isOvernight = (session: RentalSessionItem) => {
+    const start = new Date(session.startedAt);
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
+    const today = new Date();
+    const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    return startDay < currentDay;
+  };
+
   // Compute remaining timer metrics
   const getSessionTimerData = (session: RentalSessionItem) => {
     const endMs = new Date(session.expectedEndTime).getTime();
@@ -843,11 +873,15 @@ export default function RentalBoardPage() {
     const isDueSoon = diffMs >= 0 && diffMs <= 5 * 60 * 1000;
 
     const absDiffSeconds = Math.floor(Math.abs(diffMs) / 1000);
-    const minutes = Math.floor(absDiffSeconds / 60);
+    const totalMins = Math.floor(absDiffSeconds / 60);
     const seconds = absDiffSeconds % 60;
-    const timeFormatted = `${minutes.toString().padStart(2, "0")}:${seconds
-      .toString()
-      .padStart(2, "0")}`;
+    const hours = Math.floor(totalMins / 60);
+    const remainingMins = totalMins % 60;
+
+    const timeFormatted =
+      hours > 0
+        ? `${hours}h ${remainingMins}m`
+        : `${totalMins.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
     // Progress percentage
     const totalMs = session.totalMinutes * 60 * 1000;
@@ -859,7 +893,7 @@ export default function RentalBoardPage() {
       isDueSoon,
       diffMs,
       timeFormatted,
-      minutes,
+      minutes: totalMins,
       progressPercent,
     };
   };
@@ -919,6 +953,17 @@ export default function RentalBoardPage() {
     (s) => s.status === "RETURNED_UNPAID" || (s.isShoeReturned && s.paymentStatus === "UNPAID")
   ).length;
   const completedTodayCount = sessions.filter((s) => s.status === "COMPLETED").length;
+
+  const overnightCount = useMemo(() => {
+    return sessions.filter(
+      (s) =>
+        isOvernight(s) &&
+        (s.status === "ACTIVE" ||
+          s.status === "RETURNED_UNPAID" ||
+          (s.isShoeReturned && s.paymentStatus === "UNPAID") ||
+          s.paymentStatus === "UNPAID")
+    ).length;
+  }, [sessions]);
 
   const distinctSizes = useMemo(() => {
     const sizeSet = new Set<number>();
@@ -1007,6 +1052,20 @@ export default function RentalBoardPage() {
             </button>
           </div>
         </div>
+
+        {/* Owner Overnight / Past Day Notice */}
+        {isOwner && overnightCount > 0 && (
+          <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-3 text-amber-900 text-xs sm:text-sm shadow-xs">
+            <div className="flex items-center gap-2.5 font-medium">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 shrink-0" />
+              <span>
+                <strong className="font-bold">{t("rentals.ownerNotice", "Owner Alert:")}</strong>{" "}
+                {overnightCount}{" "}
+                {t("rentals.overnightSessionsNotice", "skate rental(s) from previous days remain unreturned or unpaid.")}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Status Highlight Tabs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
@@ -1188,9 +1247,16 @@ export default function RentalBoardPage() {
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {session.hasOwnSkates ? (
-                            <span className="font-mono text-xs sm:text-sm font-black text-[#D96827] bg-[#FFF4E5] px-2 py-0.5 rounded-lg border border-[#D96827]/30 flex items-center gap-1">
-                              🛼 {t("rentals.ownSkates", "Own Skates")}
-                            </span>
+                            <>
+                              <span className="font-mono text-xs sm:text-sm font-black text-[#D96827] bg-[#FFF4E5] px-2 py-0.5 rounded-lg border border-[#D96827]/30 flex items-center gap-1">
+                                🛼 {t("rentals.ownSkates", "Own Skates")}
+                              </span>
+                              {isOvernight(session) && (
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5] flex items-center gap-1 shadow-2xs whitespace-nowrap">
+                                  ⚠️ {t("rentals.overnight", "Overnight")} • {new Date(session.startedAt).toLocaleDateString(lang === "am" ? "am-ET" : "en-US", { month: "short", day: "numeric" })}
+                                </span>
+                              )}
+                            </>
                           ) : (
                             <>
                               <span className="font-mono text-xl sm:text-2xl font-black text-[#29221E] tracking-tight">
@@ -1213,6 +1279,11 @@ export default function RentalBoardPage() {
                               >
                                 {(session.skateType || "INLINE") === "QUAD" ? t("common.quads", "Quads") : t("common.inline", "Inline")}
                               </span>
+                              {isOvernight(session) && (
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-md bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5] flex items-center gap-1 shadow-2xs whitespace-nowrap">
+                                  ⚠️ {t("rentals.overnight", "Overnight")} • {new Date(session.startedAt).toLocaleDateString(lang === "am" ? "am-ET" : "en-US", { month: "short", day: "numeric" })}
+                                </span>
+                              )}
                             </>
                           )}
                         </div>

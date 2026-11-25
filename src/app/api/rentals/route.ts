@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { RentalSession, Shoe, Sale } from "@/models";
 import { getSession } from "@/lib/auth";
-import { parseEthiopiaTimeString } from "@/lib/dateUtils";
+import { parseEthiopiaTimeString, getEthiopiaDayBounds } from "@/lib/dateUtils";
 
 // GET /api/rentals - List sessions with optional filters (todayOnly, date range, search) and attached tab totals
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
+    const sessionUser = await getSession();
+    const isOwner = sessionUser?.role === "OWNER";
+
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") || "ACTIVE";
     const todayOnly = searchParams.get("todayOnly") === "true";
@@ -16,53 +19,80 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search")?.trim();
     const sortBy = searchParams.get("sortBy") || "expectedEndTime";
 
-    const query: Record<string, unknown> = {};
+    const conditions: Record<string, unknown>[] = [];
 
-    if (status !== "ALL") {
-      query.status = status;
-    }
-
-    // Date filtering
+    // Date filtering (Locked to Addis Ababa timezone UTC+3)
     if (todayOnly) {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
+      const { start: startOfDay, end: endOfDay } = getEthiopiaDayBounds();
 
-      // If active sessions are requested, include currently active and returned-unpaid sessions regardless of start time
-      if (status === "ACTIVE") {
-        query.$or = [
-          { status: "ACTIVE" },
-          { status: "RETURNED_UNPAID" },
-          { startedAt: { $gte: startOfDay, $lte: endOfDay } },
-        ];
-      } else if (status !== "ALL") {
-        query.status = status;
-        query.startedAt = { $gte: startOfDay, $lte: endOfDay };
+      if (isOwner) {
+        // Owner view: include unreturned active sessions and unpaid return settlements from ANY date,
+        // while completed/cancelled sessions are restricted to today.
+        if (status === "ACTIVE") {
+          conditions.push({
+            $or: [
+              { status: "ACTIVE" },
+              { status: "RETURNED_UNPAID" },
+              { startedAt: { $gte: startOfDay, $lte: endOfDay } },
+            ],
+          });
+        } else if (status === "ALL") {
+          conditions.push({
+            $or: [
+              { status: "ACTIVE" },
+              { status: "RETURNED_UNPAID" },
+              { paymentStatus: "UNPAID", status: { $ne: "CANCELLED" } },
+              { startedAt: { $gte: startOfDay, $lte: endOfDay } },
+            ],
+          });
+        } else {
+          conditions.push({
+            status,
+            startedAt: { $gte: startOfDay, $lte: endOfDay },
+          });
+        }
       } else {
-        query.startedAt = { $gte: startOfDay, $lte: endOfDay };
+        // Staff view: restricted strictly to today's shift
+        if (status !== "ALL") {
+          conditions.push({ status });
+        }
+        conditions.push({ startedAt: { $gte: startOfDay, $lte: endOfDay } });
       }
     } else if (startDate && endDate) {
-      const s = new Date(startDate);
-      s.setHours(0, 0, 0, 0);
-      const e = new Date(endDate);
-      e.setHours(23, 59, 59, 999);
-      query.startedAt = { $gte: s, $lte: e };
+      if (status !== "ALL") {
+        conditions.push({ status });
+      }
+      const s = getEthiopiaDayBounds(new Date(startDate)).start;
+      const e = getEthiopiaDayBounds(new Date(endDate)).end;
+      conditions.push({ startedAt: { $gte: s, $lte: e } });
     } else if (startDate) {
-      const s = new Date(startDate);
-      s.setHours(0, 0, 0, 0);
-      query.startedAt = { $gte: s };
+      if (status !== "ALL") {
+        conditions.push({ status });
+      }
+      const s = getEthiopiaDayBounds(new Date(startDate)).start;
+      conditions.push({ startedAt: { $gte: s } });
+    } else if (status !== "ALL") {
+      conditions.push({ status });
     }
 
     // Search query by customer name, phone, or shoe ID
     if (search) {
       const searchRegex = new RegExp(search, "i");
-      query.$or = [
-        { customerName: searchRegex },
-        { customerPhone: searchRegex },
-        { shoeId: searchRegex },
-      ];
+      conditions.push({
+        $or: [
+          { customerName: searchRegex },
+          { customerPhone: searchRegex },
+          { shoeId: searchRegex },
+        ],
+      });
     }
+
+    const query =
+      conditions.length === 0
+        ? {}
+        : conditions.length === 1
+        ? conditions[0]
+        : { $and: conditions };
 
     // Sort order: history defaults to createdAt descending, board to expectedEndTime ascending
     const sortOption: Record<string, 1 | -1> =
@@ -100,7 +130,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ sessions: sessionsWithTabs });
+    return NextResponse.json({ sessions: sessionsWithTabs, isOwner });
   } catch (error) {
     console.error("Fetch rentals error:", error);
     return NextResponse.json({ error: "Failed to fetch rental sessions" }, { status: 500 });
